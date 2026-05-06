@@ -19,8 +19,8 @@ class SettingsRepository(private val context: Context) {
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
         AppSettings(
             hourlyAnnouncementsEnabled = prefs[KEY_HOURLY_ANNOUNCEMENTS] ?: false,
-            selectedVoiceName = prefs[KEY_SELECTED_VOICE_NAME],
-            selectedLocale = prefs[KEY_SELECTED_LOCALE],
+            selectedVoiceName = prefs[KEY_SELECTED_VOICE_NAME]?.takeIf { it.isNotBlank() },
+            selectedLocale = prefs[KEY_SELECTED_LOCALE]?.takeIf { it.isNotBlank() },
             pitch = prefs[KEY_PITCH] ?: 1.0f,
             speechRate = prefs[KEY_SPEECH_RATE] ?: 1.0f,
             timeFormat = prefs[KEY_TIME_FORMAT]?.let { TimeFormat.valueOf(it) } ?: TimeFormat.HOUR_12,

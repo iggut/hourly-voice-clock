@@ -110,10 +110,9 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
     }
 
     override fun shutdown() {
-        tts?.stop()
+        pendingUtterances.clear()
         tts?.shutdown()
         tts = null
-        pendingUtterances.clear()
     }
 
     private fun setupProgressListener() {
