@@ -1,13 +1,14 @@
 package com.hourlyvoiceclock.ui.home
 
 import android.app.Application
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.announcer.QuietHoursPolicy
 import com.hourlyvoiceclock.announcer.TimeAnnouncer
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
-import com.hourlyvoiceclock.tts.AndroidTtsEngine
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsRepo = SettingsRepository(application)
     private val scheduler = AnnouncementScheduler(application)
+    private val ttsRepo = TtsVoiceRepository((application as HourlyVoiceClockApp).ttsEngine)
+    private val announcer = TimeAnnouncer(application, ttsRepo)
 
     private val _currentTime = MutableStateFlow("")
     val currentTime: StateFlow<String> = _currentTime.asStateFlow()
@@ -51,6 +54,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 _hourlyEnabled.value = settings.hourlyAnnouncementsEnabled
                 updateNextAnnouncement(settings.hourlyAnnouncementsEnabled)
                 updateQuietStatus(settings)
+            }
+        }
+        viewModelScope.launch {
+            val initOk = ttsRepo.initialize()
+            if (!initOk) {
+                Toast.makeText(getApplication(), "Text-to-Speech initialization failed. Check your TTS engine in system settings.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -102,14 +111,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun announceNow(includeDate: Boolean = false) {
         viewModelScope.launch {
             val settings = settingsRepo.settings.first()
-            val ttsEngine = AndroidTtsEngine(getApplication())
-            val ttsRepo = TtsVoiceRepository(ttsEngine)
-            val announcer = TimeAnnouncer(getApplication(), ttsRepo)
-            try {
-                announcer.announce(settings, force = true, includeDate = includeDate)
-            } finally {
-                ttsEngine.shutdown()
-            }
+            announcer.announce(settings, force = true, includeDate = includeDate)
         }
     }
 }

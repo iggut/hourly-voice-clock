@@ -5,11 +5,17 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import com.hourlyvoiceclock.tts.AndroidTtsEngine
+import com.hourlyvoiceclock.tts.TtsEngine
 
 class HourlyVoiceClockApp : Application() {
 
+    lateinit var ttsEngine: TtsEngine
+        private set
+
     override fun onCreate() {
         super.onCreate()
+        ttsEngine = AndroidTtsEngine(this)
         createNotificationChannel()
     }
 

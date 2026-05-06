@@ -3,10 +3,11 @@ package com.hourlyvoiceclock.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
+import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.announcer.TimeAnnouncer
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
-import com.hourlyvoiceclock.tts.AndroidTtsEngine
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,15 +27,16 @@ class AlarmReceiver : BroadcastReceiver() {
             val settings = settingsRepo.settings.first()
             if (!settings.hourlyAnnouncementsEnabled) return@launch
 
-            val ttsEngine = AndroidTtsEngine(appContext)
-            val ttsRepo = TtsVoiceRepository(ttsEngine)
-            val announcer = TimeAnnouncer(appContext, ttsRepo)
-
-            try {
-                announcer.announce(settings, force = false)
-            } finally {
-                ttsEngine.shutdown()
+            val app = appContext as? HourlyVoiceClockApp
+            if (app == null) {
+                Log.e("AlarmReceiver", "Cannot cast context to HourlyVoiceClockApp")
+                return@launch
             }
+
+            val ttsRepo = TtsVoiceRepository(app.ttsEngine)
+            ttsRepo.initialize()
+            val announcer = TimeAnnouncer(appContext, ttsRepo)
+            announcer.announce(settings, force = false)
 
             if (settings.hourlyAnnouncementsEnabled) {
                 scheduler.scheduleNextHour(settings.exactAlarmsEnabled)

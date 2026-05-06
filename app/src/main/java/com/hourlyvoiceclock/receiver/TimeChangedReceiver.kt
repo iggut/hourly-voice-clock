@@ -3,6 +3,7 @@ package com.hourlyvoiceclock.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +24,8 @@ class TimeChangedReceiver : BroadcastReceiver() {
                 CoroutineScope(Dispatchers.Main).launch {
                     val settings = settingsRepo.settings.first()
                     if (settings.hourlyAnnouncementsEnabled) {
+                        val app = appContext as? HourlyVoiceClockApp
+                        app?.ttsEngine?.initialize()
                         scheduler.cancelHourlyAlarms()
                         scheduler.scheduleNextHour(settings.exactAlarmsEnabled)
                     }

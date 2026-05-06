@@ -7,6 +7,7 @@ class FakeTtsEngine : TtsEngine {
 
     var initialized = false
     var lastSpokenText: String? = null
+    var lastUtteranceId: String? = null
     var lastPitch = 1.0f
     var lastSpeechRate = 1.0f
     var lastVoiceName: String? = null
@@ -21,6 +22,8 @@ class FakeTtsEngine : TtsEngine {
         initialized = true
         return true
     }
+
+    override fun isAvailable(): Boolean = initialized
 
     override fun getVoices(): List<VoiceInfo> = fakeVoices.toList()
 
@@ -43,10 +46,12 @@ class FakeTtsEngine : TtsEngine {
         lastSpeechRate = rate
     }
 
-    override suspend fun speak(text: String): Boolean {
+    override fun speak(text: String, utteranceId: String) {
         lastSpokenText = text
-        return true
+        lastUtteranceId = utteranceId
     }
+
+    override fun stop() {}
 
     override fun shutdown() {
         initialized = false

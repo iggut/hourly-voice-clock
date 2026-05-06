@@ -7,9 +7,10 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
+import android.widget.Toast
 import com.hourlyvoiceclock.data.AppSettings
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
-import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.util.Locale
 
@@ -18,7 +19,7 @@ class TimeAnnouncer(
     private val ttsRepository: TtsVoiceRepository
 ) {
 
-    suspend fun announce(settings: AppSettings, force: Boolean = false, includeDate: Boolean = false): Boolean {
+    fun announce(settings: AppSettings, force: Boolean = false, includeDate: Boolean = false) {
         val now = LocalDateTime.now()
 
         if (!force) {
@@ -28,15 +29,30 @@ class TimeAnnouncer(
                 settings.quietHoursStart,
                 settings.quietHoursEnd
             )
-            if (inQuiet) return false
+            if (inQuiet) {
+                Log.d("TimeAnnouncer", "Blocked by quiet hours")
+                return
+            }
         }
+
+        // Check media volume
+        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        val musicVolume = audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC) ?: 0
+        val musicMax = audioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC) ?: 1
+        if (musicVolume == 0) {
+            Toast.makeText(context, "Media volume is muted. Turn up volume to hear announcements.", Toast.LENGTH_LONG).show()
+            Log.w("TimeAnnouncer", "Media volume is 0 - cannot hear TTS")
+            return
+        }
+        Log.d("TimeAnnouncer", "Media volume: $musicVolume / $musicMax")
 
         if (settings.vibrateBefore) {
             vibrate()
         }
 
-        val initOk = ttsRepository.initialize()
-        if (!initOk) return false
+        if (!ttsRepository.isAvailable()) {
+            Log.w("TimeAnnouncer", "TTS not available - attempting init")
+        }
 
         val voiceSet = settings.selectedVoiceName?.let { voiceName ->
             ttsRepository.selectVoice(voiceName, settings.selectedLocale ?: "")
@@ -47,7 +63,12 @@ class TimeAnnouncer(
                 ttsRepository.selectLanguage(locale)
             } ?: false
             if (!localeSet) {
-                ttsRepository.selectLanguage(Locale.getDefault().toLanguageTag())
+                val deviceDefault = Locale.getDefault().toLanguageTag()
+                val defaultSet = ttsRepository.selectLanguage(deviceDefault)
+                if (!defaultSet) {
+                    // Try English as last resort
+                    ttsRepository.selectLanguage("en-US")
+                }
             }
         }
 
@@ -61,14 +82,14 @@ class TimeAnnouncer(
             includeDate && settings.announceDateOnDemand
         )
 
-        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-        var focusRequest: AudioFocusRequest? = null
+        Log.d("TimeAnnouncer", "Speaking: \"$text\"")
 
+        var focusRequest: AudioFocusRequest? = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
                 .setAudioAttributes(
                     AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                        .setUsage(AudioAttributes.USAGE_ASSISTANT)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                         .build()
                 )
@@ -83,24 +104,17 @@ class TimeAnnouncer(
             )
         }
 
-        return try {
-            val spoke = ttsRepository.previewVoice(text)
-            if (spoke) {
-                // Some TTS engines report onDone when synthesis is handed to
-                // AudioTrack, not when the last sample has reached the speaker.
-                // Keep the engine alive briefly so shutdown() doesn't tear down
-                // playback before audible audio is emitted.
-                delay(2500)
-            }
-            spoke
-        } finally {
+        ttsRepository.speak(text)
+
+        // Release audio focus after a short delay (fire-and-forget)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
             } else {
                 @Suppress("DEPRECATION")
                 audioManager?.abandonAudioFocus(null)
             }
-        }
+        }, 5000)
     }
 
     private fun vibrate() {

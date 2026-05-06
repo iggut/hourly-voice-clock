@@ -1,5 +1,6 @@
 package com.hourlyvoiceclock.tts
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -13,6 +14,8 @@ class TtsVoiceRepository(private val engine: TtsEngine) {
         initialized = result
         result
     }
+
+    fun isAvailable(): Boolean = engine.isAvailable()
 
     fun getVoicesGroupedByLocale(): Map<String, List<VoiceInfo>> {
         return engine.getVoices().groupBy { it.localeDisplayName }
@@ -36,13 +39,24 @@ class TtsVoiceRepository(private val engine: TtsEngine) {
         engine.setSpeechRate(rate)
     }
 
-    suspend fun previewVoice(text: String = "The time is 3:45 PM."): Boolean {
-        return engine.speak(text)
+    fun previewVoice(text: String = "The time is 3:45 PM.") {
+        if (!engine.isAvailable()) {
+            Log.w("TtsVoiceRepository", "previewVoice called but engine not available")
+            return
+        }
+        (engine as? AndroidTtsEngine)?.speakAsync(text) { success ->
+            Log.d("TtsVoiceRepository", "previewVoice completed: success=$success")
+        } ?: engine.speak(text, "preview_${System.currentTimeMillis()}")
     }
 
-    fun shutdown() {
-        engine.shutdown()
-        initialized = false
+    fun speak(text: String) {
+        if (!engine.isAvailable()) {
+            Log.w("TtsVoiceRepository", "speak called but engine not available")
+            return
+        }
+        (engine as? AndroidTtsEngine)?.speakAsync(text) { success ->
+            Log.d("TtsVoiceRepository", "speak completed: success=$success")
+        } ?: engine.speak(text, "speak_${System.currentTimeMillis()}")
     }
 
     fun hasMultipleVoices(): Boolean = engine.getVoices().size > 1

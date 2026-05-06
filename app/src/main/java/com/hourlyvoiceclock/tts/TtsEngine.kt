@@ -1,24 +1,27 @@
 package com.hourlyvoiceclock.tts
 
 import android.content.Context
-import android.os.Bundle
+import android.media.AudioAttributes
+import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
+import android.util.Log
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
 
 interface TtsEngine {
     suspend fun initialize(): Boolean
+    fun isAvailable(): Boolean
     fun getVoices(): List<VoiceInfo>
     fun setVoice(voiceName: String, localeTag: String): Boolean
     fun setLanguage(localeTag: String): Boolean
     fun setPitch(pitch: Float)
     fun setSpeechRate(rate: Float)
-    suspend fun speak(text: String): Boolean
+    fun speak(text: String, utteranceId: String)
+    fun stop()
     fun shutdown()
 }
 
@@ -27,24 +30,34 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
     private var tts: TextToSpeech? = null
     private val appContext = context.applicationContext
     private var voices: List<VoiceInfo> = emptyList()
+    private var initOk = false
     private val utteranceCounter = AtomicInteger(0)
     private val pendingUtterances = mutableMapOf<String, (Boolean) -> Unit>()
 
-    override suspend fun initialize(): Boolean = suspendCancellableCoroutine { continuation ->
-        tts?.let {
-            continuation.resume(true)
-            return@suspendCancellableCoroutine
-        }
-        tts = TextToSpeech(appContext) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                voices = queryVoices()
-                setupProgressListener()
-                continuation.resume(true)
-            } else {
-                continuation.resume(false)
+    override suspend fun initialize(): Boolean {
+        if (initOk) return true
+        val success = suspendCancellableCoroutine { continuation ->
+            tts = TextToSpeech(appContext) { status ->
+                if (status == TextToSpeech.SUCCESS) {
+                    val instance = tts ?: run {
+                        continuation.resume(false)
+                        return@TextToSpeech
+                    }
+                    voices = queryVoices(instance)
+                    setupProgressListener(instance)
+                    setupAudioAttributes(instance)
+                    initOk = true
+                    continuation.resume(true)
+                } else {
+                    Log.e("TtsEngine", "TTS init failed with status=$status")
+                    continuation.resume(false)
+                }
             }
         }
+        return success
     }
+
+    override fun isAvailable(): Boolean = initOk && tts != null
 
     override fun getVoices(): List<VoiceInfo> = voices
 
@@ -54,7 +67,9 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         val voice = ttsInstance.voices?.find {
             it.name == voiceName && it.locale.toLanguageTag() == localeTag
         } ?: return false
-        return ttsInstance.setVoice(voice) == TextToSpeech.SUCCESS
+        val result = ttsInstance.setVoice(voice)
+        Log.d("TtsEngine", "setVoice(${voice.name}) = $result")
+        return result == TextToSpeech.SUCCESS
     }
 
     override fun setLanguage(localeTag: String): Boolean {
@@ -62,6 +77,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         val ttsInstance = tts ?: return false
         val locale = Locale.forLanguageTag(localeTag)
         val result = ttsInstance.setLanguage(locale)
+        Log.d("TtsEngine", "setLanguage($localeTag) = $result")
         return result == TextToSpeech.LANG_COUNTRY_AVAILABLE
                 || result == TextToSpeech.LANG_AVAILABLE
                 || result == TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE
@@ -75,62 +91,64 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         tts?.setSpeechRate(rate.coerceIn(0.1f, 2.0f))
     }
 
-    override suspend fun speak(text: String): Boolean {
-        val result = withTimeoutOrNull(15_000) {
-            suspendCancellableCoroutine { continuation ->
-                val ttsInstance = tts ?: run {
-                    continuation.resume(false)
-                    return@suspendCancellableCoroutine
-                }
-
-                val utteranceId = "hvc_${utteranceCounter.incrementAndGet()}"
-                pendingUtterances[utteranceId] = { success -> continuation.resume(success) }
-
-                continuation.invokeOnCancellation {
-                    pendingUtterances.remove(utteranceId)
-                    ttsInstance.stop()
-                }
-
-                val result = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                    ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
-                } else {
-                    @Suppress("DEPRECATION")
-                    val params = HashMap<String, String>()
-                    params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = utteranceId
-                    ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, params)
-                }
-
-                if (result == TextToSpeech.ERROR) {
-                    pendingUtterances.remove(utteranceId)
-                    continuation.resume(false)
-                }
-            }
+    override fun speak(text: String, utteranceId: String) {
+        val ttsInstance = tts ?: run {
+            Log.e("TtsEngine", "speak() called but TTS not initialized")
+            return
         }
-        return result ?: false
+        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+        } else {
+            @Suppress("DEPRECATION")
+            val params = HashMap<String, String>()
+            params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = utteranceId
+            ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, params)
+        }
+        if (result == TextToSpeech.ERROR) {
+            Log.e("TtsEngine", "speak() returned ERROR for utterance=$utteranceId")
+        } else {
+            Log.d("TtsEngine", "speak() queued utterance=$utteranceId, result=$result")
+        }
+    }
+
+    fun speakAsync(text: String, onComplete: (Boolean) -> Unit) {
+        val id = "hvc_${utteranceCounter.incrementAndGet()}"
+        pendingUtterances[id] = onComplete
+        speak(text, id)
+    }
+
+    override fun stop() {
+        tts?.stop()
     }
 
     override fun shutdown() {
         pendingUtterances.clear()
         tts?.shutdown()
         tts = null
+        initOk = false
+        voices = emptyList()
     }
 
-    private fun setupProgressListener() {
-        val ttsInstance = tts ?: return
+    private fun setupProgressListener(ttsInstance: TextToSpeech) {
         ttsInstance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {}
+            override fun onStart(utteranceId: String?) {
+                Log.d("TtsEngine", "onStart: $utteranceId")
+            }
             override fun onDone(utteranceId: String?) {
+                Log.d("TtsEngine", "onDone: $utteranceId")
                 utteranceId?.let { id ->
                     pendingUtterances.remove(id)?.invoke(true)
                 }
             }
             override fun onError(utteranceId: String?) {
+                Log.e("TtsEngine", "onError: $utteranceId")
                 utteranceId?.let { id ->
                     pendingUtterances.remove(id)?.invoke(false)
                 }
             }
             @Suppress("OVERRIDE_DEPRECATION")
             override fun onError(utteranceId: String?, errorCode: Int) {
+                Log.e("TtsEngine", "onError: $utteranceId, code=$errorCode")
                 utteranceId?.let { id ->
                     pendingUtterances.remove(id)?.invoke(false)
                 }
@@ -138,8 +156,18 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         })
     }
 
-    private fun queryVoices(): List<VoiceInfo> {
-        val ttsInstance = tts ?: return emptyList()
+    private fun setupAudioAttributes(ttsInstance: TextToSpeech) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            ttsInstance.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+        }
+    }
+
+    private fun queryVoices(ttsInstance: TextToSpeech): List<VoiceInfo> {
         val allVoices = ttsInstance.voices ?: return emptyList()
         return allVoices.map { voice ->
             VoiceInfo(

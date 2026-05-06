@@ -3,6 +3,7 @@ package com.hourlyvoiceclock.ui.voicesettings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import com.hourlyvoiceclock.tts.VoiceInfo
@@ -15,7 +16,7 @@ import kotlinx.coroutines.launch
 class VoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsRepo = SettingsRepository(application)
-    private val ttsRepo = TtsVoiceRepository(com.hourlyvoiceclock.tts.AndroidTtsEngine(application))
+    private val ttsRepo = TtsVoiceRepository((application as HourlyVoiceClockApp).ttsEngine)
 
     private val _voicesByLocale = MutableStateFlow<Map<String, List<VoiceInfo>>>(emptyMap())
     val voicesByLocale: StateFlow<Map<String, List<VoiceInfo>>> = _voicesByLocale.asStateFlow()
@@ -69,13 +70,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun previewVoice() {
-        viewModelScope.launch {
-            ttsRepo.previewVoice("The time is 3:45 PM.")
-        }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        ttsRepo.shutdown()
+        ttsRepo.previewVoice("The time is 3:45 PM.")
     }
 }
