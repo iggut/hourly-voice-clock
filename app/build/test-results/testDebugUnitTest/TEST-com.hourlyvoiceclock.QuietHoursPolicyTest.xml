@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.hourlyvoiceclock.QuietHoursPolicyTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-05-06T21:39:52.991Z" hostname="Jupiter" time="0.003">
+  <properties/>
+  <testcase name="manual announcement blocked in quiet hours when setting disabled" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="quiet hours normal range - outside after end" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="quiet hours crossing midnight - at end boundary" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="quiet hours crossing midnight - just after start" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="quiet hours crossing midnight - just before end" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="quiet hours normal range - inside" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="quiet hours normal range - outside before start" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="manual announcement allowed in quiet hours when setting enabled" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="manual announcement allowed when not in quiet hours" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="quiet hours crossing midnight - at start boundary" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <testcase name="quiet hours disabled always returns false" classname="com.hourlyvoiceclock.QuietHoursPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="allow_manual_during_quiet">Allow manual announcements during quiet time</string>
+    <string name="announce_date">Announce date on demand</string>
+    <string name="announce_now">Announce time now</string>
+    <string name="app_name">Hourly Voice Clock</string>
+    <string name="back">Back</string>
+    <string name="chime_before">Chime before speaking</string>
+    <string name="exact_alarm_permission_explanation">To announce exactly at the top of the hour, this app needs the Alarms \&amp; reminders permission.</string>
+    <string name="exact_alarms">Exact top-of-hour alarms</string>
+    <string name="exact_alarms_desc">Requires Alarms \&amp; reminders permission. Falls back to inexact alarms if unavailable.</string>
+    <string name="female_voice">Female voice</string>
+    <string name="format_settings">Announcement format</string>
+    <string name="home_title">Hourly Voice Clock</string>
+    <string name="hourly_announcements">Hourly announcements</string>
+    <string name="latency">Latency: %1$d</string>
+    <string name="male_voice">Male voice</string>
+    <string name="next_announcement">Next announcement: %1$s</string>
+    <string name="no_voices_found">Your Android TTS engine only exposes one voice. Install more voices in Android Text-to-speech settings.</string>
+    <string name="notification_logging">Notification logging</string>
+    <string name="open_alarm_permission">Open Alarms \&amp; reminders permission</string>
+    <string name="open_tts_settings">Open Android TTS settings</string>
+    <string name="permission_required">Permission required</string>
+    <string name="phrase_style">Phrase style</string>
+    <string name="pitch">Pitch</string>
+    <string name="preview_voice">Preview voice</string>
+    <string name="quality">Quality: %1$d</string>
+    <string name="quiet_hours">Quiet hours</string>
+    <string name="quiet_hours_active">Quiet hours active</string>
+    <string name="quiet_hours_end">End time</string>
+    <string name="quiet_hours_start">Start time</string>
+    <string name="requires_network">Requires network</string>
+    <string name="schedule_settings">Schedule settings</string>
+    <string name="select_voice">Select voice</string>
+    <string name="settings">Settings</string>
+    <string name="speech_rate">Speech rate</string>
+    <string name="time_format">Time format</string>
+    <string name="vibrate_before">Vibrate before speaking</string>
+    <string name="voice_n">Voice %1$d</string>
+    <string name="voice_settings">Voice settings</string>
+    <style name="Theme.HourlyVoiceClock" parent="android:Theme.Material.Light.NoActionBar"/>
+</resources>

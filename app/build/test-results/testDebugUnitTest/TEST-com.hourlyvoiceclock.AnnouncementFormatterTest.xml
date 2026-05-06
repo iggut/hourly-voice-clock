@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.hourlyvoiceclock.AnnouncementFormatterTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-05-06T21:39:52.948Z" hostname="Jupiter" time="0.034">
+  <properties/>
+  <testcase name="detailed 12 hour format" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.005"/>
+  <testcase name="friendly morning" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.003"/>
+  <testcase name="friendly late night" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.001"/>
+  <testcase name="24 hour midnight" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.0"/>
+  <testcase name="friendly afternoon" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.0"/>
+  <testcase name="with date included" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.018"/>
+  <testcase name="friendly evening" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.0"/>
+  <testcase name="simple 12 hour with minutes" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.001"/>
+  <testcase name="simple 12 hour format" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.0"/>
+  <testcase name="24 hour format" classname="com.hourlyvoiceclock.AnnouncementFormatterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

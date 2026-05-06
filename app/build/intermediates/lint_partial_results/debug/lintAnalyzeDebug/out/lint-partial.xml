@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.8.0" type="partial_results">
+    <map id="ScheduleExactAlarm">
+        <location id="0"
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/hourlyvoiceclock/scheduler/AnnouncementScheduler.kt"
+            line="33"
+            column="17"
+            startOffset="1191"
+            endLine="37"
+            endColumn="18"
+            endOffset="1364"/>
+        <entry
+            name="ChecksExactAlarmPermission"
+            boolean="true"/>
+    </map>
+    <map id="UnsafeImplicitIntentLaunch">
+            <map id="actionsSent">
+                    <map id="android.settings.ACCESSIBILITY_SETTINGS (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/hourlyvoiceclock/ui/voicesettings/VoiceSettingsScreen.kt"
+                            line="91"
+                            column="55"
+                            startOffset="3854"
+                            endLine="91"
+                            endColumn="101"
+                            endOffset="3900"/>
+                    </map>
+                    <map id="android.settings.REQUEST_SCHEDULE_EXACT_ALARM (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/hourlyvoiceclock/ui/schedulesettings/ScheduleSettingsScreen.kt"
+                            line="110"
+                            column="51"
+                            startOffset="4840"
+                            endLine="110"
+                            endColumn="103"
+                            endOffset="4892"/>
+                    </map>
+                    <map id="com.android.settings.TTS_SETTINGS (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/hourlyvoiceclock/ui/voicesettings/VoiceSettingsScreen.kt"
+                            line="85"
+                            column="42"
+                            startOffset="3497"
+                            endLine="85"
+                            endColumn="85"
+                            endOffset="3540"/>
+                    </map>
+            </map>
+    </map>
+    <map id="UnsafeIntentLaunch">
+            <map id="unprotected">
+                <entry
+                    name="com.hourlyvoiceclock.MainActivity"
+                    boolean="true"/>
+                <entry
+                    name="com.hourlyvoiceclock.receiver.BootReceiver"
+                    boolean="true"/>
+                <entry
+                    name="com.hourlyvoiceclock.receiver.TimeChangedReceiver"
+                    boolean="true"/>
+            </map>
+    </map>
+    <map id="UnusedResources">
+        <location id="R.color.black"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="8"
+            column="12"
+            startOffset="293"
+            endLine="8"
+            endColumn="24"
+            endOffset="305"/>
+        <location id="R.color.purple_200"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="3"
+            column="12"
+            startOffset="62"
+            endLine="3"
+            endColumn="29"
+            endOffset="79"/>
+        <location id="R.color.purple_500"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="4"
+            column="12"
+            startOffset="109"
+            endLine="4"
+            endColumn="29"
+            endOffset="126"/>
+        <location id="R.color.purple_700"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="5"
+            column="12"
+            startOffset="156"
+            endLine="5"
+            endColumn="29"
+            endOffset="173"/>
+        <location id="R.color.teal_200"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="6"
+            column="12"
+            startOffset="203"
+            endLine="6"
+            endColumn="27"
+            endOffset="218"/>
+        <location id="R.color.teal_700"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="7"
+            column="12"
+            startOffset="248"
+            endLine="7"
+            endColumn="27"
+            endOffset="263"/>
+        <location id="R.color.white"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="9"
+            column="12"
+            startOffset="335"
+            endLine="9"
+            endColumn="24"
+            endOffset="347"/>
+        <location id="R.string.exact_alarm_permission_explanation"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="39"
+            column="13"
+            startOffset="2401"
+            endLine="39"
+            endColumn="54"
+            endOffset="2442"/>
+        <location id="R.string.female_voice"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="36"
+            column="13"
+            startOffset="2232"
+            endLine="36"
+            endColumn="32"
+            endOffset="2251"/>
+        <location id="R.string.home_title"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="3"
+            column="13"
+            startOffset="80"
+            endLine="3"
+            endColumn="30"
+            endOffset="97"/>
+        <location id="R.string.male_voice"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="35"
+            column="13"
+            startOffset="2182"
+            endLine="35"
+            endColumn="30"
+            endOffset="2199"/>
+        <location id="R.string.quiet_hours_end"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="24"
+            column="13"
+            startOffset="1458"
+            endLine="24"
+            endColumn="35"
+            endOffset="1480"/>
+        <location id="R.string.quiet_hours_start"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="23"
+            column="13"
+            startOffset="1401"
+            endLine="23"
+            endColumn="37"
+            endOffset="1425"/>
+        <location id="R.string.select_voice"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="31"
+            column="13"
+            startOffset="1966"
+            endLine="31"
+            endColumn="32"
+            endOffset="1985"/>
+        <entry
+            name="model"
+            string="color[purple_200(D),purple_500(D),purple_700(D),teal_200(D),teal_700(D),black(D),white(D)],drawable[ic_launcher_background(U),ic_launcher_foreground(U)],mipmap[ic_launcher(U),ic_launcher_round(U)],string[app_name(U),home_title(D),announce_now(U),hourly_announcements(U),next_announcement(U),quiet_hours_active(U),no_voices_found(U),open_tts_settings(U),open_alarm_permission(U),voice_settings(U),format_settings(U),schedule_settings(U),pitch(U),speech_rate(U),preview_voice(U),time_format(U),phrase_style(U),chime_before(U),vibrate_before(U),announce_date(U),quiet_hours(U),quiet_hours_start(D),quiet_hours_end(D),allow_manual_during_quiet(U),exact_alarms(U),exact_alarms_desc(U),notification_logging(U),back(U),settings(U),select_voice(D),requires_network(U),quality(U),latency(U),male_voice(D),female_voice(D),voice_n(U),permission_required(U),exact_alarm_permission_explanation(D)],style[Theme_HourlyVoiceClock(U)],xml[data_extraction_rules(U),backup_rules(U)];9^7^8,a^7^8;;;"/>
+    </map>
+
+</incidents>
