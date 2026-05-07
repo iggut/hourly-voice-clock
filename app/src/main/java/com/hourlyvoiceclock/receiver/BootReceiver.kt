@@ -17,16 +17,24 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != Intent.ACTION_BOOT_COMPLETED) return
 
+        val pendingResult = goAsync()
         val appContext = context.applicationContext
-        val settingsRepo = SettingsRepository(appContext)
-        val scheduler = AnnouncementScheduler(appContext)
 
         CoroutineScope(Dispatchers.Main).launch {
-            val settings = settingsRepo.settings.first()
-            if (settings.hourlyAnnouncementsEnabled) {
-                val app = appContext as? HourlyVoiceClockApp
-                app?.ttsEngine?.initialize()
-                scheduler.scheduleNextHour(settings.exactAlarmsEnabled)
+            try {
+                val settingsRepo = SettingsRepository(appContext)
+                val settings = settingsRepo.settings.first()
+                if (settings.hourlyAnnouncementsEnabled) {
+                    val app = appContext as? HourlyVoiceClockApp
+                    app?.ttsEngine?.initialize()
+                    val scheduler = AnnouncementScheduler(appContext)
+                    scheduler.scheduleNextHour(settings.exactAlarmsEnabled)
+                    Log.d("BootReceiver", "Rescheduled hourly alarm after boot")
+                }
+            } catch (e: Exception) {
+                Log.e("BootReceiver", "Error rescheduling after boot", e)
+            } finally {
+                pendingResult.finish()
             }
         }
     }

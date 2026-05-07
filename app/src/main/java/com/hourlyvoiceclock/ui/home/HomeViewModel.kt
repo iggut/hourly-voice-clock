@@ -46,13 +46,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             while (isActive) {
                 updateTime()
+                if (_hourlyEnabled.value) {
+                    updateNextAnnouncement(true)
+                }
                 delay(1000)
             }
         }
         viewModelScope.launch {
             settingsRepo.settings.collect { settings ->
                 _hourlyEnabled.value = settings.hourlyAnnouncementsEnabled
-                updateNextAnnouncement(settings.hourlyAnnouncementsEnabled)
                 updateQuietStatus(settings)
             }
         }

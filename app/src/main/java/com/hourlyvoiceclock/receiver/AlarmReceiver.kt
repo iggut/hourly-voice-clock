@@ -19,27 +19,42 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != ACTION_HOURLY_ALARM) return
 
+        val pendingResult = goAsync()
         val appContext = context.applicationContext
-        val settingsRepo = SettingsRepository(appContext)
-        val scheduler = AnnouncementScheduler(appContext)
 
         CoroutineScope(Dispatchers.Main).launch {
-            val settings = settingsRepo.settings.first()
-            if (!settings.hourlyAnnouncementsEnabled) return@launch
+            try {
+                val settingsRepo = SettingsRepository(appContext)
+                val settings = settingsRepo.settings.first()
 
-            val app = appContext as? HourlyVoiceClockApp
-            if (app == null) {
-                Log.e("AlarmReceiver", "Cannot cast context to HourlyVoiceClockApp")
-                return@launch
-            }
+                if (!settings.hourlyAnnouncementsEnabled) {
+                    Log.d("AlarmReceiver", "Hourly announcements disabled, skipping")
+                    return@launch
+                }
 
-            val ttsRepo = TtsVoiceRepository(app.ttsEngine)
-            ttsRepo.initialize()
-            val announcer = TimeAnnouncer(appContext, ttsRepo)
-            announcer.announce(settings, force = false)
-
-            if (settings.hourlyAnnouncementsEnabled) {
+                // ALWAYS reschedule first, before any heavy TTS work.
+                // If the process is killed during TTS init/speak, the next
+                // alarm is already set.
+                val scheduler = AnnouncementScheduler(appContext)
                 scheduler.scheduleNextHour(settings.exactAlarmsEnabled)
+                Log.d("AlarmReceiver", "Rescheduled next hourly alarm")
+
+                // Then do the announcement
+                val app = appContext as? HourlyVoiceClockApp
+                if (app == null) {
+                    Log.e("AlarmReceiver", "Cannot cast context to HourlyVoiceClockApp")
+                    return@launch
+                }
+
+                val ttsRepo = TtsVoiceRepository(app.ttsEngine)
+                ttsRepo.initialize()
+                val announcer = TimeAnnouncer(appContext, ttsRepo)
+                announcer.announce(settings, force = false)
+
+            } catch (e: Exception) {
+                Log.e("AlarmReceiver", "Error handling alarm", e)
+            } finally {
+                pendingResult.finish()
             }
         }
     }

@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import com.hourlyvoiceclock.receiver.AlarmReceiver
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -28,15 +29,35 @@ class AnnouncementScheduler(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        if (exact && AlarmPermissionChecker.canScheduleExactAlarms(context)) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
+        try {
+            if (exact && AlarmPermissionChecker.canScheduleExactAlarms(context)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                    Log.d("AnnouncementScheduler", "Exact alarm scheduled for $nextHour")
+                }
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                } else {
+                    alarmManager.set(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                }
+                Log.d("AnnouncementScheduler", "Inexact alarm scheduled for $nextHour")
             }
-        } else {
+        } catch (e: SecurityException) {
+            Log.e("AnnouncementScheduler", "SecurityException scheduling alarm", e)
+            // Fallback to inexact
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
@@ -65,17 +86,14 @@ class AnnouncementScheduler(private val context: Context) {
         )
         alarmManager.cancel(pendingIntent)
         pendingIntent.cancel()
+        Log.d("AnnouncementScheduler", "Hourly alarms cancelled")
     }
 
     companion object {
         private const val REQUEST_CODE_HOURLY = 1001
 
         fun getNextTopOfHour(from: LocalDateTime = LocalDateTime.now()): LocalDateTime {
-            return if (from.minute == 0 && from.second == 0) {
-                from.plusHours(1).truncatedTo(ChronoUnit.HOURS)
-            } else {
-                from.plusHours(1).truncatedTo(ChronoUnit.HOURS)
-            }
+            return from.plusHours(1).truncatedTo(ChronoUnit.HOURS)
         }
     }
 }
