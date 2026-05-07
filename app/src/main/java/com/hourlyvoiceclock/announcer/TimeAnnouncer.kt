@@ -20,12 +20,16 @@ class TimeAnnouncer(
     private val ttsRepository: TtsVoiceRepository
 ) {
 
-    fun announce(settings: AppSettings, force: Boolean = false, includeDate: Boolean = false) {
-        val now = LocalDateTime.now()
+    fun announce(
+        settings: AppSettings,
+        force: Boolean = false,
+        includeDate: Boolean = false,
+        dateTime: LocalDateTime = LocalDateTime.now()
+    ) {
 
         if (!force) {
             val inQuiet = QuietHoursPolicy.isQuietTime(
-                now.toLocalTime(),
+                dateTime.toLocalTime(),
                 settings.quietHoursEnabled,
                 settings.quietHoursStart,
                 settings.quietHoursEnd
@@ -88,7 +92,7 @@ class TimeAnnouncer(
         ttsRepository.setAudioChannel(settings.audioChannel)
 
         val text = AnnouncementFormatter.format(
-            now,
+            dateTime,
             settings.timeFormat,
             settings.phraseStyle,
             includeDate && settings.announceDateOnDemand

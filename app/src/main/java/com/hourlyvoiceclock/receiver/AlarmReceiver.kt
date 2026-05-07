@@ -13,6 +13,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 class AlarmReceiver : BroadcastReceiver() {
 
@@ -49,7 +51,10 @@ class AlarmReceiver : BroadcastReceiver() {
                 val ttsRepo = TtsVoiceRepository(app.ttsEngine)
                 ttsRepo.initialize()
                 val announcer = TimeAnnouncer(appContext, ttsRepo)
-                announcer.announce(settings, force = false)
+                // Hourly announcements always say the top of the hour,
+                // even if Doze delays the alarm by several minutes.
+                val scheduledHour = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
+                announcer.announce(settings, force = false, dateTime = scheduledHour)
 
             } catch (e: Exception) {
                 Log.e("AlarmReceiver", "Error handling alarm", e)
