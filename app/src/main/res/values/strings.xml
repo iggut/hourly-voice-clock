@@ -36,7 +36,15 @@
     <string name="female_voice">Female voice</string>
     <string name="voice_n">Voice %1$d</string>
     <string name="permission_required">Permission required</string>
-    <string name="exact_alarm_permission_explanation">To announce exactly at the top of the hour, this app needs the Alarms \&amp; reminders permission.</string>
     <string name="audio_channel">Audio channel</string>
     <string name="audio_channel_desc">Choose which volume control affects announcements</string>
+    <string name="exact_alarm_permission_title">Permission required for exact timing</string>
+    <string name="exact_alarm_permission_explanation">To announce exactly at the top of the hour, Android needs the Alarms &amp; reminders permission. Without it, announcements may be delayed by up to 15 minutes by Doze battery saving. Tap Grant to open the system settings.</string>
+    <string name="grant_permission">Grant permission</string>
+    <string name="pending_permission">Pending — tap to grant</string>
+    <string name="permission_denied">Permission denied — tap to retry</string>
+    <string name="active">Active</string>
+    <string name="inactive">Inactive</string>
+    <string name="cancel">Cancel</string>
+    <string name="notification_logging_desc">Log each hourly announcement as a notification</string>
 </resources>

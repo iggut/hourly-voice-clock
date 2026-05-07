@@ -1,7 +1,7 @@
 package com.hourlyvoiceclock.ui.schedulesettings
 
 import android.app.Application
-import android.provider.Settings
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.data.SettingsRepository
@@ -34,13 +34,22 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
     private val _exactAlarmsEnabled = MutableStateFlow(false)
     val exactAlarmsEnabled: StateFlow<Boolean> = _exactAlarmsEnabled.asStateFlow()
 
+    // Whether the system currently allows exact alarms (re-checked on resume)
     private val _canScheduleExact = MutableStateFlow(false)
     val canScheduleExact: StateFlow<Boolean> = _canScheduleExact.asStateFlow()
+
+    // True when user has enabled exact alarms but permission is not granted
+    private val _needsExactPermission = MutableStateFlow(false)
+    val needsExactPermission: StateFlow<Boolean> = _needsExactPermission.asStateFlow()
 
     private val _notificationLogging = MutableStateFlow(false)
     val notificationLogging: StateFlow<Boolean> = _notificationLogging.asStateFlow()
 
     init {
+        refreshAll()
+    }
+
+    fun refreshAll() {
         viewModelScope.launch {
             val settings = settingsRepo.settings.first()
             _quietHoursEnabled.value = settings.quietHoursEnabled
@@ -49,8 +58,17 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             _allowManualDuringQuiet.value = settings.allowManualDuringQuiet
             _exactAlarmsEnabled.value = settings.exactAlarmsEnabled
             _notificationLogging.value = settings.notificationLogging
-            _canScheduleExact.value = AlarmPermissionChecker.canScheduleExactAlarms(getApplication())
+            checkExactAlarmPermission()
         }
+    }
+
+    fun checkExactAlarmPermission() {
+        val can = AlarmPermissionChecker.canScheduleExactAlarms(getApplication())
+        _canScheduleExact.value = can
+
+        // If exact alarms are requested but permission not granted, show the permission card
+        _needsExactPermission.value = _exactAlarmsEnabled.value && !can &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     }
 
     fun setQuietHoursEnabled(enabled: Boolean) {
@@ -85,10 +103,22 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         viewModelScope.launch {
             settingsRepo.setExactAlarmsEnabled(enabled)
             _exactAlarmsEnabled.value = enabled
+
+            if (enabled) {
+                // Re-check permission immediately
+                checkExactAlarmPermission()
+                // If still can't schedule exact after re-check, we'll show the permission card
+                if (_needsExactPermission.value) {
+                    // Permission not granted yet — don't reschedule with exact timing
+                    return@launch
+                }
+            }
+
+            // Schedule or reschedule
             val settings = settingsRepo.settings.first()
             if (settings.hourlyAnnouncementsEnabled) {
                 scheduler.cancelHourlyAlarms()
-                scheduler.scheduleNextHour(enabled)
+                scheduler.scheduleNextHour(enabled && _canScheduleExact.value)
             }
         }
     }
@@ -98,9 +128,5 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             settingsRepo.setNotificationLogging(enabled)
             _notificationLogging.value = enabled
         }
-    }
-
-    fun checkExactAlarmPermission() {
-        _canScheduleExact.value = AlarmPermissionChecker.canScheduleExactAlarms(getApplication())
     }
 }
