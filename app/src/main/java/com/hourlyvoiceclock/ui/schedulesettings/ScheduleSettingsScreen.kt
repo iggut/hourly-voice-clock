@@ -1,8 +1,10 @@
 package com.hourlyvoiceclock.ui.schedulesettings
 
+import android.app.TimePickerDialog
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,6 +57,26 @@ fun ScheduleSettingsScreen(
     val canScheduleExact by viewModel.canScheduleExact.collectAsState()
     val notificationLogging by viewModel.notificationLogging.collectAsState()
     val context = LocalContext.current
+
+    val startPicker = TimePickerDialog(
+        context,
+        { _, hour, minute ->
+            viewModel.setQuietStart(LocalTime.of(hour, minute))
+        },
+        quietStart.hour,
+        quietStart.minute,
+        false
+    )
+
+    val endPicker = TimePickerDialog(
+        context,
+        { _, hour, minute ->
+            viewModel.setQuietEnd(LocalTime.of(hour, minute))
+        },
+        quietEnd.hour,
+        quietEnd.minute,
+        false
+    )
 
     Scaffold(
         topBar = {
@@ -134,9 +156,47 @@ fun ScheduleSettingsScreen(
                     }
                     if (quietEnabled) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Start: ${quietStart}")
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("End: ${quietEnd}")
+
+                        // Start time
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { startPicker.show() }
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                stringResource(R.string.quiet_hours_start),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                quietStart.toString(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        // End time
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { endPicker.show() }
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                stringResource(R.string.quiet_hours_end),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                quietEnd.toString(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),

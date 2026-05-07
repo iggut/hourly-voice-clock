@@ -169,19 +169,22 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
 
     private fun queryVoices(ttsInstance: TextToSpeech): List<VoiceInfo> {
         val allVoices = ttsInstance.voices ?: return emptyList()
-        return allVoices.map { voice ->
-            VoiceInfo(
-                name = voice.name,
-                localeDisplayName = voice.locale.getDisplayName(voice.locale),
-                localeTag = voice.locale.toLanguageTag(),
-                quality = voice.quality,
-                latency = voice.latency,
-                requiresNetwork = voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS) ?: false,
-                genderLabel = inferGender(voice.name)
+        return allVoices
+            .filter { it.locale.language.equals("en", ignoreCase = true) }
+            .map { voice ->
+                VoiceInfo(
+                    name = voice.name,
+                    localeDisplayName = voice.locale.getDisplayName(voice.locale),
+                    localeTag = voice.locale.toLanguageTag(),
+                    quality = voice.quality,
+                    latency = voice.latency,
+                    requiresNetwork = voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS) ?: false,
+                    genderLabel = inferGender(voice.name)
+                )
+            }
+            .sortedWith(
+                compareBy({ it.localeDisplayName }, { it.name })
             )
-        }.sortedWith(
-            compareBy({ it.localeDisplayName }, { it.name })
-        )
     }
 
     private fun inferGender(name: String): String? {
