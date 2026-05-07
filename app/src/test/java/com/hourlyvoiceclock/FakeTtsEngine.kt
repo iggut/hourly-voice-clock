@@ -46,6 +46,8 @@ class FakeTtsEngine : TtsEngine {
         lastSpeechRate = rate
     }
 
+    override fun setAudioChannel(channel: com.hourlyvoiceclock.data.AudioChannel) {}
+
     override fun speak(text: String, utteranceId: String) {
         lastSpokenText = text
         lastUtteranceId = utteranceId

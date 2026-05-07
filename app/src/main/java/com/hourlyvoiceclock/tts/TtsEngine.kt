@@ -7,6 +7,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.util.Log
+import com.hourlyvoiceclock.data.AudioChannel
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
@@ -20,6 +21,7 @@ interface TtsEngine {
     fun setLanguage(localeTag: String): Boolean
     fun setPitch(pitch: Float)
     fun setSpeechRate(rate: Float)
+    fun setAudioChannel(channel: AudioChannel)
     fun speak(text: String, utteranceId: String)
     fun stop()
     fun shutdown()
@@ -89,6 +91,27 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
 
     override fun setSpeechRate(rate: Float) {
         tts?.setSpeechRate(rate.coerceIn(0.1f, 2.0f))
+    }
+
+    override fun setAudioChannel(channel: AudioChannel) {
+        val ttsInstance = tts ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val (usage, contentType) = when (channel) {
+                AudioChannel.MEDIA ->
+                    AudioAttributes.USAGE_MEDIA to AudioAttributes.CONTENT_TYPE_SPEECH
+                AudioChannel.NOTIFICATION ->
+                    AudioAttributes.USAGE_NOTIFICATION to AudioAttributes.CONTENT_TYPE_SPEECH
+                AudioChannel.CALL ->
+                    AudioAttributes.USAGE_VOICE_COMMUNICATION to AudioAttributes.CONTENT_TYPE_SPEECH
+            }
+            ttsInstance.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(usage)
+                    .setContentType(contentType)
+                    .build()
+            )
+            Log.d("TtsEngine", "AudioAttributes set to channel=$channel usage=$usage")
+        }
     }
 
     override fun speak(text: String, utteranceId: String) {

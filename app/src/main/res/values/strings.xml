@@ -37,4 +37,6 @@
     <string name="voice_n">Voice %1$d</string>
     <string name="permission_required">Permission required</string>
     <string name="exact_alarm_permission_explanation">To announce exactly at the top of the hour, this app needs the Alarms \&amp; reminders permission.</string>
+    <string name="audio_channel">Audio channel</string>
+    <string name="audio_channel_desc">Choose which volume control affects announcements</string>
 </resources>

@@ -13,6 +13,12 @@ enum class TimeFormat {
     HOUR_24
 }
 
+enum class AudioChannel {
+    MEDIA,
+    NOTIFICATION,
+    CALL
+}
+
 data class AppSettings(
     val hourlyAnnouncementsEnabled: Boolean = false,
     val selectedVoiceName: String? = null,
@@ -29,5 +35,6 @@ data class AppSettings(
     val quietHoursEnd: LocalTime = LocalTime.of(7, 0),
     val allowManualDuringQuiet: Boolean = true,
     val exactAlarmsEnabled: Boolean = false,
-    val notificationLogging: Boolean = false
+    val notificationLogging: Boolean = false,
+    val audioChannel: AudioChannel = AudioChannel.MEDIA
 )

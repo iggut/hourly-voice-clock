@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
+import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.TimeFormat
 
@@ -48,6 +49,7 @@ fun FormatSettingsScreen(
     val chimeBefore by viewModel.chimeBefore.collectAsState()
     val vibrateBefore by viewModel.vibrateBefore.collectAsState()
     val announceDate by viewModel.announceDate.collectAsState()
+    val audioChannel by viewModel.audioChannel.collectAsState()
 
     Scaffold(
         topBar = {
@@ -153,6 +155,36 @@ fun FormatSettingsScreen(
                             checked = announceDate,
                             onCheckedChange = { viewModel.setAnnounceDate(it) }
                         )
+                    }
+                }
+            }
+
+            // Audio channel
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        stringResource(R.string.audio_channel),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        stringResource(R.string.audio_channel_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    AudioChannel.values().forEach { channel ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = audioChannel == channel,
+                                onClick = { viewModel.setAudioChannel(channel) }
+                            )
+                            Text(
+                                when (channel) {
+                                    AudioChannel.MEDIA -> "Media"
+                                    AudioChannel.NOTIFICATION -> "Notification"
+                                    AudioChannel.CALL -> "Call"
+                                }
+                            )
+                        }
                     }
                 }
             }

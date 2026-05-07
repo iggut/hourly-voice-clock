@@ -33,7 +33,8 @@ class SettingsRepository(private val context: Context) {
             quietHoursEnd = parseTime(prefs[KEY_QUIET_HOURS_END] ?: "07:00"),
             allowManualDuringQuiet = prefs[KEY_ALLOW_MANUAL_QUIET] ?: true,
             exactAlarmsEnabled = prefs[KEY_EXACT_ALARMS] ?: false,
-            notificationLogging = prefs[KEY_NOTIFICATION_LOGGING] ?: false
+            notificationLogging = prefs[KEY_NOTIFICATION_LOGGING] ?: false,
+            audioChannel = prefs[KEY_AUDIO_CHANNEL]?.let { AudioChannel.valueOf(it) } ?: AudioChannel.MEDIA
         )
     }
 
@@ -100,6 +101,10 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[KEY_NOTIFICATION_LOGGING] = enabled }
     }
 
+    suspend fun setAudioChannel(channel: AudioChannel) {
+        context.dataStore.edit { it[KEY_AUDIO_CHANNEL] = channel.name }
+    }
+
     private fun parseTime(value: String): LocalTime {
         val parts = value.split(":")
         return LocalTime.of(parts[0].toInt(), parts[1].toInt())
@@ -126,5 +131,6 @@ class SettingsRepository(private val context: Context) {
         private val KEY_ALLOW_MANUAL_QUIET = booleanPreferencesKey("allow_manual_quiet")
         private val KEY_EXACT_ALARMS = booleanPreferencesKey("exact_alarms")
         private val KEY_NOTIFICATION_LOGGING = booleanPreferencesKey("notification_logging")
+        private val KEY_AUDIO_CHANNEL = stringPreferencesKey("audio_channel")
     }
 }

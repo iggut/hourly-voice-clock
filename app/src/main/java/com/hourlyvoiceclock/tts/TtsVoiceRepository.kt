@@ -39,6 +39,10 @@ class TtsVoiceRepository(private val engine: TtsEngine) {
         engine.setSpeechRate(rate)
     }
 
+    fun setAudioChannel(channel: com.hourlyvoiceclock.data.AudioChannel) {
+        engine.setAudioChannel(channel)
+    }
+
     fun previewVoice(text: String = "The time is 3:45 PM.") {
         if (!engine.isAvailable()) {
             Log.w("TtsVoiceRepository", "previewVoice called but engine not available")

@@ -10,6 +10,7 @@ import android.os.Vibrator
 import android.util.Log
 import android.widget.Toast
 import com.hourlyvoiceclock.data.AppSettings
+import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import java.time.LocalDateTime
 import java.util.Locale
@@ -35,16 +36,27 @@ class TimeAnnouncer(
             }
         }
 
-        // Check media volume
+        val (audioStream, usage) = when (settings.audioChannel) {
+            AudioChannel.MEDIA -> AudioManager.STREAM_MUSIC to AudioAttributes.USAGE_MEDIA
+            AudioChannel.NOTIFICATION -> AudioManager.STREAM_NOTIFICATION to AudioAttributes.USAGE_NOTIFICATION
+            AudioChannel.CALL -> AudioManager.STREAM_VOICE_CALL to AudioAttributes.USAGE_VOICE_COMMUNICATION
+        }
+
+        // Check volume on the selected stream
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-        val musicVolume = audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC) ?: 0
-        val musicMax = audioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC) ?: 1
-        if (musicVolume == 0) {
-            Toast.makeText(context, "Media volume is muted. Turn up volume to hear announcements.", Toast.LENGTH_LONG).show()
-            Log.w("TimeAnnouncer", "Media volume is 0 - cannot hear TTS")
+        val streamVolume = audioManager?.getStreamVolume(audioStream) ?: 0
+        val streamMax = audioManager?.getStreamMaxVolume(audioStream) ?: 1
+        if (streamVolume == 0) {
+            val label = when (settings.audioChannel) {
+                AudioChannel.MEDIA -> "Media"
+                AudioChannel.NOTIFICATION -> "Notification"
+                AudioChannel.CALL -> "Call"
+            }
+            Toast.makeText(context, "$label volume is muted. Turn up volume to hear announcements.", Toast.LENGTH_LONG).show()
+            Log.w("TimeAnnouncer", "Stream volume is 0 for $audioStream - cannot hear TTS")
             return
         }
-        Log.d("TimeAnnouncer", "Media volume: $musicVolume / $musicMax")
+        Log.d("TimeAnnouncer", "Stream $audioStream volume: $streamVolume / $streamMax")
 
         if (settings.vibrateBefore) {
             vibrate()
@@ -66,7 +78,6 @@ class TimeAnnouncer(
                 val deviceDefault = Locale.getDefault().toLanguageTag()
                 val defaultSet = ttsRepository.selectLanguage(deviceDefault)
                 if (!defaultSet) {
-                    // Try English as last resort
                     ttsRepository.selectLanguage("en-US")
                 }
             }
@@ -74,6 +85,7 @@ class TimeAnnouncer(
 
         ttsRepository.setPitch(settings.pitch)
         ttsRepository.setSpeechRate(settings.speechRate)
+        ttsRepository.setAudioChannel(settings.audioChannel)
 
         val text = AnnouncementFormatter.format(
             now,
@@ -82,14 +94,14 @@ class TimeAnnouncer(
             includeDate && settings.announceDateOnDemand
         )
 
-        Log.d("TimeAnnouncer", "Speaking: \"$text\"")
+        Log.d("TimeAnnouncer", "Speaking: \"$text\" on channel=${settings.audioChannel}")
 
         var focusRequest: AudioFocusRequest? = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
                 .setAudioAttributes(
                     AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                        .setUsage(usage)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                         .build()
                 )
@@ -99,14 +111,13 @@ class TimeAnnouncer(
             @Suppress("DEPRECATION")
             audioManager?.requestAudioFocus(
                 null,
-                AudioManager.STREAM_MUSIC,
+                audioStream,
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
             )
         }
 
         ttsRepository.speak(text)
 
-        // Release audio focus after a short delay (fire-and-forget)
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }

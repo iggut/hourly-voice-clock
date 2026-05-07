@@ -3,6 +3,7 @@ package com.hourlyvoiceclock.ui.formatsettings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.data.TimeFormat
@@ -31,6 +32,9 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
     private val _announceDate = MutableStateFlow(false)
     val announceDate: StateFlow<Boolean> = _announceDate.asStateFlow()
 
+    private val _audioChannel = MutableStateFlow(AudioChannel.MEDIA)
+    val audioChannel: StateFlow<AudioChannel> = _audioChannel.asStateFlow()
+
     init {
         viewModelScope.launch {
             val settings = settingsRepo.settings.first()
@@ -39,6 +43,7 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
             _chimeBefore.value = settings.chimeBefore
             _vibrateBefore.value = settings.vibrateBefore
             _announceDate.value = settings.announceDateOnDemand
+            _audioChannel.value = settings.audioChannel
         }
     }
 
@@ -74,6 +79,13 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch {
             settingsRepo.setAnnounceDateOnDemand(enabled)
             _announceDate.value = enabled
+        }
+    }
+
+    fun setAudioChannel(channel: AudioChannel) {
+        viewModelScope.launch {
+            settingsRepo.setAudioChannel(channel)
+            _audioChannel.value = channel
         }
     }
 }
