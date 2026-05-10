@@ -10,10 +10,11 @@ object AnnouncementFormatter {
 
     fun format(
         dateTime: LocalDateTime,
-        timeFormat: TimeFormat,
-        phraseStyle: PhraseStyle,
+        settings: com.hourlyvoiceclock.data.AppSettings,
         includeDate: Boolean
     ): String {
+        val timeFormat = settings.timeFormat
+        val phraseStyle = settings.phraseStyle
         val timeText = when (timeFormat) {
             TimeFormat.HOUR_12 -> format12Hour(dateTime, phraseStyle == PhraseStyle.DETAILED)
             TimeFormat.HOUR_24 -> format24Hour(dateTime, phraseStyle == PhraseStyle.DETAILED)
@@ -28,6 +29,7 @@ object AnnouncementFormatter {
             PhraseStyle.SIMPLE -> "It is $timeText."
             PhraseStyle.DETAILED -> "The time is $timeText."
             PhraseStyle.FRIENDLY -> "$greeting It is $timeText."
+            PhraseStyle.CUSTOM -> "${settings.customPrefix}$timeText${settings.customSuffix}".trim()
         }
 
         return if (includeDate) {

@@ -5,7 +5,8 @@ import java.time.LocalTime
 enum class PhraseStyle {
     SIMPLE,
     DETAILED,
-    FRIENDLY
+    FRIENDLY,
+    CUSTOM
 }
 
 enum class TimeFormat {
@@ -27,6 +28,8 @@ data class AppSettings(
     val speechRate: Float = 1.0f,
     val timeFormat: TimeFormat = TimeFormat.HOUR_12,
     val phraseStyle: PhraseStyle = PhraseStyle.SIMPLE,
+    val customPrefix: String = "It is now ",
+    val customSuffix: String = "",
     val chimeBefore: Boolean = false,
     val vibrateBefore: Boolean = false,
     val announceDateOnDemand: Boolean = false,

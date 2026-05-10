@@ -25,6 +25,8 @@ class SettingsRepository(private val context: Context) {
             speechRate = prefs[KEY_SPEECH_RATE] ?: 1.0f,
             timeFormat = prefs[KEY_TIME_FORMAT]?.let { TimeFormat.valueOf(it) } ?: TimeFormat.HOUR_12,
             phraseStyle = prefs[KEY_PHRASE_STYLE]?.let { PhraseStyle.valueOf(it) } ?: PhraseStyle.SIMPLE,
+            customPrefix = prefs[KEY_CUSTOM_PREFIX] ?: "It is now ",
+            customSuffix = prefs[KEY_CUSTOM_SUFFIX] ?: "",
             chimeBefore = prefs[KEY_CHIME_BEFORE] ?: false,
             vibrateBefore = prefs[KEY_VIBRATE_BEFORE] ?: false,
             announceDateOnDemand = prefs[KEY_ANNOUNCE_DATE] ?: false,
@@ -63,6 +65,14 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setPhraseStyle(style: PhraseStyle) {
         context.dataStore.edit { it[KEY_PHRASE_STYLE] = style.name }
+    }
+
+    suspend fun setCustomPrefix(prefix: String) {
+        context.dataStore.edit { it[KEY_CUSTOM_PREFIX] = prefix }
+    }
+
+    suspend fun setCustomSuffix(suffix: String) {
+        context.dataStore.edit { it[KEY_CUSTOM_SUFFIX] = suffix }
     }
 
     suspend fun setChimeBefore(enabled: Boolean) {
@@ -122,6 +132,8 @@ class SettingsRepository(private val context: Context) {
         private val KEY_SPEECH_RATE = floatPreferencesKey("speech_rate")
         private val KEY_TIME_FORMAT = stringPreferencesKey("time_format")
         private val KEY_PHRASE_STYLE = stringPreferencesKey("phrase_style")
+        private val KEY_CUSTOM_PREFIX = stringPreferencesKey("custom_prefix")
+        private val KEY_CUSTOM_SUFFIX = stringPreferencesKey("custom_suffix")
         private val KEY_CHIME_BEFORE = booleanPreferencesKey("chime_before")
         private val KEY_VIBRATE_BEFORE = booleanPreferencesKey("vibrate_before")
         private val KEY_ANNOUNCE_DATE = booleanPreferencesKey("announce_date")

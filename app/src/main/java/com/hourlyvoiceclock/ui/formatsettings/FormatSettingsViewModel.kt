@@ -23,6 +23,12 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
     private val _phraseStyle = MutableStateFlow(PhraseStyle.SIMPLE)
     val phraseStyle: StateFlow<PhraseStyle> = _phraseStyle.asStateFlow()
 
+    private val _customPrefix = MutableStateFlow("It is now ")
+    val customPrefix: StateFlow<String> = _customPrefix.asStateFlow()
+
+    private val _customSuffix = MutableStateFlow("")
+    val customSuffix: StateFlow<String> = _customSuffix.asStateFlow()
+
     private val _chimeBefore = MutableStateFlow(false)
     val chimeBefore: StateFlow<Boolean> = _chimeBefore.asStateFlow()
 
@@ -40,6 +46,8 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
             val settings = settingsRepo.settings.first()
             _timeFormat.value = settings.timeFormat
             _phraseStyle.value = settings.phraseStyle
+            _customPrefix.value = settings.customPrefix
+            _customSuffix.value = settings.customSuffix
             _chimeBefore.value = settings.chimeBefore
             _vibrateBefore.value = settings.vibrateBefore
             _announceDate.value = settings.announceDateOnDemand
@@ -58,6 +66,20 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch {
             settingsRepo.setPhraseStyle(style)
             _phraseStyle.value = style
+        }
+    }
+
+    fun setCustomPrefix(prefix: String) {
+        viewModelScope.launch {
+            settingsRepo.setCustomPrefix(prefix)
+            _customPrefix.value = prefix
+        }
+    }
+
+    fun setCustomSuffix(suffix: String) {
+        viewModelScope.launch {
+            settingsRepo.setCustomSuffix(suffix)
+            _customSuffix.value = suffix
         }
     }
 

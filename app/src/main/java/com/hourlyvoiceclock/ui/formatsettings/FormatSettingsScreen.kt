@@ -3,8 +3,10 @@ package com.hourlyvoiceclock.ui.formatsettings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -15,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -46,6 +49,8 @@ fun FormatSettingsScreen(
 ) {
     val timeFormat by viewModel.timeFormat.collectAsState()
     val phraseStyle by viewModel.phraseStyle.collectAsState()
+    val customPrefix by viewModel.customPrefix.collectAsState()
+    val customSuffix by viewModel.customSuffix.collectAsState()
     val chimeBefore by viewModel.chimeBefore.collectAsState()
     val vibrateBefore by viewModel.vibrateBefore.collectAsState()
     val announceDate by viewModel.announceDate.collectAsState()
@@ -113,9 +118,26 @@ fun FormatSettingsScreen(
                                     PhraseStyle.SIMPLE -> "Simple: \"It is 3 PM.\""
                                     PhraseStyle.DETAILED -> "Detailed: \"The time is 3:00 PM.\""
                                     PhraseStyle.FRIENDLY -> "Friendly: \"Good afternoon. It is 3 PM.\""
+                                    PhraseStyle.CUSTOM -> "Custom"
                                 }
                             )
                         }
+                    }
+                    if (phraseStyle == PhraseStyle.CUSTOM) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = customPrefix,
+                            onValueChange = { viewModel.setCustomPrefix(it) },
+                            label = { Text("Prefix (e.g., 'Hello, it is now ')") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = customSuffix,
+                            onValueChange = { viewModel.setCustomSuffix(it) },
+                            label = { Text("Suffix (e.g., ' master.')") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }

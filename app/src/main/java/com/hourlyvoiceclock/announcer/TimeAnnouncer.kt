@@ -92,10 +92,9 @@ class TimeAnnouncer(
         ttsRepository.setAudioChannel(settings.audioChannel)
 
         val text = AnnouncementFormatter.format(
-            dateTime,
-            settings.timeFormat,
-            settings.phraseStyle,
-            includeDate && settings.announceDateOnDemand
+            dateTime = dateTime,
+            settings = settings,
+            includeDate = includeDate && settings.announceDateOnDemand
         )
 
         Log.d("TimeAnnouncer", "Speaking: \"$text\" on channel=${settings.audioChannel}")
