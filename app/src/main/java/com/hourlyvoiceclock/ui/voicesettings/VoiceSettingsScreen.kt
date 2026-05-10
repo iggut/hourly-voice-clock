@@ -3,14 +3,16 @@ package com.hourlyvoiceclock.ui.voicesettings
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,11 +38,11 @@ fun VoiceSettingsScreen(
     )
 ) {
     val normalVoicesByLocale by viewModel.normalVoicesByLocale.collectAsState()
-    val specialVoices by viewModel.specialVoices.collectAsState()
     val selectedVoice by viewModel.selectedVoiceName.collectAsState()
     val pitch by viewModel.pitch.collectAsState()
     val speechRate by viewModel.speechRate.collectAsState()
     val hasMultiple by viewModel.hasMultipleVoices.collectAsState()
+    val selectedGender by viewModel.selectedGender.collectAsState()
     val context = LocalContext.current
 
     Scaffold(
@@ -98,6 +100,55 @@ fun VoiceSettingsScreen(
                 }
             }
 
+            // Presets Section
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Special Voice Presets",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    viewModel.specialPresets.forEach { preset ->
+                        Card(
+                            modifier = Modifier
+                                .width(120.dp)
+                                .clickable { viewModel.selectVoicePreset(preset) },
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = preset.displayName,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Sliders Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -143,46 +194,19 @@ fun VoiceSettingsScreen(
                 }
             }
 
-            if (specialVoices.isNotEmpty()) {
-                val premiumGradient = Brush.horizontalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.tertiary,
-                        MaterialTheme.colorScheme.primary
+            // Gender Filter
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val options = listOf("All", "Female", "Male")
+                options.forEach { option ->
+                    FilterChip(
+                        selected = selectedGender == option,
+                        onClick = { viewModel.setGenderFilter(option) },
+                        label = { Text(option) },
+                        shape = RoundedCornerShape(8.dp)
                     )
-                )
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                ) {
-                    Column {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(premiumGradient)
-                                .padding(16.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Filled.Star,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Premium Voices",
-                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
-                        }
-                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                            specialVoices.forEach { voice ->
-                                VoiceItem(voice, selectedVoice, viewModel::selectVoice)
-                            }
-                        }
-                    }
                 }
             }
 
@@ -225,13 +249,14 @@ fun VoiceItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onSelectVoice(voice.name, voice.localeTag) }
             .background(backgroundColor)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
             selected = isSelected,
-            onClick = { onSelectVoice(voice.name, voice.localeTag) }
+            onClick = null // handled by row click
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {

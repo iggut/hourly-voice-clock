@@ -192,25 +192,29 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
 
     private fun queryVoices(ttsInstance: TextToSpeech): List<VoiceInfo> {
         val allVoices = ttsInstance.voices ?: return emptyList()
-        return allVoices
-            .filter { it.locale.language.equals("en", ignoreCase = true) }
-            .map { voice ->
-                val isNetwork = voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS) ?: false
-                VoiceInfo(
-                    name = voice.name,
-                    localeDisplayName = voice.locale.getDisplayName(voice.locale),
-                    localeTag = voice.locale.toLanguageTag(),
-                    quality = voice.quality,
-                    latency = voice.latency,
-                    requiresNetwork = isNetwork,
-                    genderLabel = inferGender(voice.name),
-                    description = generateDescription(voice.name, isNetwork),
-                    isSpecial = isSpecialVoice(voice.name, isNetwork, voice.quality)
-                )
-            }
-            .sortedWith(
-                compareBy({ it.localeDisplayName }, { it.name })
+        val filtered = allVoices.filter { it.locale.language.equals("en", ignoreCase = true) }
+            .sortedWith(compareBy({ it.locale.getDisplayName(it.locale) }, { it.name }))
+            
+        val countryCounters = mutableMapOf<String, Int>()
+        
+        return filtered.map { voice ->
+            val isNetwork = voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS) ?: false
+            val country = voice.locale.displayCountry.ifBlank { voice.locale.displayLanguage }
+            val count = countryCounters.getOrDefault(country, 0) + 1
+            countryCounters[country] = count
+            
+            VoiceInfo(
+                name = voice.name,
+                localeDisplayName = country,
+                localeTag = voice.locale.toLanguageTag(),
+                quality = voice.quality,
+                latency = voice.latency,
+                requiresNetwork = isNetwork,
+                genderLabel = inferGender(voice.name),
+                description = "$country Voice $count",
+                isSpecial = false
             )
+        }
     }
 
     private fun inferGender(name: String): String? {
@@ -220,21 +224,5 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             lower.contains("female") -> "Female"
             else -> null
         }
-    }
-
-    private fun generateDescription(name: String, isNetwork: Boolean): String {
-        val parts = name.split("-")
-        // Try to find the voice variant identifier (e.g. "sfg" in en-us-x-sfg-local)
-        val variantPart = parts.firstOrNull { it.length == 3 && it != "eng" && it != "usa" && it != "gbr" && !it.startsWith("en") }?.uppercase() 
-            ?: parts.getOrNull(3)?.uppercase() 
-            ?: "STANDARD"
-            
-        val type = if (isNetwork) "Premium Cloud" else "Local"
-        return "$type Voice • Variant $variantPart"
-    }
-
-    private fun isSpecialVoice(name: String, isNetwork: Boolean, quality: Int): Boolean {
-        // Consider network voices or high quality voices as special
-        return isNetwork || quality >= 400 || name.contains("-network")
     }
 }
