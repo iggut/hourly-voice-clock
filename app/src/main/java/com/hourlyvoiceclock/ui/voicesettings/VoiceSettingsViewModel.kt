@@ -18,8 +18,11 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     private val settingsRepo = SettingsRepository(application)
     private val ttsRepo = TtsVoiceRepository((application as HourlyVoiceClockApp).ttsEngine)
 
-    private val _voicesByLocale = MutableStateFlow<Map<String, List<VoiceInfo>>>(emptyMap())
-    val voicesByLocale: StateFlow<Map<String, List<VoiceInfo>>> = _voicesByLocale.asStateFlow()
+    private val _normalVoicesByLocale = MutableStateFlow<Map<String, List<VoiceInfo>>>(emptyMap())
+    val normalVoicesByLocale: StateFlow<Map<String, List<VoiceInfo>>> = _normalVoicesByLocale.asStateFlow()
+
+    private val _specialVoices = MutableStateFlow<List<VoiceInfo>>(emptyList())
+    val specialVoices: StateFlow<List<VoiceInfo>> = _specialVoices.asStateFlow()
 
     private val _selectedVoiceName = MutableStateFlow<String?>(null)
     val selectedVoiceName: StateFlow<String?> = _selectedVoiceName.asStateFlow()
@@ -36,7 +39,8 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     init {
         viewModelScope.launch {
             ttsRepo.initialize()
-            _voicesByLocale.value = ttsRepo.getVoicesGroupedByLocale()
+            _normalVoicesByLocale.value = ttsRepo.getNormalVoicesGroupedByLocale()
+            _specialVoices.value = ttsRepo.getSpecialVoices()
             _hasMultipleVoices.value = ttsRepo.hasMultipleVoices()
             val settings = settingsRepo.settings.first()
             _selectedVoiceName.value = settings.selectedVoiceName

@@ -7,5 +7,7 @@ data class VoiceInfo(
     val quality: Int,
     val latency: Int,
     val requiresNetwork: Boolean,
-    val genderLabel: String?
+    val genderLabel: String?,
+    val description: String,
+    val isSpecial: Boolean
 )

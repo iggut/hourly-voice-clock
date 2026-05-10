@@ -195,14 +195,17 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         return allVoices
             .filter { it.locale.language.equals("en", ignoreCase = true) }
             .map { voice ->
+                val isNetwork = voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS) ?: false
                 VoiceInfo(
                     name = voice.name,
                     localeDisplayName = voice.locale.getDisplayName(voice.locale),
                     localeTag = voice.locale.toLanguageTag(),
                     quality = voice.quality,
                     latency = voice.latency,
-                    requiresNetwork = voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS) ?: false,
-                    genderLabel = inferGender(voice.name)
+                    requiresNetwork = isNetwork,
+                    genderLabel = inferGender(voice.name),
+                    description = generateDescription(voice.name, isNetwork),
+                    isSpecial = isSpecialVoice(voice.name, isNetwork, voice.quality)
                 )
             }
             .sortedWith(
@@ -217,5 +220,21 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             lower.contains("female") -> "Female"
             else -> null
         }
+    }
+
+    private fun generateDescription(name: String, isNetwork: Boolean): String {
+        val parts = name.split("-")
+        // Try to find the voice variant identifier (e.g. "sfg" in en-us-x-sfg-local)
+        val variantPart = parts.firstOrNull { it.length == 3 && it != "eng" && it != "usa" && it != "gbr" && !it.startsWith("en") }?.uppercase() 
+            ?: parts.getOrNull(3)?.uppercase() 
+            ?: "STANDARD"
+            
+        val type = if (isNetwork) "Premium Cloud" else "Local"
+        return "$type Voice • Variant $variantPart"
+    }
+
+    private fun isSpecialVoice(name: String, isNetwork: Boolean, quality: Int): Boolean {
+        // Consider network voices or high quality voices as special
+        return isNetwork || quality >= 400 || name.contains("-network")
     }
 }

@@ -17,8 +17,12 @@ class TtsVoiceRepository(private val engine: TtsEngine) {
 
     fun isAvailable(): Boolean = engine.isAvailable()
 
-    fun getVoicesGroupedByLocale(): Map<String, List<VoiceInfo>> {
-        return engine.getVoices().groupBy { it.localeDisplayName }
+    fun getSpecialVoices(): List<VoiceInfo> {
+        return engine.getVoices().filter { it.isSpecial }
+    }
+
+    fun getNormalVoicesGroupedByLocale(): Map<String, List<VoiceInfo>> {
+        return engine.getVoices().filter { !it.isSpecial }.groupBy { it.localeDisplayName }
     }
 
     fun getAllVoices(): List<VoiceInfo> = engine.getVoices()
