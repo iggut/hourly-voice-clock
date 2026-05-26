@@ -37,7 +37,8 @@ class SettingsRepository(private val context: Context) {
             exactAlarmsEnabled = prefs[KEY_EXACT_ALARMS] ?: false,
             notificationLogging = prefs[KEY_NOTIFICATION_LOGGING] ?: false,
             audioChannel = safeEnumValueOf(prefs[KEY_AUDIO_CHANNEL], AudioChannel.MEDIA),
-            selectedTtsEnginePackage = prefs[KEY_SELECTED_TTS_ENGINE_PACKAGE]?.takeIf { it.isNotBlank() }
+            selectedTtsEnginePackage = prefs[KEY_SELECTED_TTS_ENGINE_PACKAGE]?.takeIf { it.isNotBlank() },
+            autoUpdateEnabled = prefs[KEY_AUTO_UPDATE_ENABLED] ?: true
         )
     }
 
@@ -120,6 +121,10 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[KEY_SELECTED_TTS_ENGINE_PACKAGE] = packageName ?: "" }
     }
 
+    suspend fun setAutoUpdateEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_AUTO_UPDATE_ENABLED] = enabled }
+    }
+
 
     companion object {
         internal fun parseTime(value: String?, fallback: String): LocalTime {
@@ -169,5 +174,6 @@ class SettingsRepository(private val context: Context) {
         private val KEY_NOTIFICATION_LOGGING = booleanPreferencesKey("notification_logging")
         private val KEY_AUDIO_CHANNEL = stringPreferencesKey("audio_channel")
         private val KEY_SELECTED_TTS_ENGINE_PACKAGE = stringPreferencesKey("selected_tts_engine_package")
+        private val KEY_AUTO_UPDATE_ENABLED = booleanPreferencesKey("auto_update_enabled")
     }
 }

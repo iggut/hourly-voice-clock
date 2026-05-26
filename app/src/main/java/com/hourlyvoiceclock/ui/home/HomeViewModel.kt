@@ -22,6 +22,14 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+sealed interface UpdateStatus {
+    object Idle : UpdateStatus
+    object Checking : UpdateStatus
+    data class UpdateAvailable(val latestVersion: String, val downloadUrl: String, val releaseNotes: String) : UpdateStatus
+    object UpToDate : UpdateStatus
+    data class Error(val message: String) : UpdateStatus
+}
+
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsRepo = SettingsRepository(application)
@@ -51,6 +59,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _canSpeakNow = MutableStateFlow(true)
     val canSpeakNow: StateFlow<Boolean> = _canSpeakNow.asStateFlow()
 
+    private val _updateStatus = MutableStateFlow<UpdateStatus>(UpdateStatus.Idle)
+    val updateStatus: StateFlow<UpdateStatus> = _updateStatus.asStateFlow()
+
+    private var autoCheckCompleted = false
+
     init {
         viewModelScope.launch {
             while (isActive) {
@@ -65,6 +78,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             settingsRepo.settings.collect { settings ->
                 _hourlyEnabled.value = settings.hourlyAnnouncementsEnabled
                 updateQuietStatus(settings)
+                if (!autoCheckCompleted && settings.autoUpdateEnabled) {
+                    autoCheckCompleted = true
+                    checkForUpdates(isManual = false)
+                }
             }
         }
         viewModelScope.launch {
@@ -123,6 +140,47 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val settings = settingsRepo.settings.first()
             announcer.announce(settings, force = true, includeDate = includeDate)
+        }
+    }
+
+    fun setAutoUpdateEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepo.setAutoUpdateEnabled(enabled)
+        }
+    }
+
+    fun checkForUpdates(isManual: Boolean = false) {
+        viewModelScope.launch {
+            _updateStatus.value = UpdateStatus.Checking
+            val currentVersion = try {
+                val pInfo = getApplication<Application>().packageManager.getPackageInfo(getApplication<Application>().packageName, 0)
+                pInfo.versionName ?: "0.1"
+            } catch (e: Exception) {
+                "0.1"
+            }
+
+            com.hourlyvoiceclock.data.UpdateChecker.checkForUpdate(currentVersion)
+                .onSuccess { info ->
+                    if (info.isUpdateAvailable) {
+                        _updateStatus.value = UpdateStatus.UpdateAvailable(
+                            latestVersion = info.latestVersion,
+                            downloadUrl = info.downloadUrl,
+                            releaseNotes = info.releaseNotes
+                        )
+                    } else {
+                        _updateStatus.value = UpdateStatus.UpToDate
+                    }
+                }
+                .onFailure { error ->
+                    _updateStatus.value = UpdateStatus.Error(error.localizedMessage ?: "Unknown error")
+                    if (isManual) {
+                        Toast.makeText(
+                            getApplication(),
+                            "Update check failed: ${error.localizedMessage}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
         }
     }
 }

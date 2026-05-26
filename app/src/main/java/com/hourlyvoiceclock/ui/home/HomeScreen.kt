@@ -33,6 +33,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.content.Intent
+import androidx.compose.material.icons.filled.SystemUpdate
+import com.hourlyvoiceclock.ui.home.UpdateStatus
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.TimeFormat
@@ -54,6 +57,8 @@ fun HomeScreen(
     val hourlyEnabled by viewModel.hourlyEnabled.collectAsState()
     val canSpeakNow by viewModel.canSpeakNow.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
+    val updateStatus by viewModel.updateStatus.collectAsState()
+    var showUpdatesDialog by remember { mutableStateOf(false) }
 
     val isDark = isSystemInDarkTheme()
     val bgGradient = Brush.verticalGradient(
@@ -415,6 +420,118 @@ fun HomeScreen(
                         subtitle = scheduleSubtitle,
                         icon = Icons.Default.Schedule,
                         onClick = onNavigateToScheduleSettings
+                    )
+
+                    val updateSubtitle = when (val status = updateStatus) {
+                        is UpdateStatus.UpdateAvailable -> "Update available • Version ${status.latestVersion}"
+                        is UpdateStatus.Checking -> "Checking for updates..."
+                        is UpdateStatus.UpToDate -> "Version 0.1 • Up to date"
+                        is UpdateStatus.Error -> "Check failed • Tap to retry"
+                        else -> "Version 0.1 • " + if (settings.autoUpdateEnabled) "Auto-check active" else "Auto-check disabled"
+                    }
+                    DashboardCard(
+                        title = "App Updates",
+                        subtitle = updateSubtitle,
+                        icon = Icons.Default.SystemUpdate,
+                        onClick = { showUpdatesDialog = true }
+                    )
+                }
+
+                if (showUpdatesDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showUpdatesDialog = false },
+                        title = { Text("App Updates", fontWeight = FontWeight.Bold) },
+                        text = {
+                            val context = LocalContext.current
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                val currentVersion = remember {
+                                    try {
+                                        val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                                        pInfo.versionName ?: "0.1"
+                                    } catch (e: Exception) {
+                                        "0.1"
+                                    }
+                                }
+                                Text("Current version: v$currentVersion", fontWeight = FontWeight.SemiBold)
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Auto-check for updates", fontWeight = FontWeight.Medium)
+                                        Text("Checks on app startup", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Switch(
+                                        checked = settings.autoUpdateEnabled,
+                                        onCheckedChange = { viewModel.setAutoUpdateEnabled(it) }
+                                    )
+                                }
+                                
+                                HorizontalDivider(color = if (isDark) GlassBorderDark else GlassBorderLight)
+                                
+                                when (val status = updateStatus) {
+                                    is UpdateStatus.Idle -> {
+                                        Text("Check status: Not checked", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    is UpdateStatus.Checking -> {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                            Text("Checking for updates...", color = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                    is UpdateStatus.UpToDate -> {
+                                        Text("Your app is up to date!", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                                    }
+                                    is UpdateStatus.UpdateAvailable -> {
+                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Text("New version available: ${status.latestVersion}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                            if (status.releaseNotes.isNotBlank()) {
+                                                Text(
+                                                    "Release Notes:\n${status.releaseNotes}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    maxLines = 5
+                                                )
+                                            }
+                                            Button(
+                                                onClick = {
+                                                    try {
+                                                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(status.downloadUrl))
+                                                        context.startActivity(intent)
+                                                    } catch (e: Exception) {
+                                                        // Ignore or handle
+                                                    }
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                shape = RoundedCornerShape(12.dp)
+                                            ) {
+                                                Text("Download & Install", fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
+                                    is UpdateStatus.Error -> {
+                                        Text("Check failed: ${status.message}", color = MaterialTheme.colorScheme.error)
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = { viewModel.checkForUpdates(isManual = true) }
+                            ) {
+                                Text("Check Now", fontWeight = FontWeight.Bold)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showUpdatesDialog = false }) {
+                                Text("Close")
+                            }
+                        }
                     )
                 }
 

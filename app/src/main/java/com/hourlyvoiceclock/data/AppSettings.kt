@@ -40,5 +40,6 @@ data class AppSettings(
     val exactAlarmsEnabled: Boolean = false,
     val notificationLogging: Boolean = false,
     val audioChannel: AudioChannel = AudioChannel.MEDIA,
-    val selectedTtsEnginePackage: String? = null
+    val selectedTtsEnginePackage: String? = null,
+    val autoUpdateEnabled: Boolean = true
 )
