@@ -64,6 +64,7 @@ fun ScheduleSettingsScreen(
     val needsExactPermission by viewModel.needsExactPermission.collectAsState()
     val notificationLogging by viewModel.notificationLogging.collectAsState()
     val hasNotificationPermission by viewModel.hasNotificationPermission.collectAsState()
+    val isIgnoringBatteryOptimizations by viewModel.isIgnoringBatteryOptimizations.collectAsState()
     val context = LocalContext.current
 
     // Re-check permission whenever screen becomes visible
@@ -247,10 +248,9 @@ fun ScheduleSettingsScreen(
                             Switch(
                                 checked = exactAlarms,
                                 onCheckedChange = { enabled ->
+                                    viewModel.setExactAlarmsEnabled(enabled)
                                     if (enabled && !canScheduleExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                         showExactAlarmDialog = true
-                                    } else {
-                                        viewModel.setExactAlarmsEnabled(enabled)
                                     }
                                 }
                             )
@@ -576,6 +576,140 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Text("Grant Permission", color = Color.White, fontWeight = FontWeight.Bold)
                                 }
+                            }
+                        }
+                    }
+                }
+
+                // ── Battery Optimization Guidance Card ─────────────────────────────────────────────
+                val batteryCardBorder = if (!isIgnoringBatteryOptimizations) {
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                } else {
+                    BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                }
+                val batteryCardBg = if (isDark) GlassBgDark else GlassBgLight
+
+                var oemGuidesExpanded by remember { mutableStateOf(false) }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = batteryCardBg),
+                    border = batteryCardBorder
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            if (!isIgnoringBatteryOptimizations)
+                                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
+                                            else
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LockClock,
+                                        contentDescription = null,
+                                        tint = if (!isIgnoringBatteryOptimizations) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Column(modifier = Modifier.widthIn(max = 240.dp)) {
+                                    Text(
+                                        "Battery Optimization",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        if (isIgnoringBatteryOptimizations) "Unrestricted - High Reliability" else "Optimized - Delayed Announcements Possible",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                        color = if (isIgnoringBatteryOptimizations) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            "Android aggressive battery savers suspend background processes. To ensure voice announcements fire exactly at the top of the hour, please set the app's battery usage settings to Unrestricted.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        if (!isIgnoringBatteryOptimizations) {
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = {
+                                    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                    context.startActivity(intent)
+                                },
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Disable Optimization", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 14.dp),
+                            color = if (isDark) GlassBorderDark else GlassBorderLight
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { oemGuidesExpanded = !oemGuidesExpanded }
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "OEM Specific Instructions",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Icon(
+                                imageVector = if (oemGuidesExpanded) Icons.Default.Warning else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        if (oemGuidesExpanded) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    "• Samsung: Settings -> Apps -> Hourly Voice Clock -> Battery -> Choose \"Unrestricted\".",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "• Xiaomi / MIUI: Settings -> Apps -> Manage Apps -> Hourly Voice Clock -> Battery saver -> Choose \"No restrictions\".",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "• OnePlus: Settings -> Apps -> App management -> Hourly Voice Clock -> Battery usage -> Choose \"Allow background activity\".",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "• Huawei: Settings -> Apps -> Apps -> Hourly Voice Clock -> Power usage details -> Launch -> Switch to \"Manage manually\" and enable \"Run in background\".",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "• Vivo: Settings -> Battery -> High background power consumption -> Enable \"Hourly Voice Clock\".",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }

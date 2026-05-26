@@ -51,6 +51,9 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
     private val _hasNotificationPermission = MutableStateFlow(true)
     val hasNotificationPermission: StateFlow<Boolean> = _hasNotificationPermission.asStateFlow()
 
+    private val _isIgnoringBatteryOptimizations = MutableStateFlow(true)
+    val isIgnoringBatteryOptimizations: StateFlow<Boolean> = _isIgnoringBatteryOptimizations.asStateFlow()
+
     init {
         refreshAll()
     }
@@ -66,6 +69,7 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             _notificationLogging.value = settings.notificationLogging
             checkExactAlarmPermission()
             checkNotificationPermission()
+            checkBatteryOptimizations()
         }
     }
 
@@ -93,6 +97,7 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
     fun onResume() {
         checkExactAlarmPermission()
         checkNotificationPermission()
+        checkBatteryOptimizations()
     }
 
     fun checkNotificationPermission() {
@@ -104,6 +109,16 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             _hasNotificationPermission.value = granted
         } else {
             _hasNotificationPermission.value = true
+        }
+    }
+
+    fun checkBatteryOptimizations() {
+        val app = getApplication<Application>()
+        val pm = app.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
+        if (pm != null) {
+            _isIgnoringBatteryOptimizations.value = pm.isIgnoringBatteryOptimizations(app.packageName)
+        } else {
+            _isIgnoringBatteryOptimizations.value = true
         }
     }
 
