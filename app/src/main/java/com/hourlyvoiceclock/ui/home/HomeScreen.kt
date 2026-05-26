@@ -60,6 +60,16 @@ fun HomeScreen(
     val updateStatus by viewModel.updateStatus.collectAsState()
     var showUpdatesDialog by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val currentVersion = remember {
+        try {
+            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            pInfo.versionName ?: "0.1"
+        } catch (e: Exception) {
+            "0.1"
+        }
+    }
+
     val isDark = isSystemInDarkTheme()
     val bgGradient = Brush.verticalGradient(
         colors = listOf(
@@ -425,9 +435,10 @@ fun HomeScreen(
                     val updateSubtitle = when (val status = updateStatus) {
                         is UpdateStatus.UpdateAvailable -> "Update available • Version ${status.latestVersion}"
                         is UpdateStatus.Checking -> "Checking for updates..."
-                        is UpdateStatus.UpToDate -> "Version 0.1 • Up to date"
+                        is UpdateStatus.UpToDate -> "Version $currentVersion • Up to date"
+                        is UpdateStatus.NoRelease -> "Version $currentVersion • No release published"
                         is UpdateStatus.Error -> "Check failed • Tap to retry"
-                        else -> "Version 0.1 • " + if (settings.autoUpdateEnabled) "Auto-check active" else "Auto-check disabled"
+                        else -> "Version $currentVersion • " + if (settings.autoUpdateEnabled) "Auto-check active" else "Auto-check disabled"
                     }
                     DashboardCard(
                         title = "App Updates",
@@ -442,16 +453,7 @@ fun HomeScreen(
                         onDismissRequest = { showUpdatesDialog = false },
                         title = { Text("App Updates", fontWeight = FontWeight.Bold) },
                         text = {
-                            val context = LocalContext.current
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                val currentVersion = remember {
-                                    try {
-                                        val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-                                        pInfo.versionName ?: "0.1"
-                                    } catch (e: Exception) {
-                                        "0.1"
-                                    }
-                                }
                                 Text("Current version: v$currentVersion", fontWeight = FontWeight.SemiBold)
                                 
                                 Row(
@@ -461,7 +463,7 @@ fun HomeScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text("Auto-check for updates", fontWeight = FontWeight.Medium)
-                                        Text("Checks on app startup", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("Queries GitHub API on app startup", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Switch(
                                         checked = settings.autoUpdateEnabled,
@@ -469,6 +471,12 @@ fun HomeScreen(
                                     )
                                 }
                                 
+                                Text(
+                                    "When auto-check is enabled, the app contacts the public GitHub Releases API on startup to see if a newer version is available.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
                                 HorizontalDivider(color = if (isDark) GlassBorderDark else GlassBorderLight)
                                 
                                 when (val status = updateStatus) {
@@ -486,6 +494,9 @@ fun HomeScreen(
                                     }
                                     is UpdateStatus.UpToDate -> {
                                         Text("Your app is up to date!", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                                    }
+                                    is UpdateStatus.NoRelease -> {
+                                        Text("No published release yet on GitHub.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     is UpdateStatus.UpdateAvailable -> {
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

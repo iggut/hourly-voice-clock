@@ -46,9 +46,10 @@ com.hourlyvoiceclock/
 ## Permissions
 
 - `POST_NOTIFICATIONS` (Android 13+) — only if notification logging is enabled
-- `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` — for exact top-of-hour scheduling
+- `SCHEDULE_EXACT_ALARM` — for exact top-of-hour scheduling
 - `RECEIVE_BOOT_COMPLETED` — to reschedule alarms after reboot
 - `VIBRATE` — for pre-announcement vibration
+- `INTERNET` — to check the public GitHub releases API for app updates
 
 ## Android Version Notes
 
@@ -77,4 +78,4 @@ Gender metadata is not guaranteed by the Android TTS API. The app displays "Male
 
 ## Privacy
 
-No network calls are made by the app. The only network usage occurs if the user selects a TTS voice that itself requires network synthesis (indicated in the voice list).
+No personal data or usage metrics are collected. The only network requests made by the app are to query the latest public GitHub release for app updates (if auto-check is enabled in settings) and if a TTS voice itself requires network synthesis (indicated in the voice list).

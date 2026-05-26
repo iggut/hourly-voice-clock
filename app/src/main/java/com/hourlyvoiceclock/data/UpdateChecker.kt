@@ -69,6 +69,14 @@ object UpdateChecker {
                         releaseNotes = body
                     )
                 )
+            } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                Result.success(
+                    UpdateInfo(
+                        isUpdateAvailable = false,
+                        latestVersion = "",
+                        downloadUrl = ""
+                    )
+                )
             } else {
                 Result.failure(Exception("HTTP error $responseCode"))
             }

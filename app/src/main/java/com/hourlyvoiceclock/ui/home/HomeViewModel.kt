@@ -27,6 +27,7 @@ sealed interface UpdateStatus {
     object Checking : UpdateStatus
     data class UpdateAvailable(val latestVersion: String, val downloadUrl: String, val releaseNotes: String) : UpdateStatus
     object UpToDate : UpdateStatus
+    object NoRelease : UpdateStatus
     data class Error(val message: String) : UpdateStatus
 }
 
@@ -167,6 +168,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                             downloadUrl = info.downloadUrl,
                             releaseNotes = info.releaseNotes
                         )
+                    } else if (info.latestVersion.isBlank()) {
+                        _updateStatus.value = UpdateStatus.NoRelease
                     } else {
                         _updateStatus.value = UpdateStatus.UpToDate
                     }
