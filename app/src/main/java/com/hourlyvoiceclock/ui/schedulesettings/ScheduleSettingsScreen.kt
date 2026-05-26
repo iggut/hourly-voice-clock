@@ -69,7 +69,19 @@ fun ScheduleSettingsScreen(
     // Re-check permission whenever screen becomes visible
     LaunchedEffect(Unit) {
         viewModel.refreshAll()
-        viewModel.onResume()
+    }
+
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.onResume()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     // Permission explanation dialog with device-specific guidance
@@ -121,7 +133,9 @@ fun ScheduleSettingsScreen(
     // Notification permission launcher for Android 13+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { /*_granted -> */ }
+    ) { _ ->
+        viewModel.checkNotificationPermission()
+    }
 
     val isDark = isSystemInDarkTheme()
     val bgGradient = Brush.verticalGradient(

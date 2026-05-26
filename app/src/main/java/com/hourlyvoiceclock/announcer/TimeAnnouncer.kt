@@ -136,6 +136,18 @@ class TimeAnnouncer(
     }
 
     private fun postNotification(text: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+            if (!granted) {
+                Log.w("TimeAnnouncer", "Notification logging enabled but POST_NOTIFICATIONS is denied")
+                return
+            }
+        }
+
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager ?: return
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             android.app.Notification.Builder(context, com.hourlyvoiceclock.HourlyVoiceClockApp.CHANNEL_ID_STATUS)
