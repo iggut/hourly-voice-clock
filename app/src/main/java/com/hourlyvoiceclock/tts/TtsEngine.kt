@@ -8,7 +8,9 @@ import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.util.Log
 import com.hourlyvoiceclock.data.AudioChannel
+import com.hourlyvoiceclock.data.SettingsRepository
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.flow.first
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
@@ -25,7 +27,15 @@ interface TtsEngine {
     fun speak(text: String, utteranceId: String)
     fun stop()
     fun shutdown()
+    suspend fun switchEngine(enginePackage: String?): Boolean
+    fun getEngines(): List<TtsEngineInfo>
 }
+
+data class TtsEngineInfo(
+    val packageName: String,
+    val label: String,
+    val isInstalled: Boolean
+)
 
 class AndroidTtsEngine(context: Context) : TtsEngine {
 
@@ -35,15 +45,27 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
     private var initOk = false
     private val utteranceCounter = AtomicInteger(0)
     private val pendingUtterances = mutableMapOf<String, (Boolean) -> Unit>()
+    private var currentEnginePackage: String? = null
 
     override suspend fun initialize(): Boolean {
         if (initOk) return true
+        
+        // Load the saved engine package name if we haven't set it yet
+        if (currentEnginePackage == null) {
+            try {
+                val repository = SettingsRepository(appContext)
+                currentEnginePackage = repository.settings.first().selectedTtsEnginePackage
+            } catch (e: Exception) {
+                Log.e("TtsEngine", "Failed to load saved TTS engine package", e)
+            }
+        }
+
         val success = suspendCancellableCoroutine { continuation ->
-            tts = TextToSpeech(appContext) { status ->
+            val initListener = TextToSpeech.OnInitListener { status ->
                 if (status == TextToSpeech.SUCCESS) {
                     val instance = tts ?: run {
                         continuation.resume(false)
-                        return@TextToSpeech
+                        return@OnInitListener
                     }
                     voices = queryVoices(instance)
                     setupProgressListener(instance)
@@ -55,8 +77,46 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
                     continuation.resume(false)
                 }
             }
+            
+            tts = if (currentEnginePackage.isNullOrBlank()) {
+                TextToSpeech(appContext, initListener)
+            } else {
+                TextToSpeech(appContext, initListener, currentEnginePackage)
+            }
         }
         return success
+    }
+
+    override suspend fun switchEngine(enginePackage: String?): Boolean {
+        shutdown()
+        currentEnginePackage = enginePackage
+        return initialize()
+    }
+
+    override fun getEngines(): List<TtsEngineInfo> {
+        val ttsInstance = tts ?: return emptyList()
+        val installed = ttsInstance.engines.map {
+            TtsEngineInfo(
+                packageName = it.name,
+                label = it.label,
+                isInstalled = true
+            )
+        }
+        
+        // Define standard popular engines to show even if not installed
+        val knownEngines = listOf(
+            TtsEngineInfo("com.google.android.tts", "Speech Services by Google", false),
+            TtsEngineInfo("com.redzoc.espeakng", "eSpeak NG", false),
+            TtsEngineInfo("org.rhvoice.android", "RHVoice", false)
+        )
+        
+        val result = installed.toMutableList()
+        for (known in knownEngines) {
+            if (result.none { it.packageName == known.packageName }) {
+                result.add(known)
+            }
+        }
+        return result
     }
 
     override fun isAvailable(): Boolean = initOk && tts != null

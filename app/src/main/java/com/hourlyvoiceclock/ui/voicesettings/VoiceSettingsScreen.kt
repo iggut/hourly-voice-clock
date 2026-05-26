@@ -1,6 +1,7 @@
 package com.hourlyvoiceclock.ui.voicesettings
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -51,6 +52,8 @@ fun VoiceSettingsScreen(
     val speechRate by viewModel.speechRate.collectAsState()
     val hasMultiple by viewModel.hasMultipleVoices.collectAsState()
     val selectedGender by viewModel.selectedGender.collectAsState()
+    val engines by viewModel.engines.collectAsState()
+    val selectedEnginePackage by viewModel.selectedEnginePackage.collectAsState()
     val context = LocalContext.current
 
     val isDark = isSystemInDarkTheme()
@@ -93,6 +96,92 @@ fun VoiceSettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
+
+                // Speech Engines Section
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Preferred Speech Engine",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        engines.forEach { engine ->
+                            val isSelected = selectedEnginePackage == engine.packageName
+                            val engineBg = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                            } else {
+                                if (isDark) GlassBgDark else GlassBgLight
+                            }
+                            val borderTint = if (isSelected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                if (isDark) GlassBorderDark else GlassBorderLight
+                            }
+                            val textTint = if (isSelected) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onBackground
+                            }
+
+                            Card(
+                                modifier = Modifier
+                                    .width(160.dp)
+                                    .clickable {
+                                        if (engine.isInstalled) {
+                                            viewModel.switchTtsEngine(engine.packageName)
+                                        } else {
+                                            val playStoreUri = Uri.parse("market://details?id=${engine.packageName}")
+                                            val playStoreIntent = Intent(Intent.ACTION_VIEW, playStoreUri).apply {
+                                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                            try {
+                                                context.startActivity(playStoreIntent)
+                                            } catch (e: Exception) {
+                                                val webUri = Uri.parse("https://play.google.com/store/apps/details?id=${engine.packageName}")
+                                                context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                                            }
+                                        }
+                                    },
+                                shape = RoundedCornerShape(16.dp),
+                                border = BorderStroke(1.dp, borderTint),
+                                colors = CardDefaults.cardColors(containerColor = engineBg)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = engine.label,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = textTint,
+                                        maxLines = 1
+                                    )
+                                    
+                                    if (engine.isInstalled) {
+                                        Text(
+                                            text = if (isSelected) "Active" else "Tap to Switch",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = textTint.copy(alpha = 0.7f)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "Tap to Install",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 if (!hasMultiple) {
                     Card(

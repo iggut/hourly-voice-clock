@@ -68,4 +68,14 @@ class TtsVoiceRepository(private val engine: TtsEngine) {
     }
 
     fun hasMultipleVoices(): Boolean = engine.getVoices().size > 1
+
+    suspend fun switchEngine(enginePackage: String?): Boolean = withContext(Dispatchers.Main) {
+        val result = engine.switchEngine(enginePackage)
+        initialized = result
+        result
+    }
+
+    fun getEngines(): List<TtsEngineInfo> {
+        return engine.getEngines()
+    }
 }

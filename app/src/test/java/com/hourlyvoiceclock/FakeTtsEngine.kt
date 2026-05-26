@@ -1,6 +1,7 @@
 package com.hourlyvoiceclock
 
 import com.hourlyvoiceclock.tts.TtsEngine
+import com.hourlyvoiceclock.tts.TtsEngineInfo
 import com.hourlyvoiceclock.tts.VoiceInfo
 
 class FakeTtsEngine : TtsEngine {
@@ -57,5 +58,19 @@ class FakeTtsEngine : TtsEngine {
 
     override fun shutdown() {
         initialized = false
+    }
+
+    override suspend fun switchEngine(enginePackage: String?): Boolean {
+        lastVoiceName = null
+        lastLocaleTag = null
+        return true
+    }
+
+    override fun getEngines(): List<TtsEngineInfo> {
+        return listOf(
+            TtsEngineInfo("com.google.android.tts", "Speech Services by Google", true),
+            TtsEngineInfo("com.redzoc.espeakng", "eSpeak NG", false),
+            TtsEngineInfo("org.rhvoice.android", "RHVoice", false)
+        )
     }
 }

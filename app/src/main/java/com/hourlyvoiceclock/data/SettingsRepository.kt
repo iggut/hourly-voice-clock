@@ -36,7 +36,8 @@ class SettingsRepository(private val context: Context) {
             allowManualDuringQuiet = prefs[KEY_ALLOW_MANUAL_QUIET] ?: true,
             exactAlarmsEnabled = prefs[KEY_EXACT_ALARMS] ?: false,
             notificationLogging = prefs[KEY_NOTIFICATION_LOGGING] ?: false,
-            audioChannel = prefs[KEY_AUDIO_CHANNEL]?.let { AudioChannel.valueOf(it) } ?: AudioChannel.MEDIA
+            audioChannel = prefs[KEY_AUDIO_CHANNEL]?.let { AudioChannel.valueOf(it) } ?: AudioChannel.MEDIA,
+            selectedTtsEnginePackage = prefs[KEY_SELECTED_TTS_ENGINE_PACKAGE]?.takeIf { it.isNotBlank() }
         )
     }
 
@@ -115,6 +116,10 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[KEY_AUDIO_CHANNEL] = channel.name }
     }
 
+    suspend fun setSelectedTtsEnginePackage(packageName: String?) {
+        context.dataStore.edit { it[KEY_SELECTED_TTS_ENGINE_PACKAGE] = packageName ?: "" }
+    }
+
     private fun parseTime(value: String): LocalTime {
         val parts = value.split(":")
         return LocalTime.of(parts[0].toInt(), parts[1].toInt())
@@ -144,5 +149,6 @@ class SettingsRepository(private val context: Context) {
         private val KEY_EXACT_ALARMS = booleanPreferencesKey("exact_alarms")
         private val KEY_NOTIFICATION_LOGGING = booleanPreferencesKey("notification_logging")
         private val KEY_AUDIO_CHANNEL = stringPreferencesKey("audio_channel")
+        private val KEY_SELECTED_TTS_ENGINE_PACKAGE = stringPreferencesKey("selected_tts_engine_package")
     }
 }

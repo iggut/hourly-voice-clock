@@ -7,6 +7,7 @@ import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import com.hourlyvoiceclock.tts.VoiceInfo
+import com.hourlyvoiceclock.tts.TtsEngineInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -61,16 +62,25 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     private val _hasMultipleVoices = MutableStateFlow(false)
     val hasMultipleVoices: StateFlow<Boolean> = _hasMultipleVoices.asStateFlow()
 
+    private val _engines = MutableStateFlow<List<TtsEngineInfo>>(emptyList())
+    val engines: StateFlow<List<TtsEngineInfo>> = _engines.asStateFlow()
+
+    private val _selectedEnginePackage = MutableStateFlow<String?>(null)
+    val selectedEnginePackage: StateFlow<String?> = _selectedEnginePackage.asStateFlow()
+
     init {
         viewModelScope.launch {
             ttsRepo.initialize()
-            allNormalVoices = ttsRepo.getAllVoices()
-            _hasMultipleVoices.value = allNormalVoices.size > 1
             
             val settings = settingsRepo.settings.first()
+            _selectedEnginePackage.value = settings.selectedTtsEnginePackage ?: ttsRepo.getEngines().firstOrNull { it.isInstalled }?.packageName
             _selectedVoiceName.value = settings.selectedVoiceName
             _pitch.value = settings.pitch
             _speechRate.value = settings.speechRate
+            
+            _engines.value = ttsRepo.getEngines()
+            allNormalVoices = ttsRepo.getAllVoices()
+            _hasMultipleVoices.value = allNormalVoices.size > 1
             
             updateFilteredVoices()
         }
@@ -79,6 +89,27 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     fun setGenderFilter(gender: String) {
         _selectedGender.value = gender
         updateFilteredVoices()
+    }
+
+    fun switchTtsEngine(packageName: String) {
+        viewModelScope.launch {
+            val success = ttsRepo.switchEngine(packageName)
+            if (success) {
+                settingsRepo.setSelectedTtsEnginePackage(packageName)
+                _selectedEnginePackage.value = packageName
+                
+                // Clear selected voice since engine changed
+                settingsRepo.setSelectedVoice(null, null)
+                _selectedVoiceName.value = null
+
+                // Reload engines and voices
+                _engines.value = ttsRepo.getEngines()
+                allNormalVoices = ttsRepo.getAllVoices()
+                _hasMultipleVoices.value = allNormalVoices.size > 1
+                
+                updateFilteredVoices()
+            }
+        }
     }
 
     private fun updateFilteredVoices() {
