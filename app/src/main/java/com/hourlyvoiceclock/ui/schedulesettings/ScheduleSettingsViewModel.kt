@@ -64,11 +64,31 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
 
     fun checkExactAlarmPermission() {
         val can = AlarmPermissionChecker.canScheduleExactAlarms(getApplication())
+        val wasDenied = _needsExactPermission.value
         _canScheduleExact.value = can
 
         // If exact alarms are requested but permission not granted, show the permission card
         _needsExactPermission.value = _exactAlarmsEnabled.value && !can &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+        // If permission was previously denied and is now granted, reschedule
+        if (wasDenied && can && _exactAlarmsEnabled.value) {
+            viewModelScope.launch {
+                val settings = settingsRepo.settings.first()
+                if (settings.hourlyAnnouncementsEnabled) {
+                    scheduler.cancelHourlyAlarms()
+                    scheduler.scheduleNextHour(exact = true)
+                }
+            }
+        }
+    }
+
+    /**
+     * Called when the user returns from system settings (onResume).
+     * Re-checks exact alarm permission and reschedules if newly granted.
+     */
+    fun onResume() {
+        checkExactAlarmPermission()
     }
 
     fun setQuietHoursEnabled(enabled: Boolean) {

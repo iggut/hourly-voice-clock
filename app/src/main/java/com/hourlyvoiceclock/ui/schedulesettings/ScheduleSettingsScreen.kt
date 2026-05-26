@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
+import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
 import com.hourlyvoiceclock.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,24 +68,42 @@ fun ScheduleSettingsScreen(
     // Re-check permission whenever screen becomes visible
     LaunchedEffect(Unit) {
         viewModel.refreshAll()
+        viewModel.onResume()
     }
 
-    // Permission explanation dialog
+    // Permission explanation dialog with device-specific guidance
     var showExactAlarmDialog by remember { mutableStateOf(false) }
+    val deviceGuidance = remember { AlarmPermissionChecker.getDeviceGuidance() }
+
     if (showExactAlarmDialog) {
         AlertDialog(
             onDismissRequest = { showExactAlarmDialog = false },
             title = { Text(stringResource(R.string.exact_alarm_permission_title), fontWeight = FontWeight.Bold) },
-            text = { Text(stringResource(R.string.exact_alarm_permission_explanation)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.exact_alarm_permission_explanation))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        buildString {
+                            appendLine("${deviceGuidance.manufacturerLabel} device:")
+                            appendLine(deviceGuidance.permissionPath)
+                            deviceGuidance.extraNote?.let {
+                                appendLine()
+                                append(it)
+                            }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showExactAlarmDialog = false
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
-                        } else {
-                            context.startActivity(Intent(Settings.ACTION_APPLICATION_SETTINGS))
-                        }
+                        context.startActivity(
+                            AlarmPermissionChecker.buildExactAlarmSettingsIntent(context)
+                        )
                     }
                 ) {
                     Text(stringResource(R.string.grant_permission), fontWeight = FontWeight.Bold)
@@ -229,14 +248,25 @@ fun ScheduleSettingsScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
+                            // Device-specific helper text
+                            Text(
+                                buildString {
+                                    appendLine("${deviceGuidance.manufacturerLabel} device: ${deviceGuidance.permissionPath}")
+                                    deviceGuidance.extraNote?.let {
+                                        appendLine()
+                                        append(it)
+                                    }
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
                                 onClick = {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
-                                    } else {
-                                        context.startActivity(Intent(Settings.ACTION_APPLICATION_SETTINGS))
-                                    }
+                                    context.startActivity(
+                                        AlarmPermissionChecker.buildExactAlarmSettingsIntent(context)
+                                    )
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
