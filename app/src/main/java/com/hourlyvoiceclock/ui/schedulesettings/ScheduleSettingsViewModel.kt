@@ -51,8 +51,14 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
     private val _hasNotificationPermission = MutableStateFlow(true)
     val hasNotificationPermission: StateFlow<Boolean> = _hasNotificationPermission.asStateFlow()
 
-    private val _isIgnoringBatteryOptimizations = MutableStateFlow(true)
-    val isIgnoringBatteryOptimizations: StateFlow<Boolean> = _isIgnoringBatteryOptimizations.asStateFlow()
+    enum class BatteryOptimizationStatus {
+        UNKNOWN,
+        OPTIMIZED,
+        UNRESTRICTED
+    }
+
+    private val _batteryStatus = MutableStateFlow(BatteryOptimizationStatus.UNKNOWN)
+    val batteryStatus: StateFlow<BatteryOptimizationStatus> = _batteryStatus.asStateFlow()
 
     init {
         refreshAll()
@@ -116,9 +122,10 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         val app = getApplication<Application>()
         val pm = app.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
         if (pm != null) {
-            _isIgnoringBatteryOptimizations.value = pm.isIgnoringBatteryOptimizations(app.packageName)
+            val ignoring = pm.isIgnoringBatteryOptimizations(app.packageName)
+            _batteryStatus.value = if (ignoring) BatteryOptimizationStatus.UNRESTRICTED else BatteryOptimizationStatus.OPTIMIZED
         } else {
-            _isIgnoringBatteryOptimizations.value = true
+            _batteryStatus.value = BatteryOptimizationStatus.UNRESTRICTED
         }
     }
 

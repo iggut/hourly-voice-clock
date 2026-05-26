@@ -79,3 +79,21 @@ Gender metadata is not guaranteed by the Android TTS API. The app displays "Male
 ## Privacy
 
 No personal data or usage metrics are collected. The only network requests made by the app are to query the latest public GitHub release for app updates (if auto-check is enabled in settings) and if a TTS voice itself requires network synthesis (indicated in the voice list).
+
+## Release QA Matrix
+
+To verify build reliability, manual checks must be performed across these target segments prior to tagging a new release:
+
+| Test Scenario | Pixel (Android 14) | Samsung (One UI) | Xiaomi (MIUI) | Expected Outcome |
+| :--- | :--- | :--- | :--- | :--- |
+| **Exact Alarm Toggling** | Yes | Yes | Yes | Saved immediately to DataStore; triggers system settings prompt if permission missing. |
+| **Notification Logging** | Yes | Yes | Yes | Asks `POST_NOTIFICATIONS` runtime permission; writes log entry to drawer; silently skipped if denied. |
+| **Battery Optimization** | Yes | Yes | Yes | Detects optimization state; links to system battery optimizations screen. |
+| **OEM Background Launch** | N/A | Exclude from App Sleeping | Enable Autostart | Alarms scheduled via `AlarmManager` execute reliably on time. |
+| **Boot Recovery** | Yes | Yes | Yes | Re-arms next scheduled top-of-hour announcement automatically after device restart. |
+
+### Release Artifact Naming
+
+GitHub release builds are generated using:
+- **Artifact Format**: `hourly-voice-clock-v[version]-release.apk`
+- **Verification Signature**: Confirm code is signed using the standard release keystore rather than development debug configurations.

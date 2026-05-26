@@ -64,7 +64,6 @@ fun ScheduleSettingsScreen(
     val needsExactPermission by viewModel.needsExactPermission.collectAsState()
     val notificationLogging by viewModel.notificationLogging.collectAsState()
     val hasNotificationPermission by viewModel.hasNotificationPermission.collectAsState()
-    val isIgnoringBatteryOptimizations by viewModel.isIgnoringBatteryOptimizations.collectAsState()
     val context = LocalContext.current
 
     // Re-check permission whenever screen becomes visible
@@ -582,7 +581,11 @@ fun ScheduleSettingsScreen(
                 }
 
                 // ── Battery Optimization Guidance Card ─────────────────────────────────────────────
-                val batteryCardBorder = if (!isIgnoringBatteryOptimizations) {
+                val batteryStatus by viewModel.batteryStatus.collectAsState()
+                val isOptimized = batteryStatus == ScheduleSettingsViewModel.BatteryOptimizationStatus.OPTIMIZED
+                val isUnrestricted = batteryStatus == ScheduleSettingsViewModel.BatteryOptimizationStatus.UNRESTRICTED
+
+                val batteryCardBorder = if (isOptimized) {
                     BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 } else {
                     BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
@@ -609,7 +612,7 @@ fun ScheduleSettingsScreen(
                                         .size(40.dp)
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(
-                                            if (!isIgnoringBatteryOptimizations)
+                                            if (isOptimized)
                                                 MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
                                             else
                                                 MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -619,7 +622,7 @@ fun ScheduleSettingsScreen(
                                     Icon(
                                         imageVector = Icons.Default.LockClock,
                                         contentDescription = null,
-                                        tint = if (!isIgnoringBatteryOptimizations) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+                                        tint = if (isOptimized) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                                     )
                                 }
                                 Column(modifier = Modifier.widthIn(max = 240.dp)) {
@@ -629,9 +632,17 @@ fun ScheduleSettingsScreen(
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        if (isIgnoringBatteryOptimizations) "Unrestricted - High Reliability" else "Optimized - Delayed Announcements Possible",
+                                        when (batteryStatus) {
+                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.UNRESTRICTED -> "Unrestricted - High Reliability"
+                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.OPTIMIZED -> "Optimized - Delayed Announcements Possible"
+                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.UNKNOWN -> "Checking status..."
+                                        },
                                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                        color = if (isIgnoringBatteryOptimizations) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                                        color = when (batteryStatus) {
+                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.UNRESTRICTED -> MaterialTheme.colorScheme.primary
+                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.OPTIMIZED -> MaterialTheme.colorScheme.secondary
+                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
                                     )
                                 }
                             }
@@ -644,7 +655,7 @@ fun ScheduleSettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        if (!isIgnoringBatteryOptimizations) {
+                        if (isOptimized) {
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
                                 onClick = {
