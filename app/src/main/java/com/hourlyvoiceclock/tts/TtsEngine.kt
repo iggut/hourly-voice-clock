@@ -252,12 +252,11 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
 
     private fun queryVoices(ttsInstance: TextToSpeech): List<VoiceInfo> {
         val allVoices = ttsInstance.voices ?: return emptyList()
-        val filtered = allVoices.filter { it.locale.language.equals("en", ignoreCase = true) }
-            .sortedWith(compareBy({ it.locale.getDisplayName(it.locale) }, { it.name }))
+        val sorted = allVoices.sortedWith(compareBy({ it.locale.getDisplayName(it.locale) }, { it.name }))
             
         val countryCounters = mutableMapOf<String, Int>()
         
-        return filtered.map { voice ->
+        return sorted.map { voice ->
             val isNetwork = voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS) ?: false
             val country = voice.locale.displayCountry.ifBlank { voice.locale.displayLanguage }
             val count = countryCounters.getOrDefault(country, 0) + 1
@@ -313,7 +312,23 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         "lcf" to "Female",
         
         // South African English
-        "nfc" to "Female"
+        "nfc" to "Female",
+
+        // RHVoice voices (English, Russian, etc.)
+        "alan" to "Male",
+        "bdl" to "Male",
+        "clb" to "Female",
+        "slt" to "Female",
+        "aleksandr" to "Male",
+        "anna" to "Female",
+        "elena" to "Female",
+        "irina" to "Female",
+        "spika" to "Female",
+        "yuri" to "Male",
+        "artemiy" to "Male",
+        "tatiana" to "Female",
+        "victoria" to "Female",
+        "vitaliy" to "Male"
     )
 
     private fun inferGender(name: String): String? {
