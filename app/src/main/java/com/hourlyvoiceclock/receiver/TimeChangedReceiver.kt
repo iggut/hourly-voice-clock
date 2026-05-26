@@ -15,29 +15,28 @@ import kotlinx.coroutines.launch
 class TimeChangedReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
-        when (intent?.action) {
-            Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED -> {
-                val pendingResult = goAsync()
-                val appContext = context.applicationContext
+        val action = intent?.action
+        if (action == Intent.ACTION_TIME_CHANGED ||
+            action == Intent.ACTION_TIMEZONE_CHANGED ||
+            action == "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"
+        ) {
+            val pendingResult = goAsync()
+            val appContext = context.applicationContext
 
-                CoroutineScope(Dispatchers.Main).launch {
-                    try {
-                        val settingsRepo = SettingsRepository(appContext)
-                        val settings = settingsRepo.settings.first()
-                        if (settings.hourlyAnnouncementsEnabled) {
-                            val app = appContext as? HourlyVoiceClockApp
-                            app?.ttsEngine?.initialize()
-                            val scheduler = AnnouncementScheduler(appContext)
-                            scheduler.cancelHourlyAlarms()
-                            scheduler.scheduleNextHour(settings.exactAlarmsEnabled)
-                            Log.d("TimeChangedReceiver", "Rescheduled after time/timezone change")
-                        }
-                    } catch (e: Exception) {
-                        Log.e("TimeChangedReceiver", "Error rescheduling", e)
-                    } finally {
-                        pendingResult.finish()
+            CoroutineScope(Dispatchers.Default).launch {
+                try {
+                    val settingsRepo = SettingsRepository(appContext)
+                    val settings = settingsRepo.settings.first()
+                    if (settings.hourlyAnnouncementsEnabled) {
+                        val scheduler = AnnouncementScheduler(appContext)
+                        scheduler.cancelHourlyAlarms()
+                        scheduler.scheduleNextHour(settings.exactAlarmsEnabled)
+                        Log.d("TimeChangedReceiver", "Rescheduled after action: $action")
                     }
+                } catch (e: Exception) {
+                    Log.e("TimeChangedReceiver", "Error rescheduling after action $action", e)
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }
