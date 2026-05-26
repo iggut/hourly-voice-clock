@@ -7,32 +7,22 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.LockClock
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,11 +32,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
+import com.hourlyvoiceclock.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +74,7 @@ fun ScheduleSettingsScreen(
     if (showExactAlarmDialog) {
         AlertDialog(
             onDismissRequest = { showExactAlarmDialog = false },
-            title = { Text(stringResource(R.string.exact_alarm_permission_title)) },
+            title = { Text(stringResource(R.string.exact_alarm_permission_title), fontWeight = FontWeight.Bold) },
             text = { Text(stringResource(R.string.exact_alarm_permission_explanation)) },
             confirmButton = {
                 TextButton(
@@ -91,7 +87,7 @@ fun ScheduleSettingsScreen(
                         }
                     }
                 ) {
-                    Text(stringResource(R.string.grant_permission))
+                    Text(stringResource(R.string.grant_permission), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -107,211 +103,322 @@ fun ScheduleSettingsScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { /*_granted -> */ }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.schedule_settings)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Spacer(modifier = Modifier.height(4.dp))
+    val isDark = isSystemInDarkTheme()
+    val bgGradient = Brush.verticalGradient(
+        colors = listOf(
+            if (isDark) DarkBgStart else LightBgStart,
+            if (isDark) DarkBgEnd else LightBgEnd
+        )
+    )
 
-            // ── Exact alarms card ──────────────────────────────────────────────
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (needsExactPermission)
-                        MaterialTheme.colorScheme.errorContainer
-                    else
-                        MaterialTheme.colorScheme.surfaceVariant
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(bgGradient)
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text(stringResource(R.string.schedule_settings), fontWeight = FontWeight.Bold, fontSize = 20.sp) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+                    )
                 )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                stringResource(R.string.exact_alarms),
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                            Text(
-                                when {
-                                    needsExactPermission -> stringResource(R.string.permission_denied)
-                                    exactAlarms && canScheduleExact -> stringResource(R.string.active)
-                                    exactAlarms -> stringResource(R.string.pending_permission)
-                                    else -> stringResource(R.string.inactive)
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = when {
-                                    needsExactPermission -> MaterialTheme.colorScheme.error
-                                    exactAlarms && canScheduleExact -> MaterialTheme.colorScheme.primary
-                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
-                        }
-                        Switch(
-                            checked = exactAlarms,
-                            onCheckedChange = { enabled ->
-                                if (enabled && !canScheduleExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    // Show explanation dialog first
-                                    showExactAlarmDialog = true
-                                } else {
-                                    viewModel.setExactAlarmsEnabled(enabled)
-                                }
-                            }
-                        )
-                    }
-
-                    if (needsExactPermission) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            stringResource(R.string.exact_alarm_permission_explanation),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(
-                            onClick = {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
-                                } else {
-                                    context.startActivity(Intent(Settings.ACTION_APPLICATION_SETTINGS))
-                                }
-                            },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text(stringResource(R.string.open_alarm_permission))
-                        }
-                    }
-                }
             }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Spacer(modifier = Modifier.height(4.dp))
 
-            // ── Quiet hours card ───────────────────────────────────────────────
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            stringResource(R.string.quiet_hours),
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        Switch(
-                            checked = quietEnabled,
-                            onCheckedChange = { viewModel.setQuietHoursEnabled(it) }
-                        )
-                    }
+                // ── Exact alarms card ──────────────────────────────────────────────
+                val cardBorder = if (needsExactPermission) {
+                    BorderStroke(1.5.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                } else {
+                    BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                }
+                
+                val cardBg = if (needsExactPermission) {
+                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
+                } else {
+                    if (isDark) GlassBgDark else GlassBgLight
+                }
 
-                    if (quietEnabled) {
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Start time row
-                        ClickableRow(
-                            label = stringResource(R.string.quiet_hours_start),
-                            value = formatTime(quietStart),
-                            onClick = {
-                                TimePickerDialog(
-                                    context,
-                                    { _, hour, minute ->
-                                        viewModel.setQuietStart(java.time.LocalTime.of(hour, minute))
-                                    },
-                                    quietStart.hour,
-                                    quietStart.minute,
-                                    false
-                                ).show()
-                            }
-                        )
-
-                        // End time row
-                        ClickableRow(
-                            label = stringResource(R.string.quiet_hours_end),
-                            value = formatTime(quietEnd),
-                            onClick = {
-                                TimePickerDialog(
-                                    context,
-                                    { _, hour, minute ->
-                                        viewModel.setQuietEnd(java.time.LocalTime.of(hour, minute))
-                                    },
-                                    quietEnd.hour,
-                                    quietEnd.minute,
-                                    false
-                                ).show()
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    border = cardBorder
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                stringResource(R.string.allow_manual_during_quiet),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Switch(
-                                checked = allowManual,
-                                onCheckedChange = { viewModel.setAllowManualDuringQuiet(it) }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // ── Notifications card ─────────────────────────────────────────────
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                stringResource(R.string.notification_logging),
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                            Text(
-                                stringResource(R.string.notification_logging_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = notificationLogging,
-                            onCheckedChange = {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                                    notificationLogging == false
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            if (needsExactPermission)
+                                                MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+                                            else
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                        ),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    Icon(
+                                        imageVector = if (needsExactPermission) Icons.Default.Warning else Icons.Default.Alarm,
+                                        contentDescription = null,
+                                        tint = if (needsExactPermission) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                    )
                                 }
-                                viewModel.setNotificationLogging(it)
+                                Column {
+                                    Text(
+                                        stringResource(R.string.exact_alarms),
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = if (needsExactPermission) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        when {
+                                            needsExactPermission -> stringResource(R.string.permission_denied)
+                                            exactAlarms && canScheduleExact -> stringResource(R.string.active)
+                                            exactAlarms -> stringResource(R.string.pending_permission)
+                                            else -> stringResource(R.string.inactive)
+                                        },
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                        color = when {
+                                            needsExactPermission -> MaterialTheme.colorScheme.error
+                                            exactAlarms && canScheduleExact -> MaterialTheme.colorScheme.primary
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    )
+                                }
                             }
-                        )
+                            Switch(
+                                checked = exactAlarms,
+                                onCheckedChange = { enabled ->
+                                    if (enabled && !canScheduleExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                        showExactAlarmDialog = true
+                                    } else {
+                                        viewModel.setExactAlarmsEnabled(enabled)
+                                    }
+                                }
+                            )
+                        }
+
+                        if (needsExactPermission) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                stringResource(R.string.exact_alarm_permission_explanation),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                        context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+                                    } else {
+                                        context.startActivity(Intent(Settings.ACTION_APPLICATION_SETTINGS))
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text(stringResource(R.string.open_alarm_permission), color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                // ── Quiet hours card ───────────────────────────────────────────────
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
+                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LockClock,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        stringResource(R.string.quiet_hours),
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = if (quietEnabled) "Quiet hours active" else "Quiet hours inactive",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Switch(
+                                checked = quietEnabled,
+                                onCheckedChange = { viewModel.setQuietHoursEnabled(it) }
+                            )
+                        }
+
+                        if (quietEnabled) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 14.dp),
+                                color = if (isDark) GlassBorderDark else GlassBorderLight
+                            )
+
+                            // Start time row
+                            ClickableRow(
+                                label = stringResource(R.string.quiet_hours_start),
+                                value = formatTime(quietStart),
+                                onClick = {
+                                    TimePickerDialog(
+                                        context,
+                                        { _, hour, minute ->
+                                            viewModel.setQuietStart(java.time.LocalTime.of(hour, minute))
+                                        },
+                                        quietStart.hour,
+                                        quietStart.minute,
+                                        false
+                                    ).show()
+                                }
+                            )
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                color = if (isDark) GlassBorderDark.copy(alpha = 0.05f) else GlassBorderLight.copy(alpha = 0.05f)
+                            )
+
+                            // End time row
+                            ClickableRow(
+                                label = stringResource(R.string.quiet_hours_end),
+                                value = formatTime(quietEnd),
+                                onClick = {
+                                    TimePickerDialog(
+                                        context,
+                                        { _, hour, minute ->
+                                            viewModel.setQuietEnd(java.time.LocalTime.of(hour, minute))
+                                        },
+                                        quietEnd.hour,
+                                        quietEnd.minute,
+                                        false
+                                    ).show()
+                                }
+                            )
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = if (isDark) GlassBorderDark else GlassBorderLight
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    stringResource(R.string.allow_manual_during_quiet),
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Switch(
+                                    checked = allowManual,
+                                    onCheckedChange = { viewModel.setAllowManualDuringQuiet(it) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ── Notifications card ─────────────────────────────────────────────
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
+                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Notifications,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Column(modifier = Modifier.widthIn(max = 200.dp)) {
+                                    Text(
+                                        stringResource(R.string.notification_logging),
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        stringResource(R.string.notification_logging_desc),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Switch(
+                                checked = notificationLogging,
+                                onCheckedChange = {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        notificationLogging == false
+                                    ) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                    viewModel.setNotificationLogging(it)
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(30.dp))
+            }
         }
     }
 }
@@ -325,16 +432,17 @@ private fun ClickableRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() }
-            .padding(vertical = 10.dp),
+            .padding(vertical = 12.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(label, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = MaterialTheme.colorScheme.onSurface)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 value,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary
             )
             Icon(

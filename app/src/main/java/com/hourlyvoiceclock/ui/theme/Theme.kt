@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -18,19 +19,29 @@ import androidx.core.view.WindowCompat
 private val DarkColorScheme = darkColorScheme(
     primary = Indigo80,
     secondary = IndigoGrey80,
-    tertiary = Teal80
+    tertiary = Teal80,
+    background = DarkBgStart,
+    surface = Color(0xFF1E293B).copy(alpha = 0.4f), // Glassmorphic translucent default
+    surfaceVariant = Color(0xFF1E293B).copy(alpha = 0.7f),
+    onSurface = Color(0xFFF1F5F9),
+    onBackground = Color(0xFFF8FAFC)
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Indigo40,
     secondary = IndigoGrey40,
-    tertiary = Teal40
+    tertiary = Teal40,
+    background = LightBgStart,
+    surface = Color(0xFFFFFFFF).copy(alpha = 0.5f), // Translucent light surface
+    surfaceVariant = Color(0xFFFFFFFF).copy(alpha = 0.8f),
+    onSurface = Color(0xFF0F172A),
+    onBackground = Color(0xFF0F172A)
 )
 
 @Composable
 fun HourlyVoiceClockTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // Set false to showcase our custom styled gradient theme
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -45,8 +56,12 @@ fun HourlyVoiceClockTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            window.statusBarColor = android.graphics.Color.TRANSPARENT
+            window.navigationBarColor = android.graphics.Color.TRANSPARENT
+            
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 

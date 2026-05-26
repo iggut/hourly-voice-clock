@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 class FormatSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -69,17 +71,25 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
+    private var prefixSaveJob: Job? = null
+
     fun setCustomPrefix(prefix: String) {
-        viewModelScope.launch {
+        _customPrefix.value = prefix
+        prefixSaveJob?.cancel()
+        prefixSaveJob = viewModelScope.launch {
+            delay(500)
             settingsRepo.setCustomPrefix(prefix)
-            _customPrefix.value = prefix
         }
     }
 
+    private var suffixSaveJob: Job? = null
+
     fun setCustomSuffix(suffix: String) {
-        viewModelScope.launch {
+        _customSuffix.value = suffix
+        suffixSaveJob?.cancel()
+        suffixSaveJob = viewModelScope.launch {
+            delay(500)
             settingsRepo.setCustomSuffix(suffix)
-            _customSuffix.value = suffix
         }
     }
 

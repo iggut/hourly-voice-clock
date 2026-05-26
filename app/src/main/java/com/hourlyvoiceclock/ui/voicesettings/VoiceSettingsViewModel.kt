@@ -23,9 +23,15 @@ data class SpecialVoicePreset(
 
 val SPECIAL_VOICE_PRESETS = listOf(
     SpecialVoicePreset("preset_robot", "Robot", 0.4f, 0.8f, "Male"),
+    SpecialVoicePreset("preset_freeman", "Morgan Freeman", 0.82f, 0.85f, "Male"),
+    SpecialVoicePreset("preset_giant", "Giant", 0.5f, 0.7f, "Male"),
+    SpecialVoicePreset("preset_chipmunk", "Chipmunk", 1.7f, 1.3f, "Female"),
+    SpecialVoicePreset("preset_goblin", "Goblin", 1.4f, 1.1f, "Male"),
     SpecialVoicePreset("preset_redneck", "Redneck", 0.8f, 0.9f, "Male"),
     SpecialVoicePreset("preset_baby", "Baby", 2.0f, 1.2f, "Female"),
-    SpecialVoicePreset("preset_donald", "Donald Duck", 2.0f, 2.0f, "Male")
+    SpecialVoicePreset("preset_donald", "Donald Duck", 2.0f, 2.0f, "Male"),
+    SpecialVoicePreset("preset_nerdy", "Nerdy", 1.2f, 1.2f, "Male"),
+    SpecialVoicePreset("preset_slowmo", "Slow Motion", 0.9f, 0.6f, "Male")
 )
 
 class VoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -128,5 +134,14 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun previewVoice() {
         ttsRepo.previewVoice("The time is 3:45 PM.")
+    }
+
+    fun selectAndPreviewVoice(voiceName: String, localeTag: String) {
+        viewModelScope.launch {
+            ttsRepo.selectVoice(voiceName, localeTag)
+            settingsRepo.setSelectedVoice(voiceName, localeTag)
+            _selectedVoiceName.value = voiceName
+            ttsRepo.previewVoice("The time is 3:45 PM.")
+        }
     }
 }

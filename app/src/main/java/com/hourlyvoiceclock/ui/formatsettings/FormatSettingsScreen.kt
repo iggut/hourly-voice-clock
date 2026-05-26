@@ -1,41 +1,38 @@
 package com.hourlyvoiceclock.ui.formatsettings
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Style
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.TimeFormat
+import com.hourlyvoiceclock.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,159 +53,222 @@ fun FormatSettingsScreen(
     val announceDate by viewModel.announceDate.collectAsState()
     val audioChannel by viewModel.audioChannel.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.format_settings)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Time format
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.time_format),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = timeFormat == TimeFormat.HOUR_12,
-                            onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }
-                        )
-                        Text("12-hour")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = timeFormat == TimeFormat.HOUR_24,
-                            onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }
-                        )
-                        Text("24-hour")
-                    }
-                }
-            }
+    val isDark = isSystemInDarkTheme()
+    val bgGradient = Brush.verticalGradient(
+        colors = listOf(
+            if (isDark) DarkBgStart else LightBgStart,
+            if (isDark) DarkBgEnd else LightBgEnd
+        )
+    )
 
-            // Phrase style
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.phrase_style),
-                        style = MaterialTheme.typography.titleMedium
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(bgGradient)
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text(stringResource(R.string.format_settings), fontWeight = FontWeight.Bold, fontSize = 20.sp) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                     )
-                    PhraseStyle.values().forEach { style ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = phraseStyle == style,
-                                onClick = { viewModel.setPhraseStyle(style) }
-                            )
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Time format
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
+                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             Text(
-                                when (style) {
-                                    PhraseStyle.SIMPLE -> "Simple: \"It is 3 PM.\""
-                                    PhraseStyle.DETAILED -> "Detailed: \"The time is 3:00 PM.\""
-                                    PhraseStyle.FRIENDLY -> "Friendly: \"Good afternoon. It is 3 PM.\""
-                                    PhraseStyle.CUSTOM -> "Custom"
-                                }
+                                stringResource(R.string.time_format),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                         }
-                    }
-                    if (phraseStyle == PhraseStyle.CUSTOM) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = customPrefix,
-                            onValueChange = { viewModel.setCustomPrefix(it) },
-                            label = { Text("Prefix (e.g., 'Hello, it is now ')") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = customSuffix,
-                            onValueChange = { viewModel.setCustomSuffix(it) },
-                            label = { Text("Suffix (e.g., ' master.')") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            }
-
-            // Toggles
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(stringResource(R.string.chime_before))
-                        Switch(
-                            checked = chimeBefore,
-                            onCheckedChange = { viewModel.setChimeBefore(it) }
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(stringResource(R.string.vibrate_before))
-                        Switch(
-                            checked = vibrateBefore,
-                            onCheckedChange = { viewModel.setVibrateBefore(it) }
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(stringResource(R.string.announce_date))
-                        Switch(
-                            checked = announceDate,
-                            onCheckedChange = { viewModel.setAnnounceDate(it) }
-                        )
-                    }
-                }
-            }
-
-            // Audio channel
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.audio_channel),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        stringResource(R.string.audio_channel_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    AudioChannel.values().forEach { channel ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                             RadioButton(
-                                selected = audioChannel == channel,
-                                onClick = { viewModel.setAudioChannel(channel) }
+                                selected = timeFormat == TimeFormat.HOUR_12,
+                                onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }
                             )
+                            Text("12-hour (e.g. 3:00 PM)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            RadioButton(
+                                selected = timeFormat == TimeFormat.HOUR_24,
+                                onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }
+                            )
+                            Text("24-hour (e.g. 15:00)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+
+                // Phrase style
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
+                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Style, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             Text(
-                                when (channel) {
-                                    AudioChannel.MEDIA -> "Media"
-                                    AudioChannel.NOTIFICATION -> "Notification"
-                                    AudioChannel.CALL -> "Call"
-                                }
+                                stringResource(R.string.phrase_style),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        PhraseStyle.values().forEach { style ->
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                RadioButton(
+                                    selected = phraseStyle == style,
+                                    onClick = { viewModel.setPhraseStyle(style) }
+                                )
+                                Text(
+                                    text = when (style) {
+                                        PhraseStyle.SIMPLE -> "Simple: \"It is 3 PM.\""
+                                        PhraseStyle.DETAILED -> "Detailed: \"The time is 3:00 PM.\""
+                                        PhraseStyle.FRIENDLY -> "Friendly: \"Good afternoon. It is 3 PM.\""
+                                        PhraseStyle.CUSTOM -> "Custom phrase format"
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
+                        if (phraseStyle == PhraseStyle.CUSTOM) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = customPrefix,
+                                onValueChange = { viewModel.setCustomPrefix(it) },
+                                label = { Text("Prefix (e.g., 'Hello, it is now ')") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = customSuffix,
+                                onValueChange = { viewModel.setCustomSuffix(it) },
+                                label = { Text("Suffix (e.g., ' master.')") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp)
                             )
                         }
                     }
                 }
+
+                // Toggles
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
+                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.chime_before), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
+                            Switch(
+                                checked = chimeBefore,
+                                onCheckedChange = { viewModel.setChimeBefore(it) }
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.vibrate_before), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
+                            Switch(
+                                checked = vibrateBefore,
+                                onCheckedChange = { viewModel.setVibrateBefore(it) }
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.announce_date), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
+                            Switch(
+                                checked = announceDate,
+                                onCheckedChange = { viewModel.setAnnounceDate(it) }
+                            )
+                        }
+                    }
+                }
+
+                // Audio channel
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
+                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Text(
+                                stringResource(R.string.audio_channel),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            stringResource(R.string.audio_channel_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        AudioChannel.values().forEach { channel ->
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                RadioButton(
+                                    selected = audioChannel == channel,
+                                    onClick = { viewModel.setAudioChannel(channel) }
+                                )
+                                Text(
+                                    text = when (channel) {
+                                        AudioChannel.MEDIA -> "Media player (uses media volume)"
+                                        AudioChannel.NOTIFICATION -> "Notification stream (respects do-not-disturb)"
+                                        AudioChannel.CALL -> "Voice call stream"
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(30.dp))
             }
         }
     }

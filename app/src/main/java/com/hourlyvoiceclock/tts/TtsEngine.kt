@@ -217,12 +217,56 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         }
     }
 
+    private val GENDER_MAP = mapOf(
+        // US English
+        "sfg" to "Female",
+        "iom" to "Male",
+        "iua" to "Female",
+        "rgf" to "Male",
+        "tfg" to "Female",
+        "lpf" to "Female",
+        "rtc" to "Male",
+        "tpf" to "Female",
+        "jdf" to "Female",
+        "iol" to "Male",
+        
+        // UK English
+        "rjs" to "Male",
+        "fis" to "Female",
+        "gdb" to "Male",
+        "gbd" to "Male",
+        "gba" to "Female",
+        
+        // Australian English
+        "afh" to "Female",
+        "afp" to "Female",
+        "ahp" to "Male",
+        "aud" to "Male",
+        
+        // Indian English
+        "cxx" to "Female",
+        "ene" to "Male",
+        "iie" to "Female",
+        "iif" to "Male",
+        
+        // Irish English
+        "lcf" to "Female",
+        
+        // South African English
+        "nfc" to "Female"
+    )
+
     private fun inferGender(name: String): String? {
         val lower = name.lowercase()
-        return when {
-            lower.contains("male") && !lower.contains("female") -> "Male"
-            lower.contains("female") -> "Female"
-            else -> null
+        if (lower.contains("male") && !lower.contains("female")) return "Male"
+        if (lower.contains("female")) return "Female"
+        
+        val segments = lower.split(Regex("[\\-_#\\s]"))
+        for (segment in segments) {
+            val gender = GENDER_MAP[segment]
+            if (gender != null) return gender
         }
+        
+        return null
     }
 }

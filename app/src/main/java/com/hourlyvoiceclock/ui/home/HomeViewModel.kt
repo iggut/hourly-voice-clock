@@ -12,9 +12,11 @@ import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -26,6 +28,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val scheduler = AnnouncementScheduler(application)
     private val ttsRepo = TtsVoiceRepository((application as HourlyVoiceClockApp).ttsEngine)
     private val announcer = TimeAnnouncer(application, ttsRepo)
+
+    val appSettings: StateFlow<com.hourlyvoiceclock.data.AppSettings> = settingsRepo.settings
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = com.hourlyvoiceclock.data.AppSettings()
+        )
 
     private val _currentTime = MutableStateFlow("")
     val currentTime: StateFlow<String> = _currentTime.asStateFlow()
