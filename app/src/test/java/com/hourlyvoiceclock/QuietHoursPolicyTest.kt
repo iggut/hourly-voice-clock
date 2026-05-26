@@ -43,7 +43,7 @@ class QuietHoursPolicyTest {
     @Test
     fun `quiet hours crossing midnight - at start boundary`() {
         val now = LocalTime.of(22, 0)
-        assertFalse(
+        assertTrue(
             QuietHoursPolicy.isQuietTime(now, true, LocalTime.of(22, 0), LocalTime.of(7, 0))
         )
     }
@@ -69,6 +69,30 @@ class QuietHoursPolicyTest {
         val now = LocalTime.of(7, 0)
         assertFalse(
             QuietHoursPolicy.isQuietTime(now, true, LocalTime.of(22, 0), LocalTime.of(7, 0))
+        )
+    }
+
+    @Test
+    fun `quiet hours non crossing - at start boundary`() {
+        val now = LocalTime.of(9, 0)
+        assertTrue(
+            QuietHoursPolicy.isQuietTime(now, true, LocalTime.of(9, 0), LocalTime.of(17, 0))
+        )
+    }
+
+    @Test
+    fun `quiet hours non crossing - at end boundary`() {
+        val now = LocalTime.of(17, 0)
+        assertFalse(
+            QuietHoursPolicy.isQuietTime(now, true, LocalTime.of(9, 0), LocalTime.of(17, 0))
+        )
+    }
+
+    @Test
+    fun `quiet hours non crossing - inside`() {
+        val now = LocalTime.of(12, 0)
+        assertTrue(
+            QuietHoursPolicy.isQuietTime(now, true, LocalTime.of(9, 0), LocalTime.of(17, 0))
         )
     }
 

@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
@@ -24,7 +25,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         val appContext = context.applicationContext
 
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.Default).launch {
             try {
                 val settingsRepo = SettingsRepository(appContext)
                 val settings = settingsRepo.settings.first()
@@ -49,12 +50,15 @@ class AlarmReceiver : BroadcastReceiver() {
                 }
 
                 val ttsRepo = TtsVoiceRepository(app.ttsEngine)
-                ttsRepo.initialize()
-                val announcer = TimeAnnouncer(appContext, ttsRepo)
-                // Hourly announcements always say the top of the hour,
-                // even if Doze delays the alarm by several minutes.
-                val scheduledHour = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
-                announcer.announce(settings, force = false, dateTime = scheduledHour)
+                
+                withContext(Dispatchers.Main) {
+                    ttsRepo.initialize()
+                    val announcer = TimeAnnouncer(appContext, ttsRepo)
+                    // Hourly announcements always say the top of the hour,
+                    // even if Doze delays the alarm by several minutes.
+                    val scheduledHour = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
+                    announcer.announce(settings, force = false, dateTime = scheduledHour)
+                }
 
             } catch (e: Exception) {
                 Log.e("AlarmReceiver", "Error handling alarm", e)

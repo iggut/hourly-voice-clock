@@ -12,10 +12,12 @@ object QuietHoursPolicy {
     ): Boolean {
         if (!quietHoursEnabled) return false
 
-        return if (quietStart.isBefore(quietEnd) || quietStart == quietEnd) {
-            now.isAfter(quietStart) && now.isBefore(quietEnd)
+        if (quietStart == quietEnd) return true
+
+        return if (quietStart.isBefore(quietEnd)) {
+            (now == quietStart || now.isAfter(quietStart)) && now.isBefore(quietEnd)
         } else {
-            now.isAfter(quietStart) || now.isBefore(quietEnd)
+            (now == quietStart || now.isAfter(quietStart)) || now.isBefore(quietEnd)
         }
     }
 

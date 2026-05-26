@@ -23,20 +23,20 @@ class SettingsRepository(private val context: Context) {
             selectedLocale = prefs[KEY_SELECTED_LOCALE]?.takeIf { it.isNotBlank() },
             pitch = prefs[KEY_PITCH] ?: 1.0f,
             speechRate = prefs[KEY_SPEECH_RATE] ?: 1.0f,
-            timeFormat = prefs[KEY_TIME_FORMAT]?.let { TimeFormat.valueOf(it) } ?: TimeFormat.HOUR_12,
-            phraseStyle = prefs[KEY_PHRASE_STYLE]?.let { PhraseStyle.valueOf(it) } ?: PhraseStyle.SIMPLE,
+            timeFormat = safeEnumValueOf(prefs[KEY_TIME_FORMAT], TimeFormat.HOUR_12),
+            phraseStyle = safeEnumValueOf(prefs[KEY_PHRASE_STYLE], PhraseStyle.SIMPLE),
             customPrefix = prefs[KEY_CUSTOM_PREFIX] ?: "It is now ",
             customSuffix = prefs[KEY_CUSTOM_SUFFIX] ?: "",
             chimeBefore = prefs[KEY_CHIME_BEFORE] ?: false,
             vibrateBefore = prefs[KEY_VIBRATE_BEFORE] ?: false,
             announceDateOnDemand = prefs[KEY_ANNOUNCE_DATE] ?: false,
             quietHoursEnabled = prefs[KEY_QUIET_HOURS_ENABLED] ?: false,
-            quietHoursStart = parseTime(prefs[KEY_QUIET_HOURS_START] ?: "22:00"),
-            quietHoursEnd = parseTime(prefs[KEY_QUIET_HOURS_END] ?: "07:00"),
+            quietHoursStart = parseTime(prefs[KEY_QUIET_HOURS_START], "22:00"),
+            quietHoursEnd = parseTime(prefs[KEY_QUIET_HOURS_END], "07:00"),
             allowManualDuringQuiet = prefs[KEY_ALLOW_MANUAL_QUIET] ?: true,
             exactAlarmsEnabled = prefs[KEY_EXACT_ALARMS] ?: false,
             notificationLogging = prefs[KEY_NOTIFICATION_LOGGING] ?: false,
-            audioChannel = prefs[KEY_AUDIO_CHANNEL]?.let { AudioChannel.valueOf(it) } ?: AudioChannel.MEDIA,
+            audioChannel = safeEnumValueOf(prefs[KEY_AUDIO_CHANNEL], AudioChannel.MEDIA),
             selectedTtsEnginePackage = prefs[KEY_SELECTED_TTS_ENGINE_PACKAGE]?.takeIf { it.isNotBlank() }
         )
     }
@@ -120,16 +120,35 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[KEY_SELECTED_TTS_ENGINE_PACKAGE] = packageName ?: "" }
     }
 
-    private fun parseTime(value: String): LocalTime {
-        val parts = value.split(":")
-        return LocalTime.of(parts[0].toInt(), parts[1].toInt())
-    }
-
-    private fun formatTime(time: LocalTime): String {
-        return String.format("%02d:%02d", time.hour, time.minute)
-    }
 
     companion object {
+        internal fun parseTime(value: String?, fallback: String): LocalTime {
+            val cleanValue = if (value.isNullOrBlank()) fallback else value
+            return try {
+                val parts = cleanValue.split(":")
+                LocalTime.of(parts[0].toInt(), parts[1].toInt())
+            } catch (e: Exception) {
+                try {
+                    val parts = fallback.split(":")
+                    LocalTime.of(parts[0].toInt(), parts[1].toInt())
+                } catch (e2: Exception) {
+                    LocalTime.of(22, 0)
+                }
+            }
+        }
+
+        internal fun formatTime(time: LocalTime): String {
+            return String.format("%02d:%02d", time.hour, time.minute)
+        }
+
+        internal inline fun <reified T : Enum<T>> safeEnumValueOf(value: String?, fallback: T): T {
+            if (value == null) return fallback
+            return try {
+                java.lang.Enum.valueOf(T::class.java, value)
+            } catch (e: IllegalArgumentException) {
+                fallback
+            }
+        }
         private val KEY_HOURLY_ANNOUNCEMENTS = booleanPreferencesKey("hourly_announcements")
         private val KEY_SELECTED_VOICE_NAME = stringPreferencesKey("selected_voice_name")
         private val KEY_SELECTED_LOCALE = stringPreferencesKey("selected_locale")

@@ -23,20 +23,31 @@ android {
 
     signingConfigs {
         create("release") {
-            // Use debug keystore for CI builds.
-            // For production, override with real keystore via env vars:
-            // KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
-            val keystorePath = System.getenv("KEYSTORE_PATH")
-            if (keystorePath != null && file(keystorePath).exists()) {
-                storeFile = file(keystorePath)
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: ""
-                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+            val envKeystorePath = System.getenv("KEYSTORE_PATH")
+            val envKeystorePassword = System.getenv("KEYSTORE_PASSWORD")
+            val envKeyAlias = System.getenv("KEY_ALIAS")
+            val envKeyPassword = System.getenv("KEY_PASSWORD")
+
+            val isReleaseTask = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+
+            if (envKeystorePath != null && file(envKeystorePath).exists()) {
+                storeFile = file(envKeystorePath)
+                storePassword = envKeystorePassword ?: ""
+                keyAlias = envKeyAlias ?: ""
+                keyPassword = envKeyPassword ?: ""
             } else {
-                storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
+                if (isReleaseTask) {
+                    throw org.gradle.api.GradleException(
+                        "Release signing credentials (KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD) " +
+                        "must be provided as environment variables for release builds."
+                    )
+                } else {
+                    // Fallback configuration for other tasks if variables are missing
+                    storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+                    storePassword = "android"
+                    keyAlias = "androiddebugkey"
+                    keyPassword = "android"
+                }
             }
         }
     }
