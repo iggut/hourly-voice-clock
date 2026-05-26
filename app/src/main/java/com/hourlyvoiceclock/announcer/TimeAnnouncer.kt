@@ -121,6 +121,10 @@ class TimeAnnouncer(
 
         ttsRepository.speak(text)
 
+        if (settings.notificationLogging) {
+            postNotification(text)
+        }
+
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
@@ -131,6 +135,23 @@ class TimeAnnouncer(
         }, 5000)
     }
 
+    private fun postNotification(text: String) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager ?: return
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            android.app.Notification.Builder(context, com.hourlyvoiceclock.HourlyVoiceClockApp.CHANNEL_ID_STATUS)
+        } else {
+            @Suppress("DEPRECATION")
+            android.app.Notification.Builder(context)
+        }
+        val notification = builder
+            .setContentTitle("Time Announced")
+            .setContentText(text)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setAutoCancel(true)
+            .build()
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
     private fun vibrate() {
         val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -139,5 +160,9 @@ class TimeAnnouncer(
             @Suppress("DEPRECATION")
             vibrator.vibrate(200)
         }
+    }
+
+    companion object {
+        private const val NOTIFICATION_ID = 2001
     }
 }

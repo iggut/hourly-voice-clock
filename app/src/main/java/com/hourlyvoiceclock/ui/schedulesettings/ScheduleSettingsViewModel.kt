@@ -2,6 +2,9 @@ package com.hourlyvoiceclock.ui.schedulesettings
 
 import android.app.Application
 import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.data.SettingsRepository
@@ -45,6 +48,9 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
     private val _notificationLogging = MutableStateFlow(false)
     val notificationLogging: StateFlow<Boolean> = _notificationLogging.asStateFlow()
 
+    private val _hasNotificationPermission = MutableStateFlow(true)
+    val hasNotificationPermission: StateFlow<Boolean> = _hasNotificationPermission.asStateFlow()
+
     init {
         refreshAll()
     }
@@ -59,6 +65,7 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             _exactAlarmsEnabled.value = settings.exactAlarmsEnabled
             _notificationLogging.value = settings.notificationLogging
             checkExactAlarmPermission()
+            checkNotificationPermission()
         }
     }
 
@@ -83,12 +90,21 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         }
     }
 
-    /**
-     * Called when the user returns from system settings (onResume).
-     * Re-checks exact alarm permission and reschedules if newly granted.
-     */
     fun onResume() {
         checkExactAlarmPermission()
+        checkNotificationPermission()
+    }
+
+    fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                getApplication(),
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            _hasNotificationPermission.value = granted
+        } else {
+            _hasNotificationPermission.value = true
+        }
     }
 
     fun setQuietHoursEnabled(enabled: Boolean) {

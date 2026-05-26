@@ -63,6 +63,7 @@ fun ScheduleSettingsScreen(
     val canScheduleExact by viewModel.canScheduleExact.collectAsState()
     val needsExactPermission by viewModel.needsExactPermission.collectAsState()
     val notificationLogging by viewModel.notificationLogging.collectAsState()
+    val hasNotificationPermission by viewModel.hasNotificationPermission.collectAsState()
     val context = LocalContext.current
 
     // Re-check permission whenever screen becomes visible
@@ -393,11 +394,77 @@ fun ScheduleSettingsScreen(
                 }
 
                 // ── Notifications card ─────────────────────────────────────────────
+                val showPermissionWarning = !hasNotificationPermission && notificationLogging && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                val notifCardBorder = if (showPermissionWarning) {
+                    BorderStroke(1.5.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                } else {
+                    BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                }
+                val notifCardBg = if (showPermissionWarning) {
+                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
+                } else {
+                    if (isDark) GlassBgDark else GlassBgLight
+                }
+
+                var showRationaleDialog by remember { mutableStateOf(false) }
+                var showSettingsRedirectDialog by remember { mutableStateOf(false) }
+
+                if (showRationaleDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showRationaleDialog = false },
+                        title = { Text("Notification Permission Required", fontWeight = FontWeight.Bold) },
+                        text = { Text("To log announcements to the notification drawer, this app needs permission to post notifications. Would you like to grant it?") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showRationaleDialog = false
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                }
+                            ) {
+                                Text("Grant", fontWeight = FontWeight.Bold)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showRationaleDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
+
+                if (showSettingsRedirectDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showSettingsRedirectDialog = false },
+                        title = { Text("Notification Permission Denied", fontWeight = FontWeight.Bold) },
+                        text = { Text("Notification permissions have been permanently denied. Please enable them in System Settings to use notification logging.") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showSettingsRedirectDialog = false
+                                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                    }
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                Text("Open Settings", fontWeight = FontWeight.Bold)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showSettingsRedirectDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
-                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                    colors = CardDefaults.cardColors(containerColor = notifCardBg),
+                    border = notifCardBorder
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Row(
@@ -410,39 +477,92 @@ fun ScheduleSettingsScreen(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                        .background(
+                                            if (showPermissionWarning)
+                                                MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+                                            else
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Notifications,
+                                        imageVector = if (showPermissionWarning) Icons.Default.Warning else Icons.Default.Notifications,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = if (showPermissionWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                     )
                                 }
                                 Column(modifier = Modifier.widthIn(max = 200.dp)) {
                                     Text(
                                         stringResource(R.string.notification_logging),
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        color = if (showPermissionWarning) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         stringResource(R.string.notification_logging_desc),
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = if (showPermissionWarning) MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                             Switch(
                                 checked = notificationLogging,
-                                onCheckedChange = {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                                        notificationLogging == false
-                                    ) {
-                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                onCheckedChange = { checked ->
+                                    if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                                        val activity = context as? androidx.activity.ComponentActivity
+                                        val shouldShowRationale = activity?.let {
+                                            androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
+                                                it,
+                                                Manifest.permission.POST_NOTIFICATIONS
+                                            )
+                                        } ?: false
+                                        
+                                        if (shouldShowRationale) {
+                                            showRationaleDialog = true
+                                        } else {
+                                            // Either first request or permanently denied.
+                                            // We check settings.notificationLogging's prior state or try launching direct.
+                                            // Let's trigger launcher first:
+                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
                                     }
-                                    viewModel.setNotificationLogging(it)
+                                    viewModel.setNotificationLogging(checked)
                                 }
                             )
+                        }
+
+                        if (showPermissionWarning) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "Notifications are disabled. The app cannot post logs to the drawer.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                            val activity = context as? androidx.activity.ComponentActivity
+                                            val shouldShowRationale = activity?.let {
+                                                androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
+                                                    it,
+                                                    Manifest.permission.POST_NOTIFICATIONS
+                                                )
+                                            } ?: false
+                                            
+                                            if (shouldShowRationale) {
+                                                showRationaleDialog = true
+                                            } else {
+                                                showSettingsRedirectDialog = true
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                ) {
+                                    Text("Grant Permission", color = Color.White, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                 }

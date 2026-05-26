@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.hourlyvoiceclock.HourlyVoiceClockApp
+import android.app.AlarmManager
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +18,7 @@ class TimeChangedReceiver : BroadcastReceiver() {
         val action = intent?.action
         if (action == Intent.ACTION_TIME_CHANGED ||
             action == Intent.ACTION_TIMEZONE_CHANGED ||
-            action == "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"
+            action == AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
         ) {
             val pendingResult = goAsync()
             val appContext = context.applicationContext

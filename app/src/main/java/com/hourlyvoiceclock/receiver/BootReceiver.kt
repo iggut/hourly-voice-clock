@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import kotlinx.coroutines.CoroutineScope
