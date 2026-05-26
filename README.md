@@ -92,8 +92,9 @@ To verify build reliability, manual checks must be performed across these target
 | **OEM Background Launch** | N/A | Exclude from App Sleeping | Enable Autostart | Alarms scheduled via `AlarmManager` execute reliably on time. |
 | **Boot Recovery** | Yes | Yes | Yes | Re-arms next scheduled top-of-hour announcement automatically after device restart. |
 
-### Release Artifact Naming
+### Release Automation
 
-GitHub release builds are generated using:
-- **Artifact Format**: `hourly-voice-clock-v[version]-release.apk`
-- **Verification Signature**: Confirm code is signed using the standard release keystore rather than development debug configurations.
+GitHub release builds are automated using a GitHub Actions CI pipeline:
+- **Triggers**: Creating and pushing a version tag (e.g. `v0.1`) runs test verification, compiles release builds, and outputs release packages.
+- **Artifact Format**: Outputs `hourly-voice-clock-v[version]-release.apk` along with its `hourly-voice-clock-v[version]-release.apk.sha256` verification checksum file.
+- **Publishing**: Automatically creates a draft release containing these build artifacts ready for approval.
