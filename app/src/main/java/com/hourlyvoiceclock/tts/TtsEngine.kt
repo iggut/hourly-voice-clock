@@ -332,12 +332,14 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         "vitaliy" to "Male"
     )
 
+    private val GENDER_SPLIT_REGEX = Regex("[\\-_#\\s]")
+
     private fun inferGender(name: String): String? {
         val lower = name.lowercase()
         if (lower.contains("male") && !lower.contains("female")) return "Male"
         if (lower.contains("female")) return "Female"
         
-        val segments = lower.split(Regex("[\\-_#\\s]"))
+        val segments = lower.split(GENDER_SPLIT_REGEX)
         for (segment in segments) {
             val gender = GENDER_MAP[segment]
             if (gender != null) return gender
