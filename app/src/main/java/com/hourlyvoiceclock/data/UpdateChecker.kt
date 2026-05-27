@@ -93,21 +93,54 @@ object UpdateChecker {
         if (current.isBlank() || latest.isBlank()) return false
         if (current == latest) return false
 
-        val currentParts = current.split(".")
-        val latestParts = latest.split(".")
-        val minSize = minOf(currentParts.size, latestParts.size)
+        var currIdx = 0
+        var lateIdx = 0
+        val currLen = current.length
+        val lateLen = latest.length
 
-        for (i in 0 until minSize) {
-            val currNum = getNumericPart(currentParts[i])
-            val lateNum = getNumericPart(latestParts[i])
+        while (currIdx < currLen && lateIdx < lateLen) {
+            var currNum = 0
+            var lateNum = 0
+
+            var currParsingDigits = true
+            while (currIdx < currLen) {
+                val c = current[currIdx++]
+                if (c == '.') break
+                if (currParsingDigits) {
+                    if (c.isDigit()) {
+                        currNum = currNum * 10 + (c - '0')
+                    } else {
+                        currParsingDigits = false
+                    }
+                }
+            }
+
+            var lateParsingDigits = true
+            while (lateIdx < lateLen) {
+                val c = latest[lateIdx++]
+                if (c == '.') break
+                if (lateParsingDigits) {
+                    if (c.isDigit()) {
+                        lateNum = lateNum * 10 + (c - '0')
+                    } else {
+                        lateParsingDigits = false
+                    }
+                }
+            }
+
             if (lateNum > currNum) return true
             if (currNum > lateNum) return false
         }
-        return latestParts.size > currentParts.size
-    }
 
-    private fun getNumericPart(part: String): Int {
-        val digits = part.takeWhile { it.isDigit() }
-        return digits.toIntOrNull() ?: 0
+        var currentPartsCount = 1
+        for (i in 0 until currLen) {
+            if (current[i] == '.') currentPartsCount++
+        }
+        var latestPartsCount = 1
+        for (i in 0 until lateLen) {
+            if (latest[i] == '.') latestPartsCount++
+        }
+
+        return latestPartsCount > currentPartsCount
     }
 }
