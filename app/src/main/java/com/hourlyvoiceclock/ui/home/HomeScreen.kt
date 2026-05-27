@@ -228,7 +228,7 @@ fun HomeScreen(
 
                         // Current Date
                         Text(
-                            text = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")),
+                            text = LocalDate.now().format(DATE_FORMATTER),
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -551,6 +551,8 @@ fun HomeScreen(
         }
     }
 }
+
+private val DATE_FORMATTER = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")
 
 @Composable
 fun DashboardCard(

@@ -95,7 +95,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun updateTime() {
         val now = LocalDateTime.now()
-        _currentTime.value = now.format(DateTimeFormatter.ofPattern("h:mm:ss a"))
+        _currentTime.value = now.format(TIME_FORMATTER)
     }
 
     private fun updateNextAnnouncement(enabled: Boolean) {
@@ -104,7 +104,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         val next = AnnouncementScheduler.getNextTopOfHour()
-        _nextAnnouncement.value = next.format(DateTimeFormatter.ofPattern("h:mm a"))
+        _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
     }
 
     private fun updateQuietStatus(settings: com.hourlyvoiceclock.data.AppSettings) {
@@ -185,5 +185,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
         }
+    }
+
+    companion object {
+        private val TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm:ss a")
+        private val NEXT_ANNOUNCEMENT_FORMATTER = DateTimeFormatter.ofPattern("h:mm a")
     }
 }
