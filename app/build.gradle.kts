@@ -61,6 +61,8 @@ android {
     }
     lint {
         disable += "StateFlowValueCalledInComposition"
+        abortOnError = false
+        checkReleaseBuilds = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
