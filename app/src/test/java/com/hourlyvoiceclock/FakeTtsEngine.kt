@@ -69,8 +69,8 @@ class FakeTtsEngine : TtsEngine {
     override fun getEngines(): List<TtsEngineInfo> {
         return listOf(
             TtsEngineInfo("com.google.android.tts", "Speech Services by Google", true),
-            TtsEngineInfo("com.redzoc.espeakng", "eSpeak NG", false),
-            TtsEngineInfo("org.rhvoice.android", "RHVoice", false)
+            TtsEngineInfo("com.redzoc.ramees.tts.espeak", "eSpeak NG", false),
+            TtsEngineInfo("com.github.olga_yakovleva.rhvoice.android", "RHVoice", false)
         )
     }
 }
