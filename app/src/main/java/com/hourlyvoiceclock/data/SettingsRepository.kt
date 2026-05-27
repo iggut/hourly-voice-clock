@@ -27,7 +27,7 @@ class SettingsRepository(private val context: Context) {
             phraseStyle = safeEnumValueOf(prefs[KEY_PHRASE_STYLE], PhraseStyle.SIMPLE),
             customPrefix = prefs[KEY_CUSTOM_PREFIX] ?: "It is now ",
             customSuffix = prefs[KEY_CUSTOM_SUFFIX] ?: "",
-            chimeBefore = prefs[KEY_CHIME_BEFORE] ?: false,
+            chimeSound = safeEnumValueOf(prefs[KEY_CHIME_SOUND], ChimeSound.NONE),
             vibrateBefore = prefs[KEY_VIBRATE_BEFORE] ?: false,
             announceDateOnDemand = prefs[KEY_ANNOUNCE_DATE] ?: false,
             quietHoursEnabled = prefs[KEY_QUIET_HOURS_ENABLED] ?: false,
@@ -77,8 +77,8 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[KEY_CUSTOM_SUFFIX] = suffix }
     }
 
-    suspend fun setChimeBefore(enabled: Boolean) {
-        context.dataStore.edit { it[KEY_CHIME_BEFORE] = enabled }
+    suspend fun setChimeSound(sound: ChimeSound) {
+        context.dataStore.edit { it[KEY_CHIME_SOUND] = sound.name }
     }
 
     suspend fun setVibrateBefore(enabled: Boolean) {
@@ -163,7 +163,7 @@ class SettingsRepository(private val context: Context) {
         private val KEY_PHRASE_STYLE = stringPreferencesKey("phrase_style")
         private val KEY_CUSTOM_PREFIX = stringPreferencesKey("custom_prefix")
         private val KEY_CUSTOM_SUFFIX = stringPreferencesKey("custom_suffix")
-        private val KEY_CHIME_BEFORE = booleanPreferencesKey("chime_before")
+        private val KEY_CHIME_SOUND = stringPreferencesKey("chime_sound")
         private val KEY_VIBRATE_BEFORE = booleanPreferencesKey("vibrate_before")
         private val KEY_ANNOUNCE_DATE = booleanPreferencesKey("announce_date")
         private val KEY_QUIET_HOURS_ENABLED = booleanPreferencesKey("quiet_hours_enabled")

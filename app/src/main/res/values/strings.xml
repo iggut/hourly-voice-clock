@@ -47,4 +47,12 @@
     <string name="inactive">Inactive</string>
     <string name="cancel">Cancel</string>
     <string name="notification_logging_desc">Log each hourly announcement as a notification</string>
+    <string name="chime_none">None</string>
+    <string name="chime_classic_chime">Classic Chime</string>
+    <string name="chime_bell">Bell</string>
+    <string name="chime_gong">Gong</string>
+    <string name="chime_cymbals">Cymbals</string>
+    <string name="chime_digital_beep">Digital Beep</string>
+    <string name="chime_bird_chirp">Bird Chirp</string>
+    <string name="chime_honk">Honk</string>
 </resources>

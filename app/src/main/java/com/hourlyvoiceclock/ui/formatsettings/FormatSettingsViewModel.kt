@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.data.AudioChannel
+import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.data.TimeFormat
@@ -31,8 +32,8 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
     private val _customSuffix = MutableStateFlow("")
     val customSuffix: StateFlow<String> = _customSuffix.asStateFlow()
 
-    private val _chimeBefore = MutableStateFlow(false)
-    val chimeBefore: StateFlow<Boolean> = _chimeBefore.asStateFlow()
+    private val _chimeSound = MutableStateFlow(ChimeSound.NONE)
+    val chimeSound: StateFlow<ChimeSound> = _chimeSound.asStateFlow()
 
     private val _vibrateBefore = MutableStateFlow(false)
     val vibrateBefore: StateFlow<Boolean> = _vibrateBefore.asStateFlow()
@@ -50,7 +51,7 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
             _phraseStyle.value = settings.phraseStyle
             _customPrefix.value = settings.customPrefix
             _customSuffix.value = settings.customSuffix
-            _chimeBefore.value = settings.chimeBefore
+            _chimeSound.value = settings.chimeSound
             _vibrateBefore.value = settings.vibrateBefore
             _announceDate.value = settings.announceDateOnDemand
             _audioChannel.value = settings.audioChannel
@@ -93,10 +94,10 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
-    fun setChimeBefore(enabled: Boolean) {
+    fun setChimeSound(sound: ChimeSound) {
         viewModelScope.launch {
-            settingsRepo.setChimeBefore(enabled)
-            _chimeBefore.value = enabled
+            settingsRepo.setChimeSound(sound)
+            _chimeSound.value = sound
         }
     }
 

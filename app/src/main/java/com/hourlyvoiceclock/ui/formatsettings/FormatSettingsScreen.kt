@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.data.AudioChannel
+import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.TimeFormat
 import com.hourlyvoiceclock.ui.theme.*
@@ -48,7 +51,7 @@ fun FormatSettingsScreen(
     val phraseStyle by viewModel.phraseStyle.collectAsState()
     val customPrefix by viewModel.customPrefix.collectAsState()
     val customSuffix by viewModel.customSuffix.collectAsState()
-    val chimeBefore by viewModel.chimeBefore.collectAsState()
+    val chimeSound by viewModel.chimeSound.collectAsState()
     val vibrateBefore by viewModel.vibrateBefore.collectAsState()
     val announceDate by viewModel.announceDate.collectAsState()
     val audioChannel by viewModel.audioChannel.collectAsState()
@@ -196,9 +199,9 @@ fun FormatSettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(stringResource(R.string.chime_before), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
-                            Switch(
-                                checked = chimeBefore,
-                                onCheckedChange = { viewModel.setChimeBefore(it) }
+                            ChimeSoundSelector(
+                                selectedSound = chimeSound,
+                                onSoundSelected = { viewModel.setChimeSound(it) }
                             )
                         }
                         Row(
@@ -269,6 +272,69 @@ fun FormatSettingsScreen(
                 }
 
                 Spacer(modifier = Modifier.height(30.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun ChimeSoundSelector(
+    selectedSound: ChimeSound,
+    onSoundSelected: (ChimeSound) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by androidx.compose.runtime.mutableStateOf(false)
+
+    Box(modifier = modifier) {
+        OutlinedButton(
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                text = when (selectedSound) {
+                    ChimeSound.NONE -> stringResource(R.string.chime_none)
+                    ChimeSound.CLASSIC_CHIME -> stringResource(R.string.chime_classic_chime)
+                    ChimeSound.BELL -> stringResource(R.string.chime_bell)
+                    ChimeSound.GONG -> stringResource(R.string.chime_gong)
+                    ChimeSound.CYMBALS -> stringResource(R.string.chime_cymbals)
+                    ChimeSound.DIGITAL_BEEP -> stringResource(R.string.chime_digital_beep)
+                    ChimeSound.BIRD_CHIRP -> stringResource(R.string.chime_bird_chirp)
+                    ChimeSound.HONK -> stringResource(R.string.chime_honk)
+                },
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            ChimeSound.entries.forEach { sound ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = when (sound) {
+                                ChimeSound.NONE -> stringResource(R.string.chime_none)
+                                ChimeSound.CLASSIC_CHIME -> stringResource(R.string.chime_classic_chime)
+                                ChimeSound.BELL -> stringResource(R.string.chime_bell)
+                                ChimeSound.GONG -> stringResource(R.string.chime_gong)
+                                ChimeSound.CYMBALS -> stringResource(R.string.chime_cymbals)
+                                ChimeSound.DIGITAL_BEEP -> stringResource(R.string.chime_digital_beep)
+                                ChimeSound.BIRD_CHIRP -> stringResource(R.string.chime_bird_chirp)
+                                ChimeSound.HONK -> stringResource(R.string.chime_honk)
+                            }
+                        )
+                    },
+                    onClick = {
+                        onSoundSelected(sound)
+                        expanded = false
+                    }
+                )
             }
         }
     }

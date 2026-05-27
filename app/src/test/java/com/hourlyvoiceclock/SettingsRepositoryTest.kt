@@ -1,6 +1,7 @@
 package com.hourlyvoiceclock
 
 import com.hourlyvoiceclock.data.AudioChannel
+import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.data.TimeFormat
@@ -35,6 +36,33 @@ class SettingsRepositoryTest {
     fun `safeEnumValueOf returns fallback for null string`() {
         val style = SettingsRepository.safeEnumValueOf(null, PhraseStyle.CUSTOM)
         assertEquals(PhraseStyle.CUSTOM, style)
+    }
+
+    @Test
+    fun `safeEnumValueOf returns matching enum for ChimeSound valid string`() {
+        val chime = SettingsRepository.safeEnumValueOf("BELL", ChimeSound.NONE)
+        assertEquals(ChimeSound.BELL, chime)
+
+        val chime2 = SettingsRepository.safeEnumValueOf("GONG", ChimeSound.NONE)
+        assertEquals(ChimeSound.GONG, chime2)
+
+        val chime3 = SettingsRepository.safeEnumValueOf("DIGITAL_BEEP", ChimeSound.NONE)
+        assertEquals(ChimeSound.DIGITAL_BEEP, chime3)
+
+        val chime4 = SettingsRepository.safeEnumValueOf("BIRD_CHIRP", ChimeSound.NONE)
+        assertEquals(ChimeSound.BIRD_CHIRP, chime4)
+    }
+
+    @Test
+    fun `safeEnumValueOf returns fallback for ChimeSound invalid string`() {
+        val chime = SettingsRepository.safeEnumValueOf("INVALID_CHIME", ChimeSound.CLASSIC_CHIME)
+        assertEquals(ChimeSound.CLASSIC_CHIME, chime)
+    }
+
+    @Test
+    fun `safeEnumValueOf returns fallback for ChimeSound null string`() {
+        val chime = SettingsRepository.safeEnumValueOf(null, ChimeSound.HONK)
+        assertEquals(ChimeSound.HONK, chime)
     }
 
     @Test

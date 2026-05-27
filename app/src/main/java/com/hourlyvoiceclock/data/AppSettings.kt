@@ -20,6 +20,17 @@ enum class AudioChannel {
     CALL
 }
 
+enum class ChimeSound {
+    NONE,
+    CLASSIC_CHIME,
+    BELL,
+    GONG,
+    CYMBALS,
+    DIGITAL_BEEP,
+    BIRD_CHIRP,
+    HONK
+}
+
 data class AppSettings(
     val hourlyAnnouncementsEnabled: Boolean = false,
     val selectedVoiceName: String? = null,
@@ -30,7 +41,7 @@ data class AppSettings(
     val phraseStyle: PhraseStyle = PhraseStyle.SIMPLE,
     val customPrefix: String = "It is now ",
     val customSuffix: String = "",
-    val chimeBefore: Boolean = false,
+    val chimeSound: ChimeSound = ChimeSound.NONE,
     val vibrateBefore: Boolean = false,
     val announceDateOnDemand: Boolean = false,
     val quietHoursEnabled: Boolean = false,
