@@ -2,6 +2,7 @@ package com.hourlyvoiceclock.ui.formatsettings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.HourglassEmpty
@@ -143,17 +145,17 @@ fun FormatSettingsScreen(
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setTimeFormat(TimeFormat.HOUR_12) }) {
                             RadioButton(
                                 selected = timeFormat == TimeFormat.HOUR_12,
-                                onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }
+                                onClick = null
                             )
                             Text("12-hour (e.g. 3:00 PM)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setTimeFormat(TimeFormat.HOUR_24) }) {
                             RadioButton(
                                 selected = timeFormat == TimeFormat.HOUR_24,
-                                onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }
+                                onClick = null
                             )
                             Text("24-hour (e.g. 15:00)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                         }
@@ -177,10 +179,10 @@ fun FormatSettingsScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         PhraseStyle.values().forEach { style ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setPhraseStyle(style) }) {
                                 RadioButton(
                                     selected = phraseStyle == style,
-                                    onClick = { viewModel.setPhraseStyle(style) }
+                                    onClick = null
                                 )
                                 Text(
                                     text = when (style) {
@@ -235,25 +237,25 @@ fun FormatSettingsScreen(
                             )
                         }
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setVibrateBefore(!vibrateBefore) },
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(stringResource(R.string.vibrate_before), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
                             Switch(
                                 checked = vibrateBefore,
-                                onCheckedChange = { viewModel.setVibrateBefore(it) }
+                                onCheckedChange = null
                             )
                         }
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setAnnounceDate(!announceDate) },
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(stringResource(R.string.announce_date), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
                             Switch(
                                 checked = announceDate,
-                                onCheckedChange = { viewModel.setAnnounceDate(it) }
+                                onCheckedChange = null
                             )
                         }
                     }
@@ -282,10 +284,10 @@ fun FormatSettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         AudioChannel.values().forEach { channel ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setAudioChannel(channel) }) {
                                 RadioButton(
                                     selected = audioChannel == channel,
-                                    onClick = { viewModel.setAudioChannel(channel) }
+                                    onClick = null
                                 )
                                 Text(
                                     text = when (channel) {
