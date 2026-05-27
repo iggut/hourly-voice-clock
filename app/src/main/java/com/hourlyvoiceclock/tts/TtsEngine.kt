@@ -106,8 +106,8 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         // Define standard popular engines to show even if not installed
         val knownEngines = listOf(
             TtsEngineInfo("com.google.android.tts", "Speech Services by Google", false),
-            TtsEngineInfo("com.redzoc.espeakng", "eSpeak NG", false),
-            TtsEngineInfo("org.rhvoice.android", "RHVoice", false)
+            TtsEngineInfo("com.redzoc.ramees.tts.espeak", "eSpeak NG", false),
+            TtsEngineInfo("com.github.olga_yakovleva.rhvoice.android", "RHVoice", false)
         )
         
         val result = installed.toMutableList()
