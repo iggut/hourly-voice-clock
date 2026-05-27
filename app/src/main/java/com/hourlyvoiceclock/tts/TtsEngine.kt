@@ -111,8 +111,9 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         )
         
         val result = installed.toMutableList()
+        val existingPackageNames = installed.mapTo(HashSet()) { it.packageName }
         for (known in knownEngines) {
-            if (result.none { it.packageName == known.packageName }) {
+            if (existingPackageNames.add(known.packageName)) {
                 result.add(known)
             }
         }
