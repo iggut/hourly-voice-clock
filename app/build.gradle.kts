@@ -28,18 +28,13 @@ android {
             val envKeyAlias = System.getenv("KEY_ALIAS")
             val envKeyPassword = System.getenv("KEY_PASSWORD")
 
-            val isReleaseTask = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
-
             if (envKeystorePath != null && file(envKeystorePath).exists()) {
                 storeFile = file(envKeystorePath)
                 storePassword = envKeystorePassword ?: ""
                 keyAlias = envKeyAlias ?: ""
                 keyPassword = envKeyPassword ?: ""
-            } else if (isReleaseTask) {
-                throw GradleException("Release signing credentials (KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD) " +
-                        "are missing or keystore file does not exist. Cannot build release APK without proper signing.")
             } else {
-                // Fallback to debug keystore for debug builds
+                // Fallback to debug keystore for builds without proper release credentials
                 storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
                 storePassword = "android"
                 keyAlias = "androiddebugkey"

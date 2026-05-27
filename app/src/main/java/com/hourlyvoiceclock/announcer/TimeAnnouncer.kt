@@ -14,6 +14,7 @@ import com.hourlyvoiceclock.data.AppSettings
 import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
+import com.hourlyvoiceclock.R
 import java.time.LocalDateTime
 import java.util.Locale
 
