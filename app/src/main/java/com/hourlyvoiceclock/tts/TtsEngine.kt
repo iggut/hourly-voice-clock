@@ -39,6 +39,10 @@ data class TtsEngineInfo(
 
 class AndroidTtsEngine(context: Context) : TtsEngine {
 
+    companion object {
+        private const val TAG = "TtsEngine"
+    }
+
     private var tts: TextToSpeech? = null
     private val appContext = context.applicationContext
     private var voices: List<VoiceInfo> = emptyList()
@@ -56,7 +60,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
                 val repository = SettingsRepository(appContext)
                 currentEnginePackage = repository.settings.first().selectedTtsEnginePackage
             } catch (e: Exception) {
-                Log.e("TtsEngine", "Failed to load saved TTS engine package", e)
+                Log.e(TAG, "Failed to load saved TTS engine package", e)
             }
         }
 
@@ -73,7 +77,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
                     initOk = true
                     continuation.resume(true)
                 } else {
-                    Log.e("TtsEngine", "TTS init failed with status=$status")
+                    Log.e(TAG, "TTS init failed with status=$status")
                     continuation.resume(false)
                 }
             }
@@ -131,7 +135,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             it.name == voiceName && it.locale.toLanguageTag() == localeTag
         } ?: return false
         val result = ttsInstance.setVoice(voice)
-        Log.d("TtsEngine", "setVoice(${voice.name}) = $result")
+        Log.d(TAG, "setVoice(${voice.name}) = $result")
         return result == TextToSpeech.SUCCESS
     }
 
@@ -140,7 +144,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         val ttsInstance = tts ?: return false
         val locale = Locale.forLanguageTag(localeTag)
         val result = ttsInstance.setLanguage(locale)
-        Log.d("TtsEngine", "setLanguage($localeTag) = $result")
+        Log.d(TAG, "setLanguage($localeTag) = $result")
         return result == TextToSpeech.LANG_COUNTRY_AVAILABLE
                 || result == TextToSpeech.LANG_AVAILABLE
                 || result == TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE
@@ -171,13 +175,13 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
                     .setContentType(contentType)
                     .build()
             )
-            Log.d("TtsEngine", "AudioAttributes set to channel=$channel usage=$usage")
+            Log.d(TAG, "AudioAttributes set to channel=$channel usage=$usage")
         }
     }
 
     override fun speak(text: String, utteranceId: String) {
         val ttsInstance = tts ?: run {
-            Log.e("TtsEngine", "speak() called but TTS not initialized")
+            Log.e(TAG, "speak() called but TTS not initialized")
             return
         }
         val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -189,9 +193,9 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, params)
         }
         if (result == TextToSpeech.ERROR) {
-            Log.e("TtsEngine", "speak() returned ERROR for utterance=$utteranceId")
+            Log.e(TAG, "speak() returned ERROR for utterance=$utteranceId")
         } else {
-            Log.d("TtsEngine", "speak() queued utterance=$utteranceId, result=$result")
+            Log.d(TAG, "speak() queued utterance=$utteranceId, result=$result")
         }
     }
 
@@ -216,23 +220,23 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
     private fun setupProgressListener(ttsInstance: TextToSpeech) {
         ttsInstance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {
-                Log.d("TtsEngine", "onStart: $utteranceId")
+                Log.d(TAG, "onStart: $utteranceId")
             }
             override fun onDone(utteranceId: String?) {
-                Log.d("TtsEngine", "onDone: $utteranceId")
+                Log.d(TAG, "onDone: $utteranceId")
                 utteranceId?.let { id ->
                     pendingUtterances.remove(id)?.invoke(true)
                 }
             }
             override fun onError(utteranceId: String?) {
-                Log.e("TtsEngine", "onError: $utteranceId")
+                Log.e(TAG, "onError: $utteranceId")
                 utteranceId?.let { id ->
                     pendingUtterances.remove(id)?.invoke(false)
                 }
             }
             @Suppress("OVERRIDE_DEPRECATION")
             override fun onError(utteranceId: String?, errorCode: Int) {
-                Log.e("TtsEngine", "onError: $utteranceId, code=$errorCode")
+                Log.e(TAG, "onError: $utteranceId, code=$errorCode")
                 utteranceId?.let { id ->
                     pendingUtterances.remove(id)?.invoke(false)
                 }
