@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.content.Intent
+import com.hourlyvoiceclock.util.openUrl
 import androidx.compose.material.icons.filled.SystemUpdate
 import com.hourlyvoiceclock.ui.home.UpdateStatus
 import com.hourlyvoiceclock.R
@@ -512,8 +513,7 @@ fun HomeScreen(
                                             Button(
                                                 onClick = {
                                                     try {
-                                                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(status.downloadUrl))
-                                                        context.startActivity(intent)
+                                                        context.openUrl(status.downloadUrl)
                                                     } catch (e: Exception) {
                                                         // Ignore or handle
                                                     }

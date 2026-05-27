@@ -1,6 +1,7 @@
 package com.hourlyvoiceclock.ui.voicesettings
 
 import android.content.Intent
+import com.hourlyvoiceclock.util.openTtsSettings
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke

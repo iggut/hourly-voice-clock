@@ -3,6 +3,8 @@ package com.hourlyvoiceclock.ui.schedulesettings
 import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Intent
+import com.hourlyvoiceclock.util.openAppNotificationSettings
+import com.hourlyvoiceclock.util.openIgnoreBatteryOptimizationSettings
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -456,10 +458,7 @@ fun ScheduleSettingsScreen(
                             TextButton(
                                 onClick = {
                                     showSettingsRedirectDialog = false
-                                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                    }
-                                    context.startActivity(intent)
+                                    context.openAppNotificationSettings()
                                 }
                             ) {
                                 Text("Open Settings", fontWeight = FontWeight.Bold)
@@ -659,8 +658,7 @@ fun ScheduleSettingsScreen(
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
                                 onClick = {
-                                    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                                    context.startActivity(intent)
+                                    context.openIgnoreBatteryOptimizationSettings()
                                 },
                                 shape = RoundedCornerShape(12.dp)
                             ) {
