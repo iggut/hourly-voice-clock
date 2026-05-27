@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -35,16 +35,15 @@ android {
                 storePassword = envKeystorePassword ?: ""
                 keyAlias = envKeyAlias ?: ""
                 keyPassword = envKeyPassword ?: ""
+            } else if (isReleaseTask) {
+                throw GradleException("Release signing credentials (KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD) " +
+                        "are missing or keystore file does not exist. Cannot build release APK without proper signing.")
             } else {
-                // Fallback configuration to debug keystore instead of failing
+                // Fallback to debug keystore for debug builds
                 storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
                 storePassword = "android"
                 keyAlias = "androiddebugkey"
                 keyPassword = "android"
-                if (isReleaseTask) {
-                    println("WARNING: Release signing credentials (KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD) " +
-                            "are missing or keystore file does not exist. Falling back to debug keystore for signing.")
-                }
             }
         }
     }
