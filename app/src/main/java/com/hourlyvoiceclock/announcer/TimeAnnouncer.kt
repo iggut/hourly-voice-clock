@@ -38,7 +38,7 @@ class TimeAnnouncer(
                 settings.quietHoursEnd
             )
             if (inQuiet) {
-                Log.d("TimeAnnouncer", "Blocked by quiet hours")
+                Log.d(TAG, "Blocked by quiet hours")
                 return
             }
         }
@@ -60,10 +60,10 @@ class TimeAnnouncer(
                 AudioChannel.CALL -> "Call"
             }
             Toast.makeText(context, "$label volume is muted. Turn up volume to hear announcements.", Toast.LENGTH_LONG).show()
-            Log.w("TimeAnnouncer", "Stream volume is 0 for $audioStream - cannot hear TTS")
+            Log.w(TAG, "Stream volume is 0 for $audioStream - cannot hear TTS")
             return
         }
-        Log.d("TimeAnnouncer", "Stream $audioStream volume: $streamVolume / $streamMax")
+        Log.d(TAG, "Stream $audioStream volume: $streamVolume / $streamMax")
 
         if (settings.vibrateBefore) {
             vibrate()
@@ -74,7 +74,7 @@ class TimeAnnouncer(
         }
 
         if (!ttsRepository.isAvailable()) {
-            Log.w("TimeAnnouncer", "TTS not available - attempting init")
+            Log.w(TAG, "TTS not available - attempting init")
         }
 
         val voiceSet = settings.selectedVoiceName?.let { voiceName ->
@@ -104,7 +104,7 @@ class TimeAnnouncer(
             includeDate = includeDate && settings.announceDateOnDemand
         )
 
-        Log.d("TimeAnnouncer", "Speaking: \"$text\" on channel=${settings.audioChannel}")
+        Log.d(TAG, "Speaking: \"$text\" on channel=${settings.audioChannel}")
 
         var focusRequest: AudioFocusRequest? = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -150,7 +150,7 @@ class TimeAnnouncer(
             ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
             if (!granted) {
-                Log.w("TimeAnnouncer", "Notification logging enabled but POST_NOTIFICATIONS is denied")
+                Log.w(TAG, "Notification logging enabled but POST_NOTIFICATIONS is denied")
                 return
             }
         }
@@ -186,7 +186,7 @@ class TimeAnnouncer(
 
         val resourceId = getChimeResourceId(chimeSound)
         if (resourceId == 0) {
-            Log.w("TimeAnnouncer", "No resource found for chime sound: $chimeSound")
+            Log.w(TAG, "No resource found for chime sound: $chimeSound")
             return
         }
 
@@ -204,10 +204,10 @@ class TimeAnnouncer(
                 }
                 mediaPlayer.start()
             } else {
-                Log.w("TimeAnnouncer", "Could not create MediaPlayer for chime: $chimeSound")
+                Log.w(TAG, "Could not create MediaPlayer for chime: $chimeSound")
             }
         } catch (e: Exception) {
-            Log.e("TimeAnnouncer", "Error playing chime: $chimeSound", e)
+            Log.e(TAG, "Error playing chime: $chimeSound", e)
         }
     }
 
@@ -225,6 +225,7 @@ class TimeAnnouncer(
     }
 
     companion object {
+        private const val TAG = "TimeAnnouncer"
         private const val NOTIFICATION_ID = 2001
     }
 }
