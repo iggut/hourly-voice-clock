@@ -60,8 +60,7 @@ object UpdateChecker {
 
                                     // Extract apk download url if available, fallback to html url
                                     var downloadUrl = htmlUrl
-                                    val assets = json.optJSONArray("assets")
-                                    if (assets != null) {
+                                    json.optJSONArray("assets")?.let { assets ->
                                         for (i in 0 until assets.length()) {
                                             val asset = assets.getJSONObject(i)
                                             val name = asset.optString("name", "")
