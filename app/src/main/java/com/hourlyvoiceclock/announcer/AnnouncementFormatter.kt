@@ -33,7 +33,7 @@ object AnnouncementFormatter {
         }
 
         return if (includeDate) {
-            val dateText = dateTime.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault()))
+            val dateText = dateTime.format(DATE_FORMATTER)
             "$phrase Today is $dateText."
         } else {
             phrase
@@ -64,4 +64,6 @@ object AnnouncementFormatter {
             else -> "Hello."
         }
     }
+
+    private val DATE_FORMATTER = DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())
 }
