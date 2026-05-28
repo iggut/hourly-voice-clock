@@ -58,6 +58,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -101,6 +102,7 @@ fun HomeScreen(
     val canSpeakNow by viewModel.canSpeakNow.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
     val updateStatus by viewModel.updateStatus.collectAsState()
+
     var showUpdatesDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -222,9 +224,12 @@ fun HomeScreen(
                                                 modifier = Modifier
                                                     .size(6.dp)
                                                     .clip(CircleShape)
+                                                    .graphicsLayer {
+                                                        alpha = if (hourlyEnabled && !quietHoursActive) pulseAlpha else 1f
+                                                    }
                                                     .background(
                                                         if (hourlyEnabled && !quietHoursActive)
-                                                            MaterialTheme.colorScheme.tertiary.copy(alpha = pulseAlpha)
+                                                            MaterialTheme.colorScheme.tertiary
                                                         else
                                                             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                                     )
