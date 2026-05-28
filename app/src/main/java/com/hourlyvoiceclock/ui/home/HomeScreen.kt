@@ -555,7 +555,14 @@ fun HomeScreen(
                                             Button(
                                                 onClick = {
                                                     try {
-                                                        context.openUrl(status.downloadUrl)
+                                                        val uri = android.net.Uri.parse(status.downloadUrl)
+                                                        val scheme = uri.scheme?.lowercase()
+                                                        if (scheme == "http" || scheme == "https") {
+                                                            val intent = Intent(Intent.ACTION_VIEW, uri)
+                                                            context.startActivity(intent)
+                                                        } else {
+                                                            android.util.Log.w("HomeScreen", "Attempted to open URL with invalid scheme: $scheme")
+                                                        }
                                                     } catch (e: Exception) {
                                                         // Ignore or handle
                                                     }
