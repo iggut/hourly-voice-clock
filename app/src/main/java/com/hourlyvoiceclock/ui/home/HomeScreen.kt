@@ -323,7 +323,11 @@ fun HomeScreen(
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { viewModel.toggleHourly(!hourlyEnabled) }
+                                .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -364,7 +368,7 @@ fun HomeScreen(
                             }
                             Switch(
                                 checked = hourlyEnabled,
-                                onCheckedChange = { viewModel.toggleHourly(it) }
+                                onCheckedChange = null
                             )
                         }
                         if (hourlyEnabled && nextAnnouncement.isNotBlank()) {
@@ -505,7 +509,11 @@ fun HomeScreen(
                                 Text("Current version: v$currentVersion", fontWeight = FontWeight.SemiBold)
                                 
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { viewModel.setAutoUpdateEnabled(!settings.autoUpdateEnabled) }
+                                        .padding(vertical = 4.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -515,7 +523,7 @@ fun HomeScreen(
                                     }
                                     Switch(
                                         checked = settings.autoUpdateEnabled,
-                                        onCheckedChange = { viewModel.setAutoUpdateEnabled(it) }
+                                        onCheckedChange = null
                                     )
                                 }
                                 
