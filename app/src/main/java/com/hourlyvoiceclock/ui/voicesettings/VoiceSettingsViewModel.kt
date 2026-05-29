@@ -22,6 +22,7 @@ data class SpecialVoicePreset(
     val preferredGender: String
 )
 
+// General voice presets that work with any TTS engine
 val SPECIAL_VOICE_PRESETS = listOf(
     SpecialVoicePreset("preset_robot", "Robot", 0.4f, 0.8f, "Male"),
     SpecialVoicePreset("preset_freeman", "Morgan Freeman", 0.82f, 0.85f, "Male"),
@@ -33,6 +34,22 @@ val SPECIAL_VOICE_PRESETS = listOf(
     SpecialVoicePreset("preset_donald", "Donald Duck", 2.0f, 2.0f, "Male"),
     SpecialVoicePreset("preset_nerdy", "Nerdy", 1.2f, 1.2f, "Male"),
     SpecialVoicePreset("preset_slowmo", "Slow Motion", 0.9f, 0.6f, "Male")
+)
+
+// eSpeak NG-specific fun voice variants
+val ESpeakNgVoiceVariants = listOf(
+    SpecialVoicePreset("espeak_robot", "Robot", 0.5f, 0.75f, "Male"),
+    SpecialVoicePreset("espeak_alien", "Alien", 1.5f, 0.9f, "Male"),
+    SpecialVoicePreset("espeak_monster", "Monster", 0.3f, 0.6f, "Male"),
+    SpecialVoicePreset("espeak_cartoon", "Cartoon", 1.8f, 1.4f, "Female"),
+    SpecialVoicePreset("espeak_deep", "Deep Voice", 0.35f, 0.85f, "Male"),
+    SpecialVoicePreset("espeak_chipmunk", "Chipmunk", 1.9f, 1.5f, "Female"),
+    SpecialVoicePreset("espeak_ghost", "Ghost", 0.6f, 0.7f, "Female"),
+    SpecialVoicePreset("espeak_dwarf", "Dwarf", 0.45f, 0.8f, "Male"),
+    SpecialVoicePreset("espeak_evil", "Evil", 0.55f, 1.1f, "Male"),
+    SpecialVoicePreset("espeak_wizard", "Wizard", 0.4f, 0.65f, "Male"),
+    SpecialVoicePreset("espeak_baby", "Baby", 2.2f, 1.3f, "Female"),
+    SpecialVoicePreset("espeak_robot_female", "Robot Female", 0.7f, 0.85f, "Female")
 )
 
 class VoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -49,6 +66,11 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     val selectedGender: StateFlow<String> = _selectedGender.asStateFlow()
 
     val specialPresets = SPECIAL_VOICE_PRESETS
+
+    val espeakNgVariants = ESpeakNgVoiceVariants
+
+    private val _isEspeakNgSelected = MutableStateFlow(false)
+    val isEspeakNgSelected: StateFlow<Boolean> = _isEspeakNgSelected.asStateFlow()
 
     private val _selectedVoiceName = MutableStateFlow<String?>(null)
     val selectedVoiceName: StateFlow<String?> = _selectedVoiceName.asStateFlow()
@@ -74,6 +96,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             
             val settings = settingsRepo.settings.first()
             _selectedEnginePackage.value = settings.selectedTtsEnginePackage ?: ttsRepo.getEngines().firstOrNull { it.isInstalled }?.packageName
+            _isEspeakNgSelected.value = _selectedEnginePackage.value?.contains("espeak", ignoreCase = true) == true
             _selectedVoiceName.value = settings.selectedVoiceName
             _pitch.value = settings.pitch
             _speechRate.value = settings.speechRate
@@ -97,6 +120,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             if (success) {
                 settingsRepo.setSelectedTtsEnginePackage(packageName)
                 _selectedEnginePackage.value = packageName
+                _isEspeakNgSelected.value = packageName?.contains("espeak", ignoreCase = true) == true
                 
                 // Clear selected voice since engine changed
                 settingsRepo.setSelectedVoice(null, null)

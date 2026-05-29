@@ -91,6 +91,7 @@ fun VoiceSettingsScreen(
     val selectedGender by viewModel.selectedGender.collectAsState()
     val engines by viewModel.engines.collectAsState()
     val selectedEnginePackage by viewModel.selectedEnginePackage.collectAsState()
+    val isEspeakNgSelected by viewModel.isEspeakNgSelected.collectAsState()
     val context = LocalContext.current
 
     val isDark = isSystemInDarkTheme()
@@ -339,6 +340,82 @@ fun VoiceSettingsScreen(
                                             style = MaterialTheme.typography.labelSmall,
                                             color = Color.White.copy(alpha = 0.85f)
                                         )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // eSpeak NG Voice Variants Section (only show when eSpeak NG is selected)
+                if (isEspeakNgSelected) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = Color(0xFF06B6D4),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "eSpeak NG Voice Variants",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color(0xFF06B6D4),
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                        
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            viewModel.espeakNgVariants.forEach { preset ->
+                                val presetGradient = when (preset.id) {
+                                    "espeak_robot" -> Brush.horizontalGradient(listOf(Color(0xFF06B6D4), Color(0xFF0891B2)))
+                                    "espeak_alien" -> Brush.horizontalGradient(listOf(Color(0xFF22C55E), Color(0xFF16A34A)))
+                                    "espeak_monster" -> Brush.horizontalGradient(listOf(Color(0xFF6B21A8), Color(0xFF5B21B6)))
+                                    "espeak_cartoon" -> Brush.horizontalGradient(listOf(Color(0xFFEC4899), Color(0xFFDB2777)))
+                                    "espeak_deep" -> Brush.horizontalGradient(listOf(Color(0xFF78716C), Color(0xFF57534E)))
+                                    "espeak_chipmunk" -> Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF059669)))
+                                    "espeak_ghost" -> Brush.horizontalGradient(listOf(Color(0xFFE2E8F0), Color(0xFFCBD5E1)))
+                                    "espeak_dwarf" -> Brush.horizontalGradient(listOf(Color(0xFFF97316), Color(0xFFEA580C)))
+                                    "espeak_evil" -> Brush.horizontalGradient(listOf(Color(0xFFDC2626), Color(0xFFB91C1C)))
+                                    "espeak_wizard" -> Brush.horizontalGradient(listOf(Color(0xFF7C3AED), Color(0xFF6D28D9)))
+                                    "espeak_baby" -> Brush.horizontalGradient(listOf(Color(0xFFF472B6), Color(0xFFDB2777)))
+                                    "espeak_robot_female" -> Brush.horizontalGradient(listOf(Color(0xFF14B8A6), Color(0xFF0D9488)))
+                                    else -> Brush.horizontalGradient(listOf(Color(0xFF6366F1), Color(0xFF4F46E5)))
+                                }
+
+                                Card(
+                                    modifier = Modifier
+                                        .width(130.dp)
+                                        .clickable { viewModel.selectVoicePreset(preset) },
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .background(presetGradient)
+                                            .padding(14.dp)
+                                            .fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = preset.displayName,
+                                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                                color = Color.White
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "Pitch: %.1f".format(preset.pitch),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color.White.copy(alpha = 0.85f)
+                                            )
+                                        }
                                     }
                                 }
                             }

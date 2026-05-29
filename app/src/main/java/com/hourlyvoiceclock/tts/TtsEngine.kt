@@ -29,6 +29,8 @@ interface TtsEngine {
     fun shutdown()
     suspend fun switchEngine(enginePackage: String?): Boolean
     fun getEngines(): List<TtsEngineInfo>
+    fun getCurrentEnginePackage(): String?
+    fun isEspeakNgEngine(): Boolean
 }
 
 data class TtsEngineInfo(
@@ -110,8 +112,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         // Define standard popular engines to show even if not installed
         val knownEngines = listOf(
             TtsEngineInfo("com.google.android.tts", "Speech Services by Google", false),
-            TtsEngineInfo("com.redzoc.ramees.tts.espeak", "eSpeak NG", false),
-            TtsEngineInfo("com.github.olga_yakovleva.rhvoice.android", "RHVoice", false)
+            TtsEngineInfo("com.redzoc.ramees.tts.espeak", "eSpeak NG", false)
         )
         
         val result = installed.toMutableList()
@@ -122,6 +123,13 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             }
         }
         return result
+    }
+
+    override fun getCurrentEnginePackage(): String? = currentEnginePackage
+
+    override fun isEspeakNgEngine(): Boolean {
+        return currentEnginePackage?.contains("espeak", ignoreCase = true) == true ||
+               currentEnginePackage == "com.redzoc.ramees.tts.espeak"
     }
 
     override fun isAvailable(): Boolean = initOk && tts != null
