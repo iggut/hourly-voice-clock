@@ -123,13 +123,15 @@ fun HomeScreen(
         )
     )
 
-    // Pulsing animation for active indicator
+    // Pulsing animation for seconds indicator
+    // When hourlyEnabled && !quietHoursActive: static solid (announcement active)
+    // Otherwise: slow 2s pulse to indicate "monitoring in progress"
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
+        initialValue = 0.6f,
         targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseAlpha"
@@ -229,9 +231,9 @@ fun HomeScreen(
                                                     }
                                                     .background(
                                                         if (hourlyEnabled && !quietHoursActive)
-                                                            MaterialTheme.colorScheme.tertiary
+                                                            MaterialTheme.colorScheme.tertiary.copy(alpha = 1.0f)
                                                         else
-                                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                                            MaterialTheme.colorScheme.tertiary.copy(alpha = pulseAlpha)
                                                     )
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
@@ -239,7 +241,8 @@ fun HomeScreen(
                                                 text = seconds,
                                                 style = MaterialTheme.typography.titleMedium.copy(
                                                     fontWeight = FontWeight.SemiBold,
-                                                    fontFamily = FontFamily.Monospace
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontFeatureSettings = "tnum"
                                                 ),
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -272,41 +275,41 @@ fun HomeScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
                         // Current Date
                         Text(
                             text = LocalDate.now().format(DATE_FORMATTER),
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    }
-                }
 
-                // Announce Now Floating Button
-                Button(
-                    onClick = { viewModel.announceNow() },
-                    enabled = canSpeakNow,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        stringResource(R.string.announce_now),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Announce Now Button - embedded as footer inside clock card
+                        Button(
+                            onClick = { viewModel.announceNow() },
+                            enabled = canSpeakNow,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                stringResource(R.string.announce_now),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    }
                 }
 
                 // Hourly Announcement Toggle Card
@@ -344,7 +347,7 @@ fun HomeScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.NotificationsActive,
+                                        imageVector = Icons.Filled.NotificationsActive,
                                         contentDescription = null,
                                         tint = if (hourlyEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -377,7 +380,7 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Schedule,
+                                    imageVector = Icons.Filled.Schedule,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
@@ -422,22 +425,12 @@ fun HomeScreen(
                     }
                 }
 
-                // Dashboard Category Section Title
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Quick Settings",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-
-                // Quick Settings Dashboard Cards
+                // Dashboard Category Section
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
                 ) {
                     val voiceSubtitle = settings.selectedVoiceName ?: "System Default voice"
                     DashboardCard(
@@ -459,7 +452,7 @@ fun HomeScreen(
                     DashboardCard(
                         title = stringResource(R.string.format_settings),
                         subtitle = formatSubtitle,
-                        icon = Icons.Default.Tune,
+                        icon = Icons.Filled.Tune,
                         onClick = onNavigateToFormatSettings
                     )
 
@@ -476,7 +469,7 @@ fun HomeScreen(
                     DashboardCard(
                         title = stringResource(R.string.schedule_settings),
                         subtitle = scheduleSubtitle,
-                        icon = Icons.Default.Schedule,
+                        icon = Icons.Filled.Schedule,
                         onClick = onNavigateToScheduleSettings
                     )
 
@@ -491,7 +484,7 @@ fun HomeScreen(
                     DashboardCard(
                         title = "App Updates",
                         subtitle = updateSubtitle,
-                        icon = Icons.Default.SystemUpdate,
+                        icon = Icons.Filled.SystemUpdate,
                         onClick = { showUpdatesDialog = true }
                     )
                 }
@@ -639,13 +632,16 @@ fun DashboardCard(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(
+                        if (isDark) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                        else MaterialTheme.colorScheme.primaryContainer
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = if (isDark) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(20.dp)
                 )
             }

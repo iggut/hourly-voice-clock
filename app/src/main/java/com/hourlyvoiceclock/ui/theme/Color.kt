@@ -21,5 +21,5 @@ val LightBgEnd = Color(0xFFEEF2F6)
 val GlassBorderDark = Color(0xFFFFFFFF).copy(alpha = 0.08f)
 val GlassBorderLight = Color(0xFF000000).copy(alpha = 0.06f)
 val GlassBgDark = Color(0xFF1E293B).copy(alpha = 0.6f)
-val GlassBgLight = Color(0xFFFFFFFF).copy(alpha = 0.7f)
+val GlassBgLight = Color(0xFFFFFFFF).copy(alpha = 0.5f)
 

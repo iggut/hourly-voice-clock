@@ -70,9 +70,22 @@ class TimeAnnouncer(
         }
 
         if (settings.chimeSound != ChimeSound.NONE) {
-            playChime(settings.chimeSound)
+            playChime(settings.chimeSound) {
+                speakText(settings, dateTime, includeDate, audioManager, usage, audioStream)
+            }
+        } else {
+            speakText(settings, dateTime, includeDate, audioManager, usage, audioStream)
         }
+    }
 
+    private fun speakText(
+        settings: AppSettings,
+        dateTime: LocalDateTime,
+        includeDate: Boolean,
+        audioManager: AudioManager?,
+        usage: Int,
+        audioStream: Int
+    ) {
         if (!ttsRepository.isAvailable()) {
             Log.w(TAG, "TTS not available - attempting init")
         }
@@ -181,12 +194,16 @@ class TimeAnnouncer(
         }
     }
 
-    private fun playChime(chimeSound: ChimeSound) {
-        if (chimeSound == ChimeSound.NONE) return
+    private fun playChime(chimeSound: ChimeSound, onComplete: () -> Unit) {
+        if (chimeSound == ChimeSound.NONE) {
+            onComplete()
+            return
+        }
 
         val resourceId = getChimeResourceId(chimeSound)
         if (resourceId == 0) {
             Log.w(TAG, "No resource found for chime sound: $chimeSound")
+            onComplete()
             return
         }
 
@@ -201,13 +218,16 @@ class TimeAnnouncer(
                 )
                 mediaPlayer.setOnCompletionListener { mp ->
                     mp.release()
+                    onComplete()
                 }
                 mediaPlayer.start()
             } else {
                 Log.w(TAG, "Could not create MediaPlayer for chime: $chimeSound")
+                onComplete()
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error playing chime: $chimeSound", e)
+            onComplete()
         }
     }
 

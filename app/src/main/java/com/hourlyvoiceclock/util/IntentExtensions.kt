@@ -24,6 +24,19 @@ fun Context.openTtsSettings() {
     startActivity(intent)
 }
 
+fun Context.openTtsEngineSettings(enginePackage: String) {
+    val intent = Intent("android.settings.TTS_SETTINGS").apply {
+        putExtra("android.speech.extras.EXTRA_TTS_ENGINE_PACKAGE_NAME", enginePackage)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+    try {
+        startActivity(intent)
+    } catch (e: Exception) {
+        // Fallback to generic TTS settings
+        openTtsSettings()
+    }
+}
+
 fun Context.openUrl(url: String) {
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
     startActivity(intent)

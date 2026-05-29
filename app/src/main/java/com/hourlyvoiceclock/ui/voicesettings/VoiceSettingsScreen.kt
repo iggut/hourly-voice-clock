@@ -1,6 +1,7 @@
 package com.hourlyvoiceclock.ui.voicesettings
 
 import android.content.Intent
+import com.hourlyvoiceclock.util.openTtsEngineSettings
 import com.hourlyvoiceclock.util.openTtsSettings
 import android.net.Uri
 import android.provider.Settings
@@ -170,18 +171,24 @@ fun VoiceSettingsScreen(
                                 modifier = Modifier
                                     .width(160.dp)
                                     .clickable {
-                                        if (engine.isInstalled) {
-                                            viewModel.switchTtsEngine(engine.packageName)
-                                        } else {
-                                            val playStoreUri = Uri.parse("market://details?id=${engine.packageName}")
-                                            val playStoreIntent = Intent(Intent.ACTION_VIEW, playStoreUri).apply {
-                                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        when {
+                                            engine.isInstalled && isSelected -> {
+                                                context.openTtsEngineSettings(engine.packageName)
                                             }
-                                            try {
-                                                context.startActivity(playStoreIntent)
-                                            } catch (e: Exception) {
-                                                val webUri = Uri.parse("https://play.google.com/store/apps/details?id=${engine.packageName}")
-                                                context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                                            engine.isInstalled -> {
+                                                viewModel.switchTtsEngine(engine.packageName)
+                                            }
+                                            else -> {
+                                                val playStoreUri = Uri.parse("market://details?id=${engine.packageName}")
+                                                val playStoreIntent = Intent(Intent.ACTION_VIEW, playStoreUri).apply {
+                                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                }
+                                                try {
+                                                    context.startActivity(playStoreIntent)
+                                                } catch (e: Exception) {
+                                                    val webUri = Uri.parse("https://play.google.com/store/apps/details?id=${engine.packageName}")
+                                                    context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                                                }
                                             }
                                         }
                                     },
@@ -202,7 +209,10 @@ fun VoiceSettingsScreen(
                                     
                                     if (engine.isInstalled) {
                                         Text(
-                                            text = if (isSelected) "Active" else "Tap to Switch",
+                                            text = when {
+                                                isSelected -> "Active — Tap for Settings"
+                                                else -> "Tap to Switch"
+                                            },
                                             style = MaterialTheme.typography.labelSmall,
                                             color = textTint.copy(alpha = 0.7f)
                                         )
