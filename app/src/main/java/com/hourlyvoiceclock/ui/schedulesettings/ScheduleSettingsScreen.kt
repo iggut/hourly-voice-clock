@@ -234,7 +234,17 @@ fun ScheduleSettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    val enabled = !exactAlarms
+                                    viewModel.setExactAlarmsEnabled(enabled)
+                                    if (enabled && !canScheduleExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                        showExactAlarmDialog = true
+                                    }
+                                }
+                                .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -281,12 +291,7 @@ fun ScheduleSettingsScreen(
                             }
                             Switch(
                                 checked = exactAlarms,
-                                onCheckedChange = { enabled ->
-                                    viewModel.setExactAlarmsEnabled(enabled)
-                                    if (enabled && !canScheduleExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        showExactAlarmDialog = true
-                                    }
-                                }
+                                onCheckedChange = null
                             )
                         }
 
@@ -335,7 +340,11 @@ fun ScheduleSettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { viewModel.setQuietHoursEnabled(!quietEnabled) }
+                                .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -368,7 +377,7 @@ fun ScheduleSettingsScreen(
                             }
                             Switch(
                                 checked = quietEnabled,
-                                onCheckedChange = { viewModel.setQuietHoursEnabled(it) }
+                                onCheckedChange = null
                             )
                         }
 
@@ -423,7 +432,11 @@ fun ScheduleSettingsScreen(
                             )
 
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { viewModel.setAllowManualDuringQuiet(!allowManual) }
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -434,7 +447,7 @@ fun ScheduleSettingsScreen(
                                 )
                                 Switch(
                                     checked = allowManual,
-                                    onCheckedChange = { viewModel.setAllowManualDuringQuiet(it) }
+                                    onCheckedChange = null
                                 )
                             }
                         }
@@ -513,7 +526,32 @@ fun ScheduleSettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    val checked = !notificationLogging
+                                    if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                                        val activity = context as? androidx.activity.ComponentActivity
+                                        val shouldShowRationale = activity?.let {
+                                            androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
+                                                it,
+                                                Manifest.permission.POST_NOTIFICATIONS
+                                            )
+                                        } ?: false
+
+                                        if (shouldShowRationale) {
+                                            showRationaleDialog = true
+                                        } else {
+                                            // Either first request or permanently denied.
+                                            // We check settings.notificationLogging's prior state or try launching direct.
+                                            // Let's trigger launcher first:
+                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                    }
+                                    viewModel.setNotificationLogging(checked)
+                                }
+                                .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -551,27 +589,7 @@ fun ScheduleSettingsScreen(
                             }
                             Switch(
                                 checked = notificationLogging,
-                                onCheckedChange = { checked ->
-                                    if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
-                                        val activity = context as? androidx.activity.ComponentActivity
-                                        val shouldShowRationale = activity?.let {
-                                            androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
-                                                it,
-                                                Manifest.permission.POST_NOTIFICATIONS
-                                            )
-                                        } ?: false
-                                        
-                                        if (shouldShowRationale) {
-                                            showRationaleDialog = true
-                                        } else {
-                                            // Either first request or permanently denied.
-                                            // We check settings.notificationLogging's prior state or try launching direct.
-                                            // Let's trigger launcher first:
-                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                        }
-                                    }
-                                    viewModel.setNotificationLogging(checked)
-                                }
+                                onCheckedChange = null
                             )
                         }
 
