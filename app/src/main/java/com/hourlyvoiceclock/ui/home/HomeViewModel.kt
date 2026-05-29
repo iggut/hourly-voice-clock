@@ -48,6 +48,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentTime = MutableStateFlow("")
     val currentTime: StateFlow<String> = _currentTime.asStateFlow()
 
+    private val _currentDate = MutableStateFlow("")
+    val currentDate: StateFlow<String> = _currentDate.asStateFlow()
+
     private val _nextAnnouncement = MutableStateFlow("")
     val nextAnnouncement: StateFlow<String> = _nextAnnouncement.asStateFlow()
 
@@ -96,6 +99,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private fun updateTime() {
         val now = LocalDateTime.now()
         _currentTime.value = now.format(TIME_FORMATTER)
+        _currentDate.value = now.format(DATE_FORMATTER)
     }
 
     private fun updateNextAnnouncement(enabled: Boolean) {
@@ -189,6 +193,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private val TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm:ss a")
+        private val DATE_FORMATTER = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")
         private val NEXT_ANNOUNCEMENT_FORMATTER = DateTimeFormatter.ofPattern("h:mm a")
     }
 }

@@ -84,8 +84,6 @@ import com.hourlyvoiceclock.ui.theme.LightBgStart
 import com.hourlyvoiceclock.ui.theme.LightBgEnd
 import com.hourlyvoiceclock.ui.theme.DarkBgStart
 import com.hourlyvoiceclock.ui.theme.DarkBgEnd
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,6 +94,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(LocalContext.current.applicationContext as android.app.Application))
 ) {
     val currentTime by viewModel.currentTime.collectAsState()
+    val currentDate by viewModel.currentDate.collectAsState()
     val nextAnnouncement by viewModel.nextAnnouncement.collectAsState()
     val quietHoursActive by viewModel.quietHoursActive.collectAsState()
     val hourlyEnabled by viewModel.hourlyEnabled.collectAsState()
@@ -277,7 +276,7 @@ fun HomeScreen(
 
                         // Current Date
                         Text(
-                            text = LocalDate.now().format(DATE_FORMATTER),
+                            text = currentDate,
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -599,7 +598,6 @@ fun HomeScreen(
     }
 }
 
-private val DATE_FORMATTER = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")
 
 @Composable
 fun DashboardCard(
