@@ -7,6 +7,9 @@ on:
         description: 'Version tag (e.g., v1.0.0)'
         required: true
         type: string
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -76,18 +79,19 @@ jobs:
       - name: Rename release APK and compute checksum
         id: rename
         run: |
-          VERSION_TAG="${{ inputs.version_tag }}"
+          VERSION_TAG="${{ inputs.version_tag || github.ref_name }}"
           APK_NAME="hourly-voice-clock-${VERSION_TAG}-release.apk"
           cp app/build/outputs/apk/release/app-release.apk "$APK_NAME"
           sha256sum "$APK_NAME" > "${APK_NAME}.sha256"
           echo "renamed_apk=$APK_NAME" >> $GITHUB_OUTPUT
           echo "sha_file=${APK_NAME}.sha256" >> $GITHUB_OUTPUT
+          echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.version_tag }}
-          name: Release ${{ inputs.version_tag }}
+          tag_name: ${{ steps.rename.outputs.version_tag }}
+          name: Release ${{ steps.rename.outputs.version_tag }}
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             ${{ steps.rename.outputs.renamed_apk }}
