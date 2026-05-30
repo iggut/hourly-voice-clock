@@ -12,8 +12,8 @@ android {
         applicationId = "com.hourlyvoiceclock"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.3-alpha"
+        versionCode = 3
+        versionName = "0.3.1-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

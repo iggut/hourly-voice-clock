@@ -35,6 +35,7 @@ data class AppSettings(
     val hourlyAnnouncementsEnabled: Boolean = false,
     val selectedVoiceName: String? = null,
     val selectedLocale: String? = null,
+    val selectedVoicePresetId: String? = null,
     val pitch: Float = 1.0f,
     val speechRate: Float = 1.0f,
     val timeFormat: TimeFormat = TimeFormat.HOUR_12,

@@ -5,8 +5,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.tts.AndroidTtsEngine
 import com.hourlyvoiceclock.tts.TtsEngine
+import kotlinx.coroutines.runBlocking
 
 class HourlyVoiceClockApp : Application() {
 
@@ -15,6 +17,9 @@ class HourlyVoiceClockApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        runBlocking {
+            SettingsRepository(this@HourlyVoiceClockApp).runMigrations()
+        }
         ttsEngine = AndroidTtsEngine(this)
         createNotificationChannel()
     }

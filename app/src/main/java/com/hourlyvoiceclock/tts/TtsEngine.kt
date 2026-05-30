@@ -1,6 +1,8 @@
 package com.hourlyvoiceclock.tts
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.os.Build
 import android.speech.tts.TextToSpeech
@@ -63,6 +65,16 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
                 currentEnginePackage = repository.settings.first().selectedTtsEnginePackage
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load saved TTS engine package", e)
+            }
+        }
+
+        if (!currentEnginePackage.isNullOrBlank() && !isEngineInstalled(currentEnginePackage!!)) {
+            Log.w(TAG, "Saved TTS engine not installed ($currentEnginePackage), using system default")
+            currentEnginePackage = null
+            try {
+                SettingsRepository(appContext).setSelectedTtsEnginePackage(null)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to clear invalid saved TTS engine package", e)
             }
         }
 
@@ -345,6 +357,15 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
     )
 
     private val GENDER_SPLIT_REGEX = Regex("[\\-_#\\s]")
+
+    private fun isEngineInstalled(packageName: String): Boolean {
+        val intent = Intent(TextToSpeech.Engine.INTENT_ACTION_TTS_SERVICE)
+        val services = appContext.packageManager.queryIntentServices(
+            intent,
+            PackageManager.MATCH_DEFAULT_ONLY
+        )
+        return services.any { it.serviceInfo.packageName == packageName }
+    }
 
     private fun inferGender(name: String): String? {
         val lower = name.lowercase()

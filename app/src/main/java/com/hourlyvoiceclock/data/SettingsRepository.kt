@@ -2,9 +2,11 @@ package com.hourlyvoiceclock.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -12,7 +14,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalTime
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "settings",
+    corruptionHandler = ReplaceFileCorruptionHandler(
+        produceNewData = { emptyPreferences() }
+    )
+)
 
 class SettingsRepository(private val context: Context) {
 
@@ -21,6 +28,7 @@ class SettingsRepository(private val context: Context) {
             hourlyAnnouncementsEnabled = prefs[KEY_HOURLY_ANNOUNCEMENTS] ?: false,
             selectedVoiceName = prefs[KEY_SELECTED_VOICE_NAME]?.takeIf { it.isNotBlank() },
             selectedLocale = prefs[KEY_SELECTED_LOCALE]?.takeIf { it.isNotBlank() },
+            selectedVoicePresetId = prefs[KEY_SELECTED_VOICE_PRESET_ID]?.takeIf { it.isNotBlank() },
             pitch = prefs[KEY_PITCH] ?: 1.0f,
             speechRate = prefs[KEY_SPEECH_RATE] ?: 1.0f,
             timeFormat = safeEnumValueOf(prefs[KEY_TIME_FORMAT], TimeFormat.HOUR_12),
@@ -46,10 +54,27 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[KEY_HOURLY_ANNOUNCEMENTS] = enabled }
     }
 
+    suspend fun runMigrations() {
+        context.dataStore.edit { prefs ->
+            SettingsMigration.migrateInPlace(prefs)
+        }
+    }
+
     suspend fun setSelectedVoice(voiceName: String?, locale: String?) {
         context.dataStore.edit {
             it[KEY_SELECTED_VOICE_NAME] = voiceName ?: ""
             it[KEY_SELECTED_LOCALE] = locale ?: ""
+            it.remove(KEY_SELECTED_VOICE_PRESET_ID)
+        }
+    }
+
+    suspend fun setSelectedVoicePreset(presetId: String?) {
+        context.dataStore.edit {
+            if (presetId.isNullOrBlank()) {
+                it.remove(KEY_SELECTED_VOICE_PRESET_ID)
+            } else {
+                it[KEY_SELECTED_VOICE_PRESET_ID] = presetId
+            }
         }
     }
 
@@ -157,6 +182,7 @@ class SettingsRepository(private val context: Context) {
         private val KEY_HOURLY_ANNOUNCEMENTS = booleanPreferencesKey("hourly_announcements")
         private val KEY_SELECTED_VOICE_NAME = stringPreferencesKey("selected_voice_name")
         private val KEY_SELECTED_LOCALE = stringPreferencesKey("selected_locale")
+        private val KEY_SELECTED_VOICE_PRESET_ID = stringPreferencesKey("selected_voice_preset_id")
         private val KEY_PITCH = floatPreferencesKey("pitch")
         private val KEY_SPEECH_RATE = floatPreferencesKey("speech_rate")
         private val KEY_TIME_FORMAT = stringPreferencesKey("time_format")

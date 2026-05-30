@@ -14,6 +14,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+enum class VoiceListFilter {
+    ALL,
+    MALE,
+    FEMALE,
+    SPECIAL
+}
+
 data class SpecialVoicePreset(
     val id: String,
     val displayName: String,
@@ -62,15 +69,22 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     private val _normalVoicesByLocale = MutableStateFlow<Map<String, List<VoiceInfo>>>(emptyMap())
     val normalVoicesByLocale: StateFlow<Map<String, List<VoiceInfo>>> = _normalVoicesByLocale.asStateFlow()
 
-    private val _selectedGender = MutableStateFlow("All")
-    val selectedGender: StateFlow<String> = _selectedGender.asStateFlow()
+    private val _selectedFilter = MutableStateFlow(VoiceListFilter.ALL)
+    val selectedFilter: StateFlow<VoiceListFilter> = _selectedFilter.asStateFlow()
 
-    val specialPresets = SPECIAL_VOICE_PRESETS
-
-    val espeakNgVariants = ESpeakNgVoiceVariants
+    private val _selectedPresetId = MutableStateFlow<String?>(null)
+    val selectedPresetId: StateFlow<String?> = _selectedPresetId.asStateFlow()
 
     private val _isEspeakNgSelected = MutableStateFlow(false)
     val isEspeakNgSelected: StateFlow<Boolean> = _isEspeakNgSelected.asStateFlow()
+
+    val activeSpecialPresets: List<SpecialVoicePreset>
+        get() = buildList {
+            addAll(SPECIAL_VOICE_PRESETS)
+            if (_isEspeakNgSelected.value) {
+                addAll(ESpeakNgVoiceVariants)
+            }
+        }
 
     private val _selectedVoiceName = MutableStateFlow<String?>(null)
     val selectedVoiceName: StateFlow<String?> = _selectedVoiceName.asStateFlow()
@@ -92,25 +106,29 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     init {
         viewModelScope.launch {
+            settingsRepo.runMigrations()
             ttsRepo.initialize()
-            
+
             val settings = settingsRepo.settings.first()
-            _selectedEnginePackage.value = settings.selectedTtsEnginePackage ?: ttsRepo.getEngines().firstOrNull { it.isInstalled }?.packageName
+            _selectedEnginePackage.value = settings.selectedTtsEnginePackage
+                ?: ttsRepo.getEngines().firstOrNull { it.isInstalled }?.packageName
             _isEspeakNgSelected.value = _selectedEnginePackage.value?.contains("espeak", ignoreCase = true) == true
             _selectedVoiceName.value = settings.selectedVoiceName
+            _selectedPresetId.value = settings.selectedVoicePresetId
             _pitch.value = settings.pitch
             _speechRate.value = settings.speechRate
-            
+
             _engines.value = ttsRepo.getEngines()
             allNormalVoices = ttsRepo.getAllVoices()
             _hasMultipleVoices.value = allNormalVoices.size > 1
-            
+
+            reconcileStaleVoiceSelection(settings.selectedVoiceName, settings.selectedLocale)
             updateFilteredVoices()
         }
     }
 
-    fun setGenderFilter(gender: String) {
-        _selectedGender.value = gender
+    fun setVoiceFilter(filter: VoiceListFilter) {
+        _selectedFilter.value = filter
         updateFilteredVoices()
     }
 
@@ -120,30 +138,54 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             if (success) {
                 settingsRepo.setSelectedTtsEnginePackage(packageName)
                 _selectedEnginePackage.value = packageName
-                _isEspeakNgSelected.value = packageName?.contains("espeak", ignoreCase = true) == true
-                
-                // Clear selected voice since engine changed
-                settingsRepo.setSelectedVoice(null, null)
-                _selectedVoiceName.value = null
+                _isEspeakNgSelected.value = packageName.contains("espeak", ignoreCase = true)
 
-                // Reload engines and voices
+                settingsRepo.setSelectedVoice(null, null)
+                settingsRepo.setSelectedVoicePreset(null)
+                _selectedVoiceName.value = null
+                _selectedPresetId.value = null
+
                 _engines.value = ttsRepo.getEngines()
                 allNormalVoices = ttsRepo.getAllVoices()
                 _hasMultipleVoices.value = allNormalVoices.size > 1
-                
+
                 updateFilteredVoices()
             }
         }
     }
 
     private fun updateFilteredVoices() {
-        val gender = _selectedGender.value
-        val filtered = if (gender == "All") {
+        if (_selectedFilter.value == VoiceListFilter.SPECIAL) {
+            _normalVoicesByLocale.value = emptyMap()
+            return
+        }
+
+        val genderFilter = when (_selectedFilter.value) {
+            VoiceListFilter.MALE -> "Male"
+            VoiceListFilter.FEMALE -> "Female"
+            else -> null
+        }
+
+        val filtered = if (genderFilter == null) {
             allNormalVoices
         } else {
-            allNormalVoices.filter { it.genderLabel == gender }
+            allNormalVoices.filter { it.genderLabel == genderFilter }
         }
         _normalVoicesByLocale.value = filtered.groupBy { it.localeDisplayName }
+    }
+
+    private suspend fun reconcileStaleVoiceSelection(savedVoiceName: String?, savedLocale: String?) {
+        if (savedVoiceName.isNullOrBlank()) return
+
+        val voiceStillExists = allNormalVoices.any {
+            it.name == savedVoiceName && (savedLocale.isNullOrBlank() || it.localeTag == savedLocale)
+        }
+        if (voiceStillExists) return
+
+        settingsRepo.setSelectedVoice(null, null)
+        settingsRepo.setSelectedVoicePreset(null)
+        _selectedVoiceName.value = null
+        _selectedPresetId.value = null
     }
 
     fun selectVoice(voiceName: String, localeTag: String) {
@@ -151,23 +193,37 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             ttsRepo.selectVoice(voiceName, localeTag)
             settingsRepo.setSelectedVoice(voiceName, localeTag)
             _selectedVoiceName.value = voiceName
+            _selectedPresetId.value = null
         }
     }
 
     fun selectVoicePreset(preset: SpecialVoicePreset) {
         viewModelScope.launch {
-            val underlyingVoice = allNormalVoices.find { it.localeTag.startsWith("en-US") && it.genderLabel == preset.preferredGender }
-                ?: allNormalVoices.find { it.localeTag.startsWith("en-") }
-                ?: allNormalVoices.firstOrNull()
+            applyPreset(preset)
+        }
+    }
 
-            if (underlyingVoice != null) {
-                ttsRepo.selectVoice(underlyingVoice.name, underlyingVoice.localeTag)
-                settingsRepo.setSelectedVoice(underlyingVoice.name, underlyingVoice.localeTag)
-                _selectedVoiceName.value = underlyingVoice.name
+    private suspend fun applyPreset(preset: SpecialVoicePreset) {
+        val underlyingVoice = allNormalVoices.find {
+            it.localeTag.startsWith("en-US") && it.genderLabel == preset.preferredGender
+        }
+            ?: allNormalVoices.find { it.localeTag.startsWith("en-") }
+            ?: allNormalVoices.firstOrNull()
 
-                setPitch(preset.pitch)
-                setSpeechRate(preset.speechRate)
-            }
+        if (underlyingVoice != null) {
+            ttsRepo.selectVoice(underlyingVoice.name, underlyingVoice.localeTag)
+            settingsRepo.setSelectedVoice(underlyingVoice.name, underlyingVoice.localeTag)
+            settingsRepo.setSelectedVoicePreset(preset.id)
+            _selectedVoiceName.value = underlyingVoice.name
+            _selectedPresetId.value = preset.id
+
+            ttsRepo.setPitch(preset.pitch)
+            settingsRepo.setPitch(preset.pitch)
+            _pitch.value = preset.pitch
+
+            ttsRepo.setSpeechRate(preset.speechRate)
+            settingsRepo.setSpeechRate(preset.speechRate)
+            _speechRate.value = preset.speechRate
         }
     }
 
@@ -196,6 +252,14 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             ttsRepo.selectVoice(voiceName, localeTag)
             settingsRepo.setSelectedVoice(voiceName, localeTag)
             _selectedVoiceName.value = voiceName
+            _selectedPresetId.value = null
+            ttsRepo.previewVoice("The time is 3:45 PM.")
+        }
+    }
+
+    fun selectAndPreviewPreset(preset: SpecialVoicePreset) {
+        viewModelScope.launch {
+            applyPreset(preset)
             ttsRepo.previewVoice("The time is 3:45 PM.")
         }
     }

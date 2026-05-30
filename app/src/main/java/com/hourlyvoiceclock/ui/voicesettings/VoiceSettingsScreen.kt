@@ -88,7 +88,8 @@ fun VoiceSettingsScreen(
     val pitch by viewModel.pitch.collectAsState()
     val speechRate by viewModel.speechRate.collectAsState()
     val hasMultiple by viewModel.hasMultipleVoices.collectAsState()
-    val selectedGender by viewModel.selectedGender.collectAsState()
+    val selectedFilter by viewModel.selectedFilter.collectAsState()
+    val selectedPresetId by viewModel.selectedPresetId.collectAsState()
     val engines by viewModel.engines.collectAsState()
     val selectedEnginePackage by viewModel.selectedEnginePackage.collectAsState()
     val isEspeakNgSelected by viewModel.isEspeakNgSelected.collectAsState()
@@ -275,154 +276,6 @@ fun VoiceSettingsScreen(
                     }
                 }
 
-                // Presets Section
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Special Voice Presets",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-                    
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        viewModel.specialPresets.forEach { preset ->
-                            val presetGradient = when (preset.id) {
-                                "preset_robot" -> Brush.horizontalGradient(listOf(Color(0xFF06B6D4), Color(0xFF0891B2)))
-                                "preset_freeman" -> Brush.horizontalGradient(listOf(Color(0xFF78350F), Color(0xFFD97706)))
-                                "preset_giant" -> Brush.horizontalGradient(listOf(Color(0xFF6B21A8), Color(0xFF5B21B6)))
-                                "preset_chipmunk" -> Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF059669)))
-                                "preset_goblin" -> Brush.horizontalGradient(listOf(Color(0xFF84CC16), Color(0xFF65A30D)))
-                                "preset_redneck" -> Brush.horizontalGradient(listOf(Color(0xFFF97316), Color(0xFFEA580C)))
-                                "preset_baby" -> Brush.horizontalGradient(listOf(Color(0xFFEC4899), Color(0xFFD946EF)))
-                                "preset_donald" -> Brush.horizontalGradient(listOf(Color(0xFFEAB308), Color(0xFFCA8A04)))
-                                "preset_nerdy" -> Brush.horizontalGradient(listOf(Color(0xFF3B82F6), Color(0xFF1D4ED8)))
-                                "preset_slowmo" -> Brush.horizontalGradient(listOf(Color(0xFFEF4444), Color(0xFFB91C1C)))
-                                else -> Brush.horizontalGradient(listOf(Color(0xFF6366F1), Color(0xFF4F46E5)))
-                            }
-
-                            Card(
-                                modifier = Modifier
-                                    .width(130.dp)
-                                    .clickable { viewModel.selectVoicePreset(preset) },
-                                shape = RoundedCornerShape(16.dp),
-                                border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .background(presetGradient)
-                                        .padding(14.dp)
-                                        .fillMaxWidth(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = preset.displayName,
-                                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                                            color = Color.White
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "Pitch: %.1f".format(preset.pitch),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = Color.White.copy(alpha = 0.85f)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // eSpeak NG Voice Variants Section (only show when eSpeak NG is selected)
-                if (isEspeakNgSelected) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Filled.Star,
-                                contentDescription = null,
-                                tint = Color(0xFF06B6D4),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "eSpeak NG Voice Variants",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color(0xFF06B6D4),
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-                        
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            viewModel.espeakNgVariants.forEach { preset ->
-                                val presetGradient = when (preset.id) {
-                                    "espeak_robot" -> Brush.horizontalGradient(listOf(Color(0xFF06B6D4), Color(0xFF0891B2)))
-                                    "espeak_alien" -> Brush.horizontalGradient(listOf(Color(0xFF22C55E), Color(0xFF16A34A)))
-                                    "espeak_monster" -> Brush.horizontalGradient(listOf(Color(0xFF6B21A8), Color(0xFF5B21B6)))
-                                    "espeak_cartoon" -> Brush.horizontalGradient(listOf(Color(0xFFEC4899), Color(0xFFDB2777)))
-                                    "espeak_deep" -> Brush.horizontalGradient(listOf(Color(0xFF78716C), Color(0xFF57534E)))
-                                    "espeak_chipmunk" -> Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF059669)))
-                                    "espeak_ghost" -> Brush.horizontalGradient(listOf(Color(0xFFE2E8F0), Color(0xFFCBD5E1)))
-                                    "espeak_dwarf" -> Brush.horizontalGradient(listOf(Color(0xFFF97316), Color(0xFFEA580C)))
-                                    "espeak_evil" -> Brush.horizontalGradient(listOf(Color(0xFFDC2626), Color(0xFFB91C1C)))
-                                    "espeak_wizard" -> Brush.horizontalGradient(listOf(Color(0xFF7C3AED), Color(0xFF6D28D9)))
-                                    "espeak_baby" -> Brush.horizontalGradient(listOf(Color(0xFFF472B6), Color(0xFFDB2777)))
-                                    "espeak_robot_female" -> Brush.horizontalGradient(listOf(Color(0xFF14B8A6), Color(0xFF0D9488)))
-                                    else -> Brush.horizontalGradient(listOf(Color(0xFF6366F1), Color(0xFF4F46E5)))
-                                }
-
-                                Card(
-                                    modifier = Modifier
-                                        .width(130.dp)
-                                        .clickable { viewModel.selectVoicePreset(preset) },
-                                    shape = RoundedCornerShape(16.dp),
-                                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .background(presetGradient)
-                                            .padding(14.dp)
-                                            .fillMaxWidth(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = preset.displayName,
-                                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                                                color = Color.White
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Pitch: %.1f".format(preset.pitch),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = Color.White.copy(alpha = 0.85f)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
                 // Sliders Section
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -476,30 +329,92 @@ fun VoiceSettingsScreen(
                     }
                 }
 
-                // Gender Filter Section
+                // Voice filter: All / Male / Female / Special
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Filter by Gender",
+                        text = "Voices",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        val options = listOf("All", "Female", "Male")
-                        options.forEach { option ->
+                        VoiceListFilter.entries.forEach { filter ->
                             FilterChip(
-                                selected = selectedGender == option,
-                                onClick = { viewModel.setGenderFilter(option) },
-                                label = { Text(option, fontWeight = FontWeight.Bold) },
+                                selected = selectedFilter == filter,
+                                onClick = { viewModel.setVoiceFilter(filter) },
+                                label = {
+                                    Text(
+                                        text = when (filter) {
+                                            VoiceListFilter.ALL -> "All"
+                                            VoiceListFilter.MALE -> "Male"
+                                            VoiceListFilter.FEMALE -> "Female"
+                                            VoiceListFilter.SPECIAL -> "Special"
+                                        },
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
                                 shape = RoundedCornerShape(12.dp)
                             )
                         }
                     }
                 }
 
-                // Voice list grouped by locale
+                val showSpecialSection = selectedFilter == VoiceListFilter.ALL ||
+                    selectedFilter == VoiceListFilter.SPECIAL
+                val showNormalVoices = selectedFilter != VoiceListFilter.SPECIAL
+
+                if (showSpecialSection) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isDark) GlassBgDark else GlassBgLight
+                        ),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (isDark) GlassBorderDark else GlassBorderLight
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(vertical = 10.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.Star,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (isEspeakNgSelected) {
+                                        "Special & eSpeak NG"
+                                    } else {
+                                        "Special Voices"
+                                    },
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            viewModel.activeSpecialPresets.forEach { preset ->
+                                SpecialPresetItem(
+                                    preset = preset,
+                                    isSelected = selectedPresetId == preset.id,
+                                    onSelectPreset = { viewModel.selectVoicePreset(preset) },
+                                    onPreviewPreset = { viewModel.selectAndPreviewPreset(preset) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // System voices grouped by locale
+                if (showNormalVoices) {
                 normalVoicesByLocale.forEach { (localeName, voices) ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -529,6 +444,7 @@ fun VoiceSettingsScreen(
                             }
                         }
                     }
+                }
                 }
 
                 // Help/Info Card for more accents and high-quality voices
@@ -592,6 +508,68 @@ fun VoiceSettingsScreen(
 
                 Spacer(modifier = Modifier.height(30.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun SpecialPresetItem(
+    preset: SpecialVoicePreset,
+    isSelected: Boolean,
+    onSelectPreset: () -> Unit,
+    onPreviewPreset: () -> Unit
+) {
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+    } else {
+        Color.Transparent
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelectPreset)
+            .background(backgroundColor)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = isSelected,
+            onClick = null
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .size(width = 4.dp, height = 44.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(presetGradientFor(preset.id))
+        )
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = preset.displayName,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                ),
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Pitch %.1f · Rate %.1f · ${preset.preferredGender}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onPreviewPreset) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = "Preview ${preset.displayName}",
+                tint = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
