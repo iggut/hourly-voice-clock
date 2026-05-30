@@ -529,6 +529,8 @@ fun HomeScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { viewModel.setAutoUpdateEnabled(!settings.autoUpdateEnabled) }
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -543,7 +545,7 @@ fun HomeScreen(
                             }
                             Switch(
                                 checked = settings.autoUpdateEnabled,
-                                onCheckedChange = { viewModel.setAutoUpdateEnabled(it) }
+                                onCheckedChange = null
                             )
                         }
 
