@@ -23,3 +23,9 @@ val GlassBorderLight = Color(0xFF000000).copy(alpha = 0.06f)
 val GlassBgDark = Color(0xFF1E293B).copy(alpha = 0.6f)
 val GlassBgLight = Color(0xFFFFFFFF).copy(alpha = 0.5f)
 
+// Opaque surfaces for modal dialogs (AlertDialog must not use translucent theme surface)
+val DialogSurfaceDark = Color(0xFF1E293B)
+val DialogSurfaceLight = Color(0xFFFFFFFF)
+val DialogOnSurfaceDark = Color(0xFFF1F5F9)
+val DialogOnSurfaceLight = Color(0xFF0F172A)
+

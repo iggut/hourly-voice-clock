@@ -66,7 +66,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _updateStatus = MutableStateFlow<UpdateStatus>(UpdateStatus.Idle)
     val updateStatus: StateFlow<UpdateStatus> = _updateStatus.asStateFlow()
 
-    private var autoCheckCompleted = false
+    private var startupAutoCheckDone = false
 
     init {
         viewModelScope.launch {
@@ -79,11 +79,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
+            var previousAutoUpdateEnabled: Boolean? = null
             settingsRepo.settings.collect { settings ->
                 _hourlyEnabled.value = settings.hourlyAnnouncementsEnabled
                 updateQuietStatus(settings)
-                if (!autoCheckCompleted && settings.autoUpdateEnabled) {
-                    autoCheckCompleted = true
+                val reEnabled =
+                    previousAutoUpdateEnabled == false && settings.autoUpdateEnabled
+                previousAutoUpdateEnabled = settings.autoUpdateEnabled
+                if (settings.autoUpdateEnabled && (!startupAutoCheckDone || reEnabled)) {
+                    startupAutoCheckDone = true
                     checkForUpdates(isManual = false)
                 }
             }

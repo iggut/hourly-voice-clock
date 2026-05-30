@@ -55,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,9 +69,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import android.content.Intent
 import com.hourlyvoiceclock.util.openUrl
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.filled.SystemUpdate
 import com.hourlyvoiceclock.ui.home.UpdateStatus
 import com.hourlyvoiceclock.R
@@ -84,6 +84,8 @@ import com.hourlyvoiceclock.ui.theme.LightBgStart
 import com.hourlyvoiceclock.ui.theme.LightBgEnd
 import com.hourlyvoiceclock.ui.theme.DarkBgStart
 import com.hourlyvoiceclock.ui.theme.DarkBgEnd
+import com.hourlyvoiceclock.ui.theme.dialogContainerColor
+import com.hourlyvoiceclock.ui.theme.dialogContentColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,6 +105,15 @@ fun HomeScreen(
     val updateStatus by viewModel.updateStatus.collectAsState()
 
     var showUpdatesDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showUpdatesDialog) {
+        if (showUpdatesDialog) {
+            when (updateStatus) {
+                is UpdateStatus.Idle, is UpdateStatus.Error -> viewModel.checkForUpdates(isManual = true)
+                else -> Unit
+            }
+        }
+    }
 
     val context = LocalContext.current
     val currentVersion = remember {
@@ -492,123 +503,126 @@ fun HomeScreen(
                     )
                 }
 
-                if (showUpdatesDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showUpdatesDialog = false },
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        title = {
-                            Text(
-                                "App Updates",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                        },
-                        text = {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text("Current version: v$currentVersion", fontWeight = FontWeight.SemiBold)
-                                
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable { viewModel.setAutoUpdateEnabled(!settings.autoUpdateEnabled) }
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text("Auto-check for updates", fontWeight = FontWeight.Medium)
-                                        Text("Queries GitHub API on app startup", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    Switch(
-                                        checked = settings.autoUpdateEnabled,
-                                        onCheckedChange = null
-                                    )
-                                }
-                                
+                Spacer(modifier = Modifier.height(30.dp))
+            }
+        }
+
+        if (showUpdatesDialog) {
+            val dialogContainer = dialogContainerColor()
+            val dialogContent = dialogContentColor()
+            AlertDialog(
+                onDismissRequest = { showUpdatesDialog = false },
+                containerColor = dialogContainer,
+                titleContentColor = dialogContent,
+                textContentColor = dialogContent,
+                title = {
+                    Text(
+                        "App Updates",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Current version: v$currentVersion", fontWeight = FontWeight.SemiBold)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Auto-check for updates", fontWeight = FontWeight.Medium)
                                 Text(
-                                    "When auto-check is enabled, the app contacts the public GitHub Releases API on startup to see if a newer version is available.",
+                                    "Queries GitHub API on app startup",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                            }
+                            Switch(
+                                checked = settings.autoUpdateEnabled,
+                                onCheckedChange = { viewModel.setAutoUpdateEnabled(it) }
+                            )
+                        }
 
-                                HorizontalDivider(color = if (isDark) GlassBorderDark else GlassBorderLight)
-                                
-                                when (val status = updateStatus) {
-                                    is UpdateStatus.Idle -> {
-                                        Text("Check status: Not checked", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            "When auto-check is enabled, the app contacts the public GitHub Releases API on startup to see if a newer version is available.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        HorizontalDivider(color = if (isDark) GlassBorderDark else GlassBorderLight)
+
+                        when (val status = updateStatus) {
+                            is UpdateStatus.Idle -> {
+                                Text("Check status: Not checked", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            is UpdateStatus.Checking -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    Text("Checking for updates...", color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                            is UpdateStatus.UpToDate -> {
+                                Text("Your app is up to date!", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                            }
+                            is UpdateStatus.NoRelease -> {
+                                Text("No published release yet on GitHub.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            is UpdateStatus.UpdateAvailable -> {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        "New version available: ${status.latestVersion}",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (status.releaseNotes.isNotBlank()) {
+                                        Text(
+                                            "Release Notes:\n${status.releaseNotes}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 5
+                                        )
                                     }
-                                    is UpdateStatus.Checking -> {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                                            Text("Checking for updates...", color = MaterialTheme.colorScheme.primary)
-                                        }
-                                    }
-                                    is UpdateStatus.UpToDate -> {
-                                        Text("Your app is up to date!", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
-                                    }
-                                    is UpdateStatus.NoRelease -> {
-                                        Text("No published release yet on GitHub.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    is UpdateStatus.UpdateAvailable -> {
-                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Text("New version available: ${status.latestVersion}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                            if (status.releaseNotes.isNotBlank()) {
-                                                Text(
-                                                    "Release Notes:\n${status.releaseNotes}",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    maxLines = 5
-                                                )
+                                    Button(
+                                        onClick = {
+                                            val uri = android.net.Uri.parse(status.downloadUrl)
+                                            val scheme = uri.scheme?.lowercase()
+                                            if (scheme == "http" || scheme == "https") {
+                                                context.openUrl(status.downloadUrl)
                                             }
-                                            Button(
-                                                onClick = {
-                                                    try {
-                                                        val uri = android.net.Uri.parse(status.downloadUrl)
-                                                        val scheme = uri.scheme?.lowercase()
-                                                        if (scheme == "http" || scheme == "https") {
-                                                            val intent = Intent(Intent.ACTION_VIEW, uri)
-                                                            context.startActivity(intent)
-                                                        } else {
-                                                            android.util.Log.w("HomeScreen", "Attempted to open URL with invalid scheme: $scheme")
-                                                        }
-                                                    } catch (e: Exception) {
-                                                        // Ignore or handle
-                                                    }
-                                                },
-                                                modifier = Modifier.fillMaxWidth(),
-                                                shape = RoundedCornerShape(12.dp)
-                                            ) {
-                                                Text("Download & Install", fontWeight = FontWeight.Bold)
-                                            }
-                                        }
-                                    }
-                                    is UpdateStatus.Error -> {
-                                        Text("Check failed: ${status.message}", color = MaterialTheme.colorScheme.error)
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text("Download & Install", fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = { viewModel.checkForUpdates(isManual = true) }
-                            ) {
-                                Text("Check Now", fontWeight = FontWeight.Bold)
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showUpdatesDialog = false }) {
-                                Text("Close")
+                            is UpdateStatus.Error -> {
+                                Text("Check failed: ${status.message}", color = MaterialTheme.colorScheme.error)
                             }
                         }
-                    )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { viewModel.checkForUpdates(isManual = true) }
+                    ) {
+                        Text("Check Now", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showUpdatesDialog = false }) {
+                        Text("Close")
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(30.dp))
-            }
+            )
         }
     }
 }
