@@ -33,6 +33,8 @@ class TtsVoiceRepositoryTest {
         override fun shutdown() {}
         override suspend fun switchEngine(enginePackage: String?): Boolean = true
         override fun getEngines(): List<TtsEngineInfo> = emptyList()
+        override fun getCurrentEnginePackage(): String? = null
+        override fun isEspeakNgEngine(): Boolean = false
     }
 
     private lateinit var fakeEngine: FakeTtsEngine

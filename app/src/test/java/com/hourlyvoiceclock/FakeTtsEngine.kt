@@ -73,4 +73,8 @@ class FakeTtsEngine : TtsEngine {
             TtsEngineInfo("com.github.olga_yakovleva.rhvoice.android", "RHVoice", false)
         )
     }
+
+    override fun getCurrentEnginePackage(): String? = null
+
+    override fun isEspeakNgEngine(): Boolean = false
 }
