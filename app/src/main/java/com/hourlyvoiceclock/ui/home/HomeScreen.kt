@@ -237,14 +237,9 @@ fun HomeScreen(
                                                     .size(6.dp)
                                                     .clip(CircleShape)
                                                     .graphicsLayer {
-                                                        alpha = if (hourlyEnabled && !quietHoursActive) pulseAlpha else 1f
+                                                        alpha = pulseAlpha
                                                     }
-                                                    .background(
-                                                        if (hourlyEnabled && !quietHoursActive)
-                                                            MaterialTheme.colorScheme.tertiary.copy(alpha = 1.0f)
-                                                        else
-                                                            MaterialTheme.colorScheme.tertiary.copy(alpha = pulseAlpha)
-                                                    )
+                                                    .background(MaterialTheme.colorScheme.tertiary)
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
