@@ -495,7 +495,14 @@ fun HomeScreen(
                 if (showUpdatesDialog) {
                     AlertDialog(
                         onDismissRequest = { showUpdatesDialog = false },
-                        title = { Text("App Updates", fontWeight = FontWeight.Bold) },
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        title = {
+                            Text(
+                                "App Updates",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
                         text = {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text("Current version: v$currentVersion", fontWeight = FontWeight.SemiBold)

@@ -126,6 +126,7 @@ fun ScheduleSettingsScreen(
     if (showExactAlarmDialog) {
         AlertDialog(
             onDismissRequest = { showExactAlarmDialog = false },
+            containerColor = MaterialTheme.colorScheme.surface,
             title = { Text(stringResource(R.string.exact_alarm_permission_title), fontWeight = FontWeight.Bold) },
             text = {
                 Column {
@@ -473,6 +474,7 @@ fun ScheduleSettingsScreen(
                 if (showRationaleDialog) {
                     AlertDialog(
                         onDismissRequest = { showRationaleDialog = false },
+                        containerColor = MaterialTheme.colorScheme.surface,
                         title = { Text("Notification Permission Required", fontWeight = FontWeight.Bold) },
                         text = { Text("To log announcements to the notification drawer, this app needs permission to post notifications. Would you like to grant it?") },
                         confirmButton = {
@@ -498,6 +500,7 @@ fun ScheduleSettingsScreen(
                 if (showSettingsRedirectDialog) {
                     AlertDialog(
                         onDismissRequest = { showSettingsRedirectDialog = false },
+                        containerColor = MaterialTheme.colorScheme.surface,
                         title = { Text("Notification Permission Denied", fontWeight = FontWeight.Bold) },
                         text = { Text("Notification permissions have been permanently denied. Please enable them in System Settings to use notification logging.") },
                         confirmButton = {
