@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.os.Build
+import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
@@ -54,6 +56,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
     private val utteranceCounter = AtomicInteger(0)
     private val pendingUtterances = mutableMapOf<String, (Boolean) -> Unit>()
     private var currentEnginePackage: String? = null
+    private var currentAudioChannel: AudioChannel = AudioChannel.MEDIA
 
     override suspend fun initialize(): Boolean {
         if (initOk) return true
@@ -62,7 +65,9 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         if (currentEnginePackage == null) {
             try {
                 val repository = SettingsRepository(appContext)
-                currentEnginePackage = repository.settings.first().selectedTtsEnginePackage
+                val settings = repository.settings.first()
+                currentEnginePackage = settings.selectedTtsEnginePackage
+                currentAudioChannel = settings.audioChannel
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load saved TTS engine package", e)
             }
@@ -87,7 +92,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
                     }
                     voices = queryVoices(instance)
                     setupProgressListener(instance)
-                    setupAudioAttributes(instance)
+                    setupAudioAttributes(instance, currentAudioChannel)
                     initOk = true
                     continuation.resume(true)
                 } else {
@@ -180,23 +185,8 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
 
     override fun setAudioChannel(channel: AudioChannel) {
         val ttsInstance = tts ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val (usage, contentType) = when (channel) {
-                AudioChannel.MEDIA ->
-                    AudioAttributes.USAGE_MEDIA to AudioAttributes.CONTENT_TYPE_SPEECH
-                AudioChannel.NOTIFICATION ->
-                    AudioAttributes.USAGE_NOTIFICATION to AudioAttributes.CONTENT_TYPE_SPEECH
-                AudioChannel.CALL ->
-                    AudioAttributes.USAGE_VOICE_COMMUNICATION to AudioAttributes.CONTENT_TYPE_SPEECH
-            }
-            ttsInstance.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(usage)
-                    .setContentType(contentType)
-                    .build()
-            )
-            Log.d(TAG, "AudioAttributes set to channel=$channel usage=$usage")
-        }
+        currentAudioChannel = channel
+        setupAudioAttributes(ttsInstance, channel)
     }
 
     override fun speak(text: String, utteranceId: String) {
@@ -204,13 +194,19 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             Log.e(TAG, "speak() called but TTS not initialized")
             return
         }
+        val params = Bundle().apply {
+            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+            @Suppress("DEPRECATION")
+            putString(TextToSpeech.Engine.KEY_PARAM_STREAM, audioStreamFor(currentAudioChannel).toString())
+        }
         val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+            ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
         } else {
             @Suppress("DEPRECATION")
-            val params = HashMap<String, String>()
-            params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = utteranceId
-            ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, params)
+            ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, hashMapOf(
+                TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID to utteranceId,
+                TextToSpeech.Engine.KEY_PARAM_STREAM to audioStreamFor(currentAudioChannel).toString()
+            ))
         }
         if (result == TextToSpeech.ERROR) {
             Log.e(TAG, "speak() returned ERROR for utterance=$utteranceId")
@@ -264,29 +260,48 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         })
     }
 
-    private fun setupAudioAttributes(ttsInstance: TextToSpeech) {
+    private fun setupAudioAttributes(ttsInstance: TextToSpeech, channel: AudioChannel) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val (usage, contentType) = when (channel) {
+                AudioChannel.MEDIA ->
+                    AudioAttributes.USAGE_MEDIA to AudioAttributes.CONTENT_TYPE_SPEECH
+                AudioChannel.NOTIFICATION ->
+                    AudioAttributes.USAGE_NOTIFICATION to AudioAttributes.CONTENT_TYPE_SPEECH
+                AudioChannel.CALL ->
+                    AudioAttributes.USAGE_NOTIFICATION_RINGTONE to AudioAttributes.CONTENT_TYPE_SPEECH
+            }
             ttsInstance.setAudioAttributes(
                 AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANT)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setUsage(usage)
+                    .setContentType(contentType)
                     .build()
             )
+            Log.d(TAG, "AudioAttributes set to channel=$channel usage=$usage stream=${audioStreamFor(channel)}")
         }
+    }
+
+    private fun audioStreamFor(channel: AudioChannel): Int = when (channel) {
+        AudioChannel.MEDIA -> AudioManager.STREAM_MUSIC
+        AudioChannel.NOTIFICATION -> AudioManager.STREAM_NOTIFICATION
+        AudioChannel.CALL -> AudioManager.STREAM_RING
     }
 
     private fun queryVoices(ttsInstance: TextToSpeech): List<VoiceInfo> {
         val allVoices = ttsInstance.voices ?: return emptyList()
-        val sorted = allVoices.sortedWith(compareBy({ it.locale.getDisplayName(it.locale) }, { it.name }))
-            
+        val sorted = allVoices
+            .asSequence()
+            .filter { it.locale.isSupportedAnnouncementLocale() }
+            .sortedWith(compareBy<Voice>({ it.locale.getDisplayName(it.locale) }, { it.name }))
+            .toList()
+
         val countryCounters = mutableMapOf<String, Int>()
-        
+
         return sorted.map { voice ->
             val isNetwork = voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS) ?: false
             val country = voice.locale.displayCountry.ifBlank { voice.locale.displayLanguage }
             val count = countryCounters.getOrDefault(country, 0) + 1
             countryCounters[country] = count
-            
+
             VoiceInfo(
                 name = voice.name,
                 localeDisplayName = country,
@@ -299,6 +314,15 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
                 isSpecial = false
             )
         }
+    }
+
+    private fun Locale.isSupportedAnnouncementLocale(): Boolean {
+        val normalizedLanguage = language.lowercase(Locale.ROOT)
+        return normalizedLanguage == Locale.ENGLISH.language ||
+                normalizedLanguage == Locale.FRENCH.language ||
+                normalizedLanguage == "eng" ||
+                normalizedLanguage == "fra" ||
+                normalizedLanguage == "fre"
     }
 
     private val GENDER_MAP = mapOf(

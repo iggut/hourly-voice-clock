@@ -18,14 +18,28 @@ class TtsVoiceRepository(private val engine: TtsEngine) {
     fun isAvailable(): Boolean = engine.isAvailable()
 
     fun getSpecialVoices(): List<VoiceInfo> {
-        return engine.getVoices().filter { it.isSpecial }
+        return filteredVoices().filter { it.isSpecial }
     }
 
     fun getNormalVoicesGroupedByLocale(): Map<String, List<VoiceInfo>> {
-        return engine.getVoices().filter { !it.isSpecial }.groupBy { it.localeDisplayName }
+        return filteredVoices().filter { !it.isSpecial }.groupBy { it.localeDisplayName }
     }
 
-    fun getAllVoices(): List<VoiceInfo> = engine.getVoices()
+    fun getAllVoices(): List<VoiceInfo> = filteredVoices()
+
+    private fun filteredVoices(): List<VoiceInfo> {
+        return engine.getVoices().filter { voice ->
+            voice.localeTag.isSupportedAnnouncementLocaleTag()
+        }
+    }
+
+    private fun String.isSupportedAnnouncementLocaleTag(): Boolean {
+        return startsWith("en", ignoreCase = true) ||
+                startsWith("fr", ignoreCase = true) ||
+                startsWith("eng", ignoreCase = true) ||
+                startsWith("fra", ignoreCase = true) ||
+                startsWith("fre", ignoreCase = true)
+    }
 
     fun selectVoice(voiceName: String, localeTag: String): Boolean {
         return engine.setVoice(voiceName, localeTag)

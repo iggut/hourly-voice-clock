@@ -26,37 +26,36 @@ data class SpecialVoicePreset(
     val displayName: String,
     val pitch: Float,
     val speechRate: Float,
-    val preferredGender: String
+    val preferredGender: String,
+    val preferredLocalePrefixes: List<String> = listOf("en-US", "en"),
+    val voiceNameHints: List<String> = emptyList(),
+    val prefersNetworkVoice: Boolean? = null
 )
 
-// General voice presets that work with any TTS engine
+// General voice presets that work with any TTS engine.  These now vary the
+// underlying voice/locale as well as pitch/rate so the presets do not collapse
+// into a chaotic set of near-identical slider changes.
 val SPECIAL_VOICE_PRESETS = listOf(
-    SpecialVoicePreset("preset_robot", "Robot", 0.4f, 0.8f, "Male"),
-    SpecialVoicePreset("preset_freeman", "Morgan Freeman", 0.82f, 0.85f, "Male"),
-    SpecialVoicePreset("preset_giant", "Giant", 0.5f, 0.7f, "Male"),
-    SpecialVoicePreset("preset_chipmunk", "Chipmunk", 1.7f, 1.3f, "Female"),
-    SpecialVoicePreset("preset_goblin", "Goblin", 1.4f, 1.1f, "Male"),
-    SpecialVoicePreset("preset_redneck", "Redneck", 0.8f, 0.9f, "Male"),
-    SpecialVoicePreset("preset_baby", "Baby", 2.0f, 1.2f, "Female"),
-    SpecialVoicePreset("preset_donald", "Donald Duck", 2.0f, 2.0f, "Male"),
-    SpecialVoicePreset("preset_nerdy", "Nerdy", 1.2f, 1.2f, "Male"),
-    SpecialVoicePreset("preset_slowmo", "Slow Motion", 0.9f, 0.6f, "Male")
+    SpecialVoicePreset("preset_robot", "Robot", 0.55f, 0.78f, "Male", voiceNameHints = listOf("robot", "droid", "synth", "male"), prefersNetworkVoice = false),
+    SpecialVoicePreset("preset_narrator", "Warm Narrator", 0.9f, 0.88f, "Female", listOf("en-US", "en-CA", "en"), listOf("female", "slt", "clb"), prefersNetworkVoice = true),
+    SpecialVoicePreset("preset_giant", "Giant", 0.45f, 0.68f, "Male", listOf("en-GB", "en-US", "en"), listOf("male", "deep", "rjs", "gdb"), prefersNetworkVoice = false),
+    SpecialVoicePreset("preset_chipmunk", "Chipmunk", 1.65f, 1.25f, "Female", listOf("en-US", "en"), listOf("female", "young", "tfg", "slt"), prefersNetworkVoice = false),
+    SpecialVoicePreset("preset_paris", "Paris Café", 0.98f, 0.92f, "Female", listOf("fr-FR", "fr-CA", "fr"), listOf("female", "fr", "victoire"), prefersNetworkVoice = true),
+    SpecialVoicePreset("preset_radio", "Old Radio", 0.72f, 0.82f, "Male", listOf("en-GB", "en-US", "en"), listOf("male", "gb", "rjs"), prefersNetworkVoice = false),
+    SpecialVoicePreset("preset_baby", "Baby", 1.9f, 1.18f, "Female", listOf("en-US", "en"), listOf("female", "young"), prefersNetworkVoice = false),
+    SpecialVoicePreset("preset_cartoon", "Cartoon Duck", 1.75f, 1.45f, "Male", listOf("en-US", "en"), listOf("male", "cartoon"), prefersNetworkVoice = false),
+    SpecialVoicePreset("preset_professor", "Professor", 1.08f, 0.96f, "Male", listOf("en-GB", "en-US", "en"), listOf("male", "gb", "gdb"), prefersNetworkVoice = true),
+    SpecialVoicePreset("preset_slowmo", "Slow Motion", 0.85f, 0.58f, "Male", listOf("en-US", "en"), listOf("male", "slow"), prefersNetworkVoice = false)
 )
 
 // eSpeak NG-specific fun voice variants
 val ESpeakNgVoiceVariants = listOf(
-    SpecialVoicePreset("espeak_robot", "Robot", 0.5f, 0.75f, "Male"),
-    SpecialVoicePreset("espeak_alien", "Alien", 1.5f, 0.9f, "Male"),
-    SpecialVoicePreset("espeak_monster", "Monster", 0.3f, 0.6f, "Male"),
-    SpecialVoicePreset("espeak_cartoon", "Cartoon", 1.8f, 1.4f, "Female"),
-    SpecialVoicePreset("espeak_deep", "Deep Voice", 0.35f, 0.85f, "Male"),
-    SpecialVoicePreset("espeak_chipmunk", "Chipmunk", 1.9f, 1.5f, "Female"),
-    SpecialVoicePreset("espeak_ghost", "Ghost", 0.6f, 0.7f, "Female"),
-    SpecialVoicePreset("espeak_dwarf", "Dwarf", 0.45f, 0.8f, "Male"),
-    SpecialVoicePreset("espeak_evil", "Evil", 0.55f, 1.1f, "Male"),
-    SpecialVoicePreset("espeak_wizard", "Wizard", 0.4f, 0.65f, "Male"),
-    SpecialVoicePreset("espeak_baby", "Baby", 2.2f, 1.3f, "Female"),
-    SpecialVoicePreset("espeak_robot_female", "Robot Female", 0.7f, 0.85f, "Female")
+    SpecialVoicePreset("espeak_robot", "eSpeak Robot", 0.5f, 0.75f, "Male", voiceNameHints = listOf("robot", "croak", "klatt")),
+    SpecialVoicePreset("espeak_alien", "eSpeak Alien", 1.5f, 0.9f, "Male", voiceNameHints = listOf("whisper", "klatt", "male")),
+    SpecialVoicePreset("espeak_monster", "eSpeak Monster", 0.3f, 0.6f, "Male", voiceNameHints = listOf("male", "croak")),
+    SpecialVoicePreset("espeak_cartoon", "eSpeak Cartoon", 1.8f, 1.4f, "Female", voiceNameHints = listOf("female", "whisper")),
+    SpecialVoicePreset("espeak_deep", "eSpeak Deep Voice", 0.35f, 0.85f, "Male", voiceNameHints = listOf("male", "klatt")),
+    SpecialVoicePreset("espeak_ghost", "eSpeak Ghost", 0.6f, 0.7f, "Female", voiceNameHints = listOf("whisper", "female"))
 )
 
 class VoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -204,11 +203,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private suspend fun applyPreset(preset: SpecialVoicePreset) {
-        val underlyingVoice = allNormalVoices.find {
-            it.localeTag.startsWith("en-US") && it.genderLabel == preset.preferredGender
-        }
-            ?: allNormalVoices.find { it.localeTag.startsWith("en-") }
-            ?: allNormalVoices.firstOrNull()
+        val underlyingVoice = choosePresetVoice(preset)
 
         if (underlyingVoice != null) {
             ttsRepo.selectVoice(underlyingVoice.name, underlyingVoice.localeTag)
@@ -225,6 +220,28 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             settingsRepo.setSpeechRate(preset.speechRate)
             _speechRate.value = preset.speechRate
         }
+    }
+
+    private fun choosePresetVoice(preset: SpecialVoicePreset): VoiceInfo? {
+        return preset.preferredLocalePrefixes.asSequence()
+            .mapNotNull { prefix -> bestPresetVoice(preset, prefix) }
+            .firstOrNull()
+            ?: bestPresetVoice(preset, "en")
+            ?: bestPresetVoice(preset, "fr")
+            ?: allNormalVoices.firstOrNull()
+    }
+
+    private fun bestPresetVoice(preset: SpecialVoicePreset, localePrefix: String): VoiceInfo? {
+        val candidates = allNormalVoices.filter { it.localeTag.startsWith(localePrefix, ignoreCase = true) }
+        if (candidates.isEmpty()) return null
+
+        return candidates.maxWithOrNull(
+            compareBy<VoiceInfo> { it.genderLabel == preset.preferredGender }
+                .thenBy { preset.prefersNetworkVoice == null || it.requiresNetwork == preset.prefersNetworkVoice }
+                .thenBy { voice -> preset.voiceNameHints.any { hint -> voice.name.contains(hint, ignoreCase = true) } }
+                .thenBy { it.quality }
+                .thenByDescending { it.latency }
+        )
     }
 
     fun setPitch(value: Float) {

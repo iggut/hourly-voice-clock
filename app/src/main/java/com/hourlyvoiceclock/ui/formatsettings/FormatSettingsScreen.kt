@@ -291,9 +291,9 @@ fun FormatSettingsScreen(
                                 )
                                 Text(
                                     text = when (channel) {
-                                        AudioChannel.MEDIA -> "Media player (uses media volume)"
-                                        AudioChannel.NOTIFICATION -> "Notification stream (respects do-not-disturb)"
-                                        AudioChannel.CALL -> "Voice call stream"
+                                        AudioChannel.MEDIA -> "Media output (uses media volume)"
+                                        AudioChannel.NOTIFICATION -> "Notification output (respects do-not-disturb)"
+                                        AudioChannel.CALL -> "Ringer output (uses ringtone volume)"
                                     },
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 8.dp)

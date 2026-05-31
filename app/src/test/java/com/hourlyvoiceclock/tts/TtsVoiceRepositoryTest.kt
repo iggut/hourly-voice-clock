@@ -49,12 +49,13 @@ class TtsVoiceRepositoryTest {
     @Test
     fun getNormalVoicesGroupedByLocale_filtersSpecialAndGroups() {
         // Arrange
-        val voice1 = createVoice(name = "voice1", localeDisplayName = "English", isSpecial = false)
-        val voice2 = createVoice(name = "voice2", localeDisplayName = "English", isSpecial = false)
-        val voice3 = createVoice(name = "voice3", localeDisplayName = "French", isSpecial = false)
-        val specialVoice = createVoice(name = "special", localeDisplayName = "English", isSpecial = true)
+        val voice1 = createVoice(name = "voice1", localeDisplayName = "English", isSpecial = false, localeTag = "en-US")
+        val voice2 = createVoice(name = "voice2", localeDisplayName = "English", isSpecial = false, localeTag = "en-GB")
+        val voice3 = createVoice(name = "voice3", localeDisplayName = "French", isSpecial = false, localeTag = "fr-FR")
+        val specialVoice = createVoice(name = "special", localeDisplayName = "English", isSpecial = true, localeTag = "en-US")
+        val unsupportedVoice = createVoice(name = "german", localeDisplayName = "German", isSpecial = false, localeTag = "de-DE")
 
-        fakeEngine.engineVoices = listOf(voice1, voice2, voice3, specialVoice)
+        fakeEngine.engineVoices = listOf(voice1, voice2, voice3, specialVoice, unsupportedVoice)
 
         // Act
         val result = repository.getNormalVoicesGroupedByLocale()
@@ -68,8 +69,9 @@ class TtsVoiceRepositoryTest {
         assertEquals(2, englishVoices.size)
         assertTrue(englishVoices.contains(voice1))
         assertTrue(englishVoices.contains(voice2))
-        // Verify special voice is NOT in the list
+        // Verify special and unsupported voices are NOT in the list
         assertTrue(englishVoices.none { it.name == "special" })
+        assertTrue(result.values.flatten().none { it.name == "german" })
 
         val frenchVoices = result["French"]!!
         assertEquals(1, frenchVoices.size)
