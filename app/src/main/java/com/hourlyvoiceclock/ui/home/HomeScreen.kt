@@ -232,19 +232,17 @@ fun HomeScreen(
                                         modifier = Modifier.padding(bottom = 12.dp)
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
+                                            val tertiaryColor = MaterialTheme.colorScheme.tertiary
                                             Box(
                                                 modifier = Modifier
                                                     .size(6.dp)
                                                     .clip(CircleShape)
+                                                    // Optimization: Read animating pulseAlpha state inside the
+                                                    // graphicsLayer lambda to prevent continuous recompositions.
                                                     .graphicsLayer {
-                                                        alpha = if (hourlyEnabled && !quietHoursActive) pulseAlpha else 1f
+                                                        alpha = pulseAlpha
                                                     }
-                                                    .background(
-                                                        if (hourlyEnabled && !quietHoursActive)
-                                                            MaterialTheme.colorScheme.tertiary.copy(alpha = 1.0f)
-                                                        else
-                                                            MaterialTheme.colorScheme.tertiary.copy(alpha = pulseAlpha)
-                                                    )
+                                                    .background(tertiaryColor)
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
