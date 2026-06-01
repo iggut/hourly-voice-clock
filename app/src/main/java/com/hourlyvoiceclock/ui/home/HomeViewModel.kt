@@ -11,6 +11,7 @@ import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.announcer.QuietHoursPolicy
 import com.hourlyvoiceclock.announcer.TimeAnnouncer
 import com.hourlyvoiceclock.data.SettingsRepository
+import com.hourlyvoiceclock.data.SignatureVerifier
 import com.hourlyvoiceclock.data.UpdateDownloader
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
@@ -249,12 +250,42 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             _updateStatus.value = UpdateStatus.Installing(0)
             val context = getApplication<Application>()
             try {
+                // Pre-installation signature verification
+                val verificationResult = SignatureVerifier.verifyUpdateCompatibility(context, localPath)
+                when (verificationResult) {
+                    is SignatureVerifier.VerifyResult.SignatureMismatch -> {
+                        _updateStatus.value = UpdateStatus.InstallFailed(
+                            "Cannot install update: Signature mismatch. " +
+                            "This app was installed via a different signing key. " +
+                            "Please uninstall the current app and reinstall from the APK file."
+                        )
+                        return@launch
+                    }
+                    is SignatureVerifier.VerifyResult.Error -> {
+                        _updateStatus.value = UpdateStatus.InstallFailed(verificationResult.message)
+                        return@launch
+                    }
+                    else -> {
+                        // Signatures match or other OK result - proceed with installation
+                    }
+                }
+
                 installApkInternal(context, localPath)
                 // Installation was initiated successfully
                 // The app will restart or the user will return to the app
                 _updateStatus.value = UpdateStatus.InstallComplete
             } catch (e: Exception) {
-                _updateStatus.value = UpdateStatus.InstallFailed(e.localizedMessage ?: "Installation failed")
+                val message = e.localizedMessage ?: "Installation failed"
+                // Check if this is a signature-related error
+                if (message.contains("INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES", ignoreCase = true) ||
+                    message.contains("signature", ignoreCase = true)) {
+                    _updateStatus.value = UpdateStatus.InstallFailed(
+                        "Installation failed due to signature mismatch. " +
+                        "Please uninstall the current app and try installing again."
+                    )
+                } else {
+                    _updateStatus.value = UpdateStatus.InstallFailed(message)
+                }
             }
         }
     }
