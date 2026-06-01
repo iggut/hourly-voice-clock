@@ -1,6 +1,9 @@
 package com.hourlyvoiceclock.ui.home
 
 import android.app.Application
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +11,7 @@ import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.announcer.QuietHoursPolicy
 import com.hourlyvoiceclock.announcer.TimeAnnouncer
 import com.hourlyvoiceclock.data.SettingsRepository
+import com.hourlyvoiceclock.data.UpdateDownloader
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import kotlinx.coroutines.delay
@@ -26,6 +30,11 @@ sealed interface UpdateStatus {
     object Idle : UpdateStatus
     object Checking : UpdateStatus
     data class UpdateAvailable(val latestVersion: String, val downloadUrl: String, val releaseNotes: String) : UpdateStatus
+    data class Downloading(val progress: Int, val bytesDownloaded: Long, val totalBytes: Long) : UpdateStatus
+    data class InstallReady(val localApkPath: String) : UpdateStatus
+    data class Installing(val progress: Int) : UpdateStatus
+    object InstallComplete : UpdateStatus
+    data class InstallFailed(val error: String) : UpdateStatus
     object UpToDate : UpdateStatus
     object NoRelease : UpdateStatus
     data class Error(val message: String) : UpdateStatus
@@ -37,6 +46,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val scheduler = AnnouncementScheduler(application)
     private val ttsRepo = TtsVoiceRepository((application as HourlyVoiceClockApp).ttsEngine)
     private val announcer = TimeAnnouncer(application, ttsRepo)
+    private val updateDownloader = UpdateDownloader()
 
     val appSettings: StateFlow<com.hourlyvoiceclock.data.AppSettings> = settingsRepo.settings
         .stateIn(
@@ -193,6 +203,106 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
         }
+    }
+
+    fun downloadAndInstall(downloadUrl: String) {
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            _updateStatus.value = UpdateStatus.Downloading(0, 0, 0)
+
+            // Start progress collection BEFORE download
+            val progressJob = launch {
+                updateDownloader.downloadProgress.collect { progress ->
+                    val currentStatus = _updateStatus.value
+                    if (currentStatus is UpdateStatus.Downloading) {
+                        _updateStatus.value = UpdateStatus.Downloading(
+                            progress = progress.progress,
+                            bytesDownloaded = progress.bytesDownloaded,
+                            totalBytes = progress.totalBytes
+                        )
+                    }
+                }
+            }
+
+            updateDownloader.downloadApk(downloadUrl, context.cacheDir)
+                .onSuccess { filePath ->
+                    progressJob.cancel()
+                    _updateStatus.value = UpdateStatus.InstallReady(filePath)
+                }
+                .onFailure { error ->
+                    progressJob.cancel()
+                    _updateStatus.value = UpdateStatus.InstallFailed(error.localizedMessage ?: "Download failed")
+                }
+        }
+    }
+
+    fun cancelDownload() {
+        updateDownloader.cancel()
+        val currentStatus = _updateStatus.value
+        if (currentStatus is UpdateStatus.Downloading) {
+            _updateStatus.value = UpdateStatus.Idle
+        }
+    }
+
+    fun installApk(localPath: String) {
+        viewModelScope.launch {
+            _updateStatus.value = UpdateStatus.Installing(0)
+            val context = getApplication<Application>()
+            try {
+                installApkInternal(context, localPath)
+                // Installation was initiated successfully
+                // The app will restart or the user will return to the app
+                _updateStatus.value = UpdateStatus.InstallComplete
+            } catch (e: Exception) {
+                _updateStatus.value = UpdateStatus.InstallFailed(e.localizedMessage ?: "Installation failed")
+            }
+        }
+    }
+
+    private fun installApkInternal(context: Context, apkPath: String) {
+        val file = java.io.File(apkPath)
+        if (!file.exists()) {
+            throw Exception("APK file not found")
+        }
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        // Try to use FileProvider if available
+        try {
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            intent.setDataAndType(uri, "application/vnd.android.package-archive")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (e: Exception) {
+            // Fallback to file:// URI
+            intent.setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive")
+        }
+
+        context.startActivity(intent)
+    }
+
+    fun cleanupAfterInstall(localPath: String?) {
+        if (localPath != null) {
+            updateDownloader.cleanupDownload(localPath)
+        }
+    }
+
+    fun dismissUpdateDialog() {
+        val currentStatus = _updateStatus.value
+        when (currentStatus) {
+            is UpdateStatus.Downloading -> cancelDownload()
+            is UpdateStatus.InstallReady, is UpdateStatus.InstallFailed -> {
+                val path = if (currentStatus is UpdateStatus.InstallReady) currentStatus.localApkPath else null
+                cleanupAfterInstall(path)
+            }
+            else -> {}
+        }
+        _updateStatus.value = UpdateStatus.Idle
     }
 
     companion object {

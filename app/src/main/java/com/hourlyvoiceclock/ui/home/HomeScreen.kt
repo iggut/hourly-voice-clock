@@ -47,6 +47,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -485,9 +486,14 @@ fun HomeScreen(
                     val updateSubtitle = when (val status = updateStatus) {
                         is UpdateStatus.UpdateAvailable -> "Update available • Version ${status.latestVersion}"
                         is UpdateStatus.Checking -> "Checking for updates..."
+                        is UpdateStatus.Downloading -> "Downloading... ${status.progress}%"
+                        is UpdateStatus.InstallReady -> "Download ready • Tap to install"
+                        is UpdateStatus.Installing -> "Installing..."
                         is UpdateStatus.UpToDate -> "Version $currentVersion • Up to date"
                         is UpdateStatus.NoRelease -> "Version $currentVersion • No release published"
                         is UpdateStatus.Error -> "Check failed • Tap to retry"
+                        is UpdateStatus.InstallComplete -> "Update installed!"
+                        is UpdateStatus.InstallFailed -> "Install failed • Tap to retry"
                         else -> "Version $currentVersion • " + if (settings.autoUpdateEnabled) "Auto-check active" else "Auto-check disabled"
                     }
                     DashboardCard(
@@ -587,17 +593,103 @@ fun HomeScreen(
                                         )
                                     }
                                     Button(
+                                        onClick = { viewModel.downloadAndInstall(status.downloadUrl) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text("Download & Install", fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                            is UpdateStatus.Downloading -> {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                        Text(
+                                            "Downloading... ${formatBytes(status.bytesDownloaded)} / ${formatBytes(status.totalBytes)}",
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                    LinearProgressIndicator(
+                                        progress = { status.progress / 100f },
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    Text(
+                                        "${status.progress}%",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    TextButton(
+                                        onClick = { viewModel.cancelDownload() },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Cancel", color = MaterialTheme.colorScheme.error)
+                                    }
+                                }
+                            }
+                            is UpdateStatus.InstallReady -> {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        "Download complete!",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Button(
+                                        onClick = { viewModel.installApk(status.localApkPath) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text("Install Update", fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                            is UpdateStatus.Installing -> {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                        Text(
+                                            "Installing...",
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                    LinearProgressIndicator(
+                                        progress = { status.progress / 100f },
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+                            }
+                            is UpdateStatus.InstallComplete -> {
+                                Text(
+                                    "Installation complete! The app will restart.",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            is UpdateStatus.InstallFailed -> {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        "Installation failed: ${status.error}",
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                    Button(
                                         onClick = {
-                                            val uri = android.net.Uri.parse(status.downloadUrl)
-                                            val scheme = uri.scheme?.lowercase()
-                                            if (scheme == "http" || scheme == "https") {
-                                                context.openUrl(status.downloadUrl)
+                                            val updateStatus = updateStatus
+                                            if (updateStatus is UpdateStatus.UpdateAvailable) {
+                                                viewModel.downloadAndInstall(updateStatus.downloadUrl)
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Download & Install", fontWeight = FontWeight.Bold)
+                                        Text("Retry", fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -688,5 +780,14 @@ fun DashboardCard(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+private fun formatBytes(bytes: Long): String {
+    return when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> String.format("%.1f KB", bytes / 1024.0)
+        bytes < 1024 * 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024))
+        else -> String.format("%.1f GB", bytes / (1024.0 * 1024 * 1024))
     }
 }
