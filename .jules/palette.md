@@ -12,3 +12,7 @@
 ## 2026-05-30 - Fix AlertDialog Switch touch target
 **Learning:** Found a `Switch` element in an AlertDialog that wasn't correctly wrapped in a clickable `Row` like the other settings, highlighting an accessibility issue pattern specific to this app's components where setting list items get proper accessible touch targets but modal/dialog settings sometimes get overlooked.
 **Action:** Always verify that interactive components inside dialogs and modals receive the same accessible touch target wrapping (`Row` + `.clickable`) as the main screen components.
+
+## 2024-05-31 - Improve context on disabled buttons
+**Learning:** Found an "Announce Now" button that was visually disabled during "Quiet Hours", but its text ("Announce time now") did not provide the user any clue as to *why* it was disabled. Hardcoding contextual text directly in Compose screens is an anti-pattern; proper string resources must be used.
+**Action:** When conditionally changing text for disabled states to provide context, extract the context strings to `res/values/strings.xml` and reference them via `stringResource(R.string.your_string_name)` to maintain localization support.

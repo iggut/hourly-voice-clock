@@ -311,7 +311,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                stringResource(R.string.announce_now),
+                                text = if (canSpeakNow) stringResource(R.string.announce_now) else stringResource(R.string.announce_disabled_quiet_hours),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                         }
