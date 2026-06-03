@@ -12,3 +12,7 @@
 ## 2026-05-30 - Fix AlertDialog Switch touch target
 **Learning:** Found a `Switch` element in an AlertDialog that wasn't correctly wrapped in a clickable `Row` like the other settings, highlighting an accessibility issue pattern specific to this app's components where setting list items get proper accessible touch targets but modal/dialog settings sometimes get overlooked.
 **Action:** Always verify that interactive components inside dialogs and modals receive the same accessible touch target wrapping (`Row` + `.clickable`) as the main screen components.
+
+## 2024-06-03 - Contextual Feedback for Disabled Actions
+**Learning:** Primary action buttons that are disabled silently without feedback (e.g., leaving a "Play" icon but making it unclickable) can confuse users, especially when the disabling reason is stateful (like quiet hours).
+**Action:** Always provide contextual feedback for disabled primary action buttons by changing text (e.g., to explain why it's disabled) or showing an inline indicator, rather than leaving them silently unresponsive.
