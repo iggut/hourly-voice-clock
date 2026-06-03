@@ -736,6 +736,7 @@ fun ScheduleSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
                                 .clickable { oemGuidesExpanded = !oemGuidesExpanded }
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,

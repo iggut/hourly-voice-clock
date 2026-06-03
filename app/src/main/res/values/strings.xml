@@ -2,6 +2,7 @@
     <string name="app_name">Hourly Voice Clock</string>
     <string name="home_title">Hourly Voice Clock</string>
     <string name="announce_now">Announce time now</string>
+    <string name="initializing_voice">Initializing Voice...</string>
     <string name="hourly_announcements">Hourly announcements</string>
     <string name="next_announcement">Next announcement: %1$s</string>
     <string name="quiet_hours_active">Quiet hours active</string>
