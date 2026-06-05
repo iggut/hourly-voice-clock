@@ -201,7 +201,8 @@ fun FormatSettingsScreen(
                             OutlinedTextField(
                                 value = customPrefix,
                                 onValueChange = { viewModel.setCustomPrefix(it) },
-                                label = { Text("Prefix (e.g., 'Hello, it is now ')") },
+                                label = { Text("Prefix") },
+                                placeholder = { Text("e.g., 'Hello, it is now '") },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(14.dp)
                             )
@@ -209,7 +210,8 @@ fun FormatSettingsScreen(
                             OutlinedTextField(
                                 value = customSuffix,
                                 onValueChange = { viewModel.setCustomSuffix(it) },
-                                label = { Text("Suffix (e.g., ' master.')") },
+                                label = { Text("Suffix") },
+                                placeholder = { Text("e.g., ' master.'") },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(14.dp)
                             )
