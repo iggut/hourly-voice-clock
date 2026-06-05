@@ -79,6 +79,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private var startupAutoCheckDone = false
 
+    private var lastDate: java.time.LocalDate? = null
+    private var lastNextHour: java.time.LocalDateTime? = null
+
     init {
         viewModelScope.launch {
             while (isActive) {
@@ -114,16 +117,31 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private fun updateTime() {
         val now = LocalDateTime.now()
         _currentTime.value = now.format(TIME_FORMATTER)
-        _currentDate.value = now.format(DATE_FORMATTER)
+
+        // ⚡ Bolt Performance Optimization:
+        // Cache the formatted date string to avoid expensive formatting
+        // and string allocations every second.
+        val today = now.toLocalDate()
+        if (lastDate != today) {
+            lastDate = today
+            _currentDate.value = now.format(DATE_FORMATTER)
+        }
     }
 
     private fun updateNextAnnouncement(enabled: Boolean) {
         if (!enabled) {
             _nextAnnouncement.value = ""
+            lastNextHour = null
             return
         }
         val next = AnnouncementScheduler.getNextTopOfHour()
-        _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
+        // ⚡ Bolt Performance Optimization:
+        // Cache the formatted next announcement string to avoid
+        // formatting and string allocations every second in the loop.
+        if (lastNextHour != next) {
+            lastNextHour = next
+            _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
+        }
     }
 
     private fun updateQuietStatus(settings: com.hourlyvoiceclock.data.AppSettings) {
