@@ -79,12 +79,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private var startupAutoCheckDone = false
 
+    private var lastDateCheckDayOfYear = -1
+    private var lastAnnouncementCheckHour = -1
+
     init {
         viewModelScope.launch {
             while (isActive) {
-                updateTime()
+                val now = LocalDateTime.now()
+                updateTime(now)
                 if (_hourlyEnabled.value) {
-                    updateNextAnnouncement(true)
+                    updateNextAnnouncement(true, now)
                 }
                 delay(1000)
             }
@@ -111,19 +115,29 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun updateTime() {
-        val now = LocalDateTime.now()
+    private fun updateTime(now: LocalDateTime) {
         _currentTime.value = now.format(TIME_FORMATTER)
-        _currentDate.value = now.format(DATE_FORMATTER)
+
+        // Only format the date when the day changes
+        if (now.dayOfYear != lastDateCheckDayOfYear) {
+            _currentDate.value = now.format(DATE_FORMATTER)
+            lastDateCheckDayOfYear = now.dayOfYear
+        }
     }
 
-    private fun updateNextAnnouncement(enabled: Boolean) {
+    private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime) {
         if (!enabled) {
             _nextAnnouncement.value = ""
+            lastAnnouncementCheckHour = -1
             return
         }
-        val next = AnnouncementScheduler.getNextTopOfHour()
-        _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
+
+        // Only calculate and format the next announcement when the hour changes
+        if (now.hour != lastAnnouncementCheckHour) {
+            val next = AnnouncementScheduler.getNextTopOfHour(now)
+            _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
+            lastAnnouncementCheckHour = now.hour
+        }
     }
 
     private fun updateQuietStatus(settings: com.hourlyvoiceclock.data.AppSettings) {
