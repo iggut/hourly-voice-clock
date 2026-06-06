@@ -16,3 +16,7 @@
 ## 2024-05-30 - Disabled primary button feedback
 **Learning:** Disabled action buttons (like 'Announce Now' during TTS initialization) without visual explanations cause user confusion, as the user doesn't know why they cannot interact with a primary feature.
 **Action:** Always provide contextual feedback for disabled primary buttons, either by morphing the button text (e.g., 'Initializing Voice...') or adding an inline loading indicator (e.g. `CircularProgressIndicator`), rather than leaving it inexplicably unresponsive.
+
+## 2024-05-24 - Concise Labels and Contextual Placeholders in Compose Text Inputs
+**Learning:** In Compose, placing instructional text (e.g., "e.g., ...") inside the `label` property causes visual clutter when the label floats to the top of the input, making it harder to read and breaking the intended layout. Moving instructional text to `placeholder` provides context without overcrowding the floating label.
+**Action:** Always keep `label` text concise and use `placeholder` for examples or format instructions in `OutlinedTextField` and other Compose text inputs.
