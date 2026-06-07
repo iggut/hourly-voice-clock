@@ -1,8 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/home.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/home.png">
-  <img alt="Hourly Voice Clock" src="docs/screenshots/home.png" width="100%">
-</picture>
+
 
 <br>
 
