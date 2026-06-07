@@ -54,6 +54,11 @@ class FakeTtsEngine : TtsEngine {
         lastUtteranceId = utteranceId
     }
 
+    override fun speakAsync(text: String, onComplete: (Boolean) -> Unit) {
+        lastSpokenText = text
+        onComplete(true)
+    }
+
     override fun stop() {}
 
     override fun shutdown() {

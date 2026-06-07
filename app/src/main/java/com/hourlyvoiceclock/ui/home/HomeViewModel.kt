@@ -98,7 +98,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            val initOk = deps.ttsVoiceRepository.initialize()
+            val initOk = deps.ttsEngine.initialize()
             if (!initOk) {
                 Toast.makeText(getApplication(), "Text-to-Speech initialization failed. Check your TTS engine in system settings.", Toast.LENGTH_LONG).show()
             }

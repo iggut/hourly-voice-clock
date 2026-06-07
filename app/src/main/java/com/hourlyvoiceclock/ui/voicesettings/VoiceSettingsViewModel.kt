@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.di.DependenciesProvider
-import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import com.hourlyvoiceclock.tts.VoiceInfo
 import com.hourlyvoiceclock.tts.TtsEngineInfo
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -104,19 +103,19 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     init {
         viewModelScope.launch {
             deps.settingsRepository.runMigrations()
-            deps.ttsVoiceRepository.initialize()
+            deps.ttsEngine.initialize()
 
             val settings = deps.settingsRepository.settings.first()
             _selectedEnginePackage.value = settings.selectedTtsEnginePackage
-                ?: deps.ttsVoiceRepository.getEngines().firstOrNull { it.isInstalled }?.packageName
+                ?: deps.ttsEngine.getEngines().firstOrNull { it.isInstalled }?.packageName
             _isEspeakNgSelected.value = _selectedEnginePackage.value?.contains("espeak", ignoreCase = true) == true
             _selectedVoiceName.value = settings.selectedVoiceName
             _selectedPresetId.value = settings.selectedVoicePresetId
             _pitch.value = settings.pitch
             _speechRate.value = settings.speechRate
 
-            _engines.value = deps.ttsVoiceRepository.getEngines()
-            allNormalVoices = deps.ttsVoiceRepository.getAllVoices()
+            _engines.value = deps.ttsEngine.getEngines()
+            allNormalVoices = deps.ttsEngine.getVoices()
             _hasMultipleVoices.value = allNormalVoices.size > 1
 
             reconcileStaleVoiceSelection(settings.selectedVoiceName, settings.selectedLocale)
@@ -131,7 +130,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun switchTtsEngine(packageName: String) {
         viewModelScope.launch {
-            val success = deps.ttsVoiceRepository.switchEngine(packageName)
+            val success = deps.ttsEngine.switchEngine(packageName)
             if (success) {
                 deps.settingsRepository.setSelectedTtsEnginePackage(packageName)
                 _selectedEnginePackage.value = packageName
@@ -142,8 +141,8 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
                 _selectedVoiceName.value = null
                 _selectedPresetId.value = null
 
-                _engines.value = deps.ttsVoiceRepository.getEngines()
-                allNormalVoices = deps.ttsVoiceRepository.getAllVoices()
+                _engines.value = deps.ttsEngine.getEngines()
+                allNormalVoices = deps.ttsEngine.getVoices()
                 _hasMultipleVoices.value = allNormalVoices.size > 1
 
                 updateFilteredVoices()
@@ -187,7 +186,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun selectVoice(voiceName: String, localeTag: String) {
         viewModelScope.launch {
-            deps.ttsVoiceRepository.selectVoice(voiceName, localeTag)
+            deps.ttsEngine.setVoice(voiceName, localeTag)
             deps.settingsRepository.setSelectedVoice(voiceName, localeTag)
             _selectedVoiceName.value = voiceName
             _selectedPresetId.value = null
@@ -204,17 +203,17 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         val underlyingVoice = choosePresetVoice(preset)
 
         if (underlyingVoice != null) {
-            deps.ttsVoiceRepository.selectVoice(underlyingVoice.name, underlyingVoice.localeTag)
+            deps.ttsEngine.setVoice(underlyingVoice.name, underlyingVoice.localeTag)
             deps.settingsRepository.setSelectedVoice(underlyingVoice.name, underlyingVoice.localeTag)
             deps.settingsRepository.setSelectedVoicePreset(preset.id)
             _selectedVoiceName.value = underlyingVoice.name
             _selectedPresetId.value = preset.id
 
-            deps.ttsVoiceRepository.setPitch(preset.pitch)
+            deps.ttsEngine.setPitch(preset.pitch)
             deps.settingsRepository.setPitch(preset.pitch)
             _pitch.value = preset.pitch
 
-            deps.ttsVoiceRepository.setSpeechRate(preset.speechRate)
+            deps.ttsEngine.setSpeechRate(preset.speechRate)
             deps.settingsRepository.setSpeechRate(preset.speechRate)
             _speechRate.value = preset.speechRate
         }
@@ -244,7 +243,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun setPitch(value: Float) {
         viewModelScope.launch {
-            deps.ttsVoiceRepository.setPitch(value)
+            deps.ttsEngine.setPitch(value)
             deps.settingsRepository.setPitch(value)
             _pitch.value = value
         }
@@ -252,30 +251,30 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun setSpeechRate(value: Float) {
         viewModelScope.launch {
-            deps.ttsVoiceRepository.setSpeechRate(value)
+            deps.ttsEngine.setSpeechRate(value)
             deps.settingsRepository.setSpeechRate(value)
             _speechRate.value = value
         }
     }
 
     fun previewVoice() {
-        deps.ttsVoiceRepository.previewVoice("The time is 3:45 PM.")
+        deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
     }
 
     fun selectAndPreviewVoice(voiceName: String, localeTag: String) {
         viewModelScope.launch {
-            deps.ttsVoiceRepository.selectVoice(voiceName, localeTag)
+            deps.ttsEngine.setVoice(voiceName, localeTag)
             deps.settingsRepository.setSelectedVoice(voiceName, localeTag)
             _selectedVoiceName.value = voiceName
             _selectedPresetId.value = null
-            deps.ttsVoiceRepository.previewVoice("The time is 3:45 PM.")
+            deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
         }
     }
 
     fun selectAndPreviewPreset(preset: SpecialVoicePreset) {
         viewModelScope.launch {
             applyPreset(preset)
-            deps.ttsVoiceRepository.previewVoice("The time is 3:45 PM.")
+            deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
         }
     }
 }

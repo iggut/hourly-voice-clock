@@ -6,7 +6,6 @@ import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import com.hourlyvoiceclock.tts.AndroidTtsEngine
 import com.hourlyvoiceclock.tts.TtsEngine
-import com.hourlyvoiceclock.tts.TtsVoiceRepository
 
 /**
  * Central composition root for shared application dependencies.
@@ -27,15 +26,11 @@ class AppDependencies(context: Context) {
         AndroidTtsEngine(appContext)
     }
 
-    val ttsVoiceRepository: TtsVoiceRepository by lazy {
-        TtsVoiceRepository(ttsEngine)
-    }
-
     val announcementScheduler: AnnouncementScheduler by lazy {
         AnnouncementScheduler(appContext)
     }
 
     val timeAnnouncer: TimeAnnouncer by lazy {
-        TimeAnnouncer(appContext, ttsVoiceRepository)
+        TimeAnnouncer(appContext, ttsEngine)
     }
 }
