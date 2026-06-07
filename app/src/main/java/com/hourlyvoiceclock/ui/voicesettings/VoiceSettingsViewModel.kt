@@ -132,12 +132,16 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             val success = deps.ttsEngine.switchEngine(packageName)
             if (success) {
-                deps.settingsRepository.setSelectedTtsEnginePackage(packageName)
+                deps.settingsRepository.update {
+                    it.copy(
+                        selectedTtsEnginePackage = packageName,
+                        selectedVoiceName = null,
+                        selectedLocale = null,
+                        selectedVoicePresetId = null
+                    )
+                }
                 _selectedEnginePackage.value = packageName
                 _isEspeakNgSelected.value = packageName.contains("espeak", ignoreCase = true)
-
-                deps.settingsRepository.setSelectedVoice(null, null)
-                deps.settingsRepository.setSelectedVoicePreset(null)
                 _selectedVoiceName.value = null
                 _selectedPresetId.value = null
 
@@ -178,8 +182,9 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         }
         if (voiceStillExists) return
 
-        deps.settingsRepository.setSelectedVoice(null, null)
-        deps.settingsRepository.setSelectedVoicePreset(null)
+        deps.settingsRepository.update {
+            it.copy(selectedVoiceName = null, selectedLocale = null, selectedVoicePresetId = null)
+        }
         _selectedVoiceName.value = null
         _selectedPresetId.value = null
     }
@@ -204,17 +209,20 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
         if (underlyingVoice != null) {
             deps.ttsEngine.setVoice(underlyingVoice.name, underlyingVoice.localeTag)
-            deps.settingsRepository.setSelectedVoice(underlyingVoice.name, underlyingVoice.localeTag)
-            deps.settingsRepository.setSelectedVoicePreset(preset.id)
+            deps.ttsEngine.setPitch(preset.pitch)
+            deps.ttsEngine.setSpeechRate(preset.speechRate)
+            deps.settingsRepository.update {
+                it.copy(
+                    selectedVoiceName = underlyingVoice.name,
+                    selectedLocale = underlyingVoice.localeTag,
+                    selectedVoicePresetId = preset.id,
+                    pitch = preset.pitch,
+                    speechRate = preset.speechRate
+                )
+            }
             _selectedVoiceName.value = underlyingVoice.name
             _selectedPresetId.value = preset.id
-
-            deps.ttsEngine.setPitch(preset.pitch)
-            deps.settingsRepository.setPitch(preset.pitch)
             _pitch.value = preset.pitch
-
-            deps.ttsEngine.setSpeechRate(preset.speechRate)
-            deps.settingsRepository.setSpeechRate(preset.speechRate)
             _speechRate.value = preset.speechRate
         }
     }
