@@ -111,19 +111,32 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private var lastDateDayOfYear: Int = -1
+
     private fun updateTime() {
         val now = LocalDateTime.now()
         _currentTime.value = now.format(TIME_FORMATTER)
-        _currentDate.value = now.format(DATE_FORMATTER)
+
+        if (now.dayOfYear != lastDateDayOfYear) {
+            lastDateDayOfYear = now.dayOfYear
+            _currentDate.value = now.format(DATE_FORMATTER)
+        }
     }
+
+    private var lastNextAnnouncementHour: Int = -1
 
     private fun updateNextAnnouncement(enabled: Boolean) {
         if (!enabled) {
             _nextAnnouncement.value = ""
+            lastNextAnnouncementHour = -1
             return
         }
-        val next = AnnouncementScheduler.getNextTopOfHour()
-        _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
+        val now = LocalDateTime.now()
+        if (now.hour != lastNextAnnouncementHour || _nextAnnouncement.value.isEmpty()) {
+            lastNextAnnouncementHour = now.hour
+            val next = AnnouncementScheduler.getNextTopOfHour(now)
+            _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
+        }
     }
 
     private fun updateQuietStatus(settings: com.hourlyvoiceclock.data.AppSettings) {
