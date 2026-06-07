@@ -73,7 +73,7 @@ import androidx.compose.ui.unit.sp
 import com.hourlyvoiceclock.util.openUrl
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.filled.SystemUpdate
-import com.hourlyvoiceclock.ui.home.UpdateStatus
+import com.hourlyvoiceclock.data.UpdateStatus
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.TimeFormat

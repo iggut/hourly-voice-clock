@@ -2,10 +2,13 @@ package com.hourlyvoiceclock.di
 
 import android.content.Context
 import com.hourlyvoiceclock.announcer.TimeAnnouncer
+import com.hourlyvoiceclock.data.DefaultUpdateManager
 import com.hourlyvoiceclock.data.SettingsRepository
+import com.hourlyvoiceclock.data.UpdateManager
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import com.hourlyvoiceclock.tts.AndroidTtsEngine
 import com.hourlyvoiceclock.tts.TtsEngine
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * Central composition root for shared application dependencies.
@@ -32,5 +35,12 @@ class AppDependencies(context: Context) {
 
     val timeAnnouncer: TimeAnnouncer by lazy {
         TimeAnnouncer(appContext, ttsEngine)
+    }
+
+    val updateManager: UpdateManager by lazy {
+        DefaultUpdateManager(
+            scope = kotlinx.coroutines.CoroutineScope(SupervisorJob()),
+            appContext = appContext
+        )
     }
 }
