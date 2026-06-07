@@ -16,3 +16,7 @@
 ## 2024-05-30 - Disabled primary button feedback
 **Learning:** Disabled action buttons (like 'Announce Now' during TTS initialization) without visual explanations cause user confusion, as the user doesn't know why they cannot interact with a primary feature.
 **Action:** Always provide contextual feedback for disabled primary buttons, either by morphing the button text (e.g., 'Initializing Voice...') or adding an inline loading indicator (e.g. `CircularProgressIndicator`), rather than leaving it inexplicably unresponsive.
+
+## 2024-05-31 - Split long text field labels into label and placeholder
+**Learning:** Found `OutlinedTextField` instances with very long, instructional labels like "Prefix (e.g., 'Hello, it is now ')". This creates visual clutter and text truncation when the label floats up upon focus or input.
+**Action:** Always improve form field labels by splitting long instructional labels into a concise, floating `label` (e.g., "Prefix") and moving the example text into the `placeholder` property (e.g., "e.g., 'Hello, it is now '") to guide users cleanly.
