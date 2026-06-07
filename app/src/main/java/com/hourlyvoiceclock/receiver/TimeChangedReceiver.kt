@@ -5,10 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.app.AlarmManager
-import com.hourlyvoiceclock.di.DependenciesProvider
+import com.hourlyvoiceclock.scheduler.rescheduleAnnouncements
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class TimeChangedReceiver : BroadcastReceiver() {
@@ -24,13 +23,8 @@ class TimeChangedReceiver : BroadcastReceiver() {
 
             CoroutineScope(Dispatchers.Default).launch {
                 try {
-                    val deps = (appContext as DependenciesProvider).dependencies
-                    val settings = deps.settingsRepository.settings.first()
-                    if (settings.hourlyAnnouncementsEnabled) {
-                        deps.announcementScheduler.cancelHourlyAlarms()
-                        deps.announcementScheduler.scheduleNextHour(settings.exactAlarmsEnabled)
-                        Log.d("TimeChangedReceiver", "Rescheduled after action: $action")
-                    }
+                    rescheduleAnnouncements(appContext, cancelFirst = true)
+                    Log.d("TimeChangedReceiver", "Rescheduled after action: $action")
                 } catch (e: Exception) {
                     Log.e("TimeChangedReceiver", "Error rescheduling after action $action", e)
                 } finally {

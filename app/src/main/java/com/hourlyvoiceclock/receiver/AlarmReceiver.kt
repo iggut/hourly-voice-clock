@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.hourlyvoiceclock.di.DependenciesProvider
+import com.hourlyvoiceclock.scheduler.rescheduleAnnouncements
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -34,7 +35,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 // ALWAYS reschedule first, before any heavy TTS work.
                 // If the process is killed during TTS init/speak, the next
                 // alarm is already set.
-                deps.announcementScheduler.scheduleNextHour(settings.exactAlarmsEnabled)
+                rescheduleAnnouncements(appContext)
                 Log.d("AlarmReceiver", "Rescheduled next hourly alarm")
 
                 // Then do the announcement
