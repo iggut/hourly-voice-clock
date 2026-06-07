@@ -6,21 +6,21 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import com.hourlyvoiceclock.data.SettingsRepository
-import com.hourlyvoiceclock.tts.AndroidTtsEngine
-import com.hourlyvoiceclock.tts.TtsEngine
+import com.hourlyvoiceclock.di.AppDependencies
+import com.hourlyvoiceclock.di.DependenciesProvider
 import kotlinx.coroutines.runBlocking
 
-class HourlyVoiceClockApp : Application() {
+class HourlyVoiceClockApp : Application(), DependenciesProvider {
 
-    lateinit var ttsEngine: TtsEngine
+    override lateinit var dependencies: AppDependencies
         private set
 
     override fun onCreate() {
         super.onCreate()
+        dependencies = AppDependencies(this)
         runBlocking {
-            SettingsRepository(this@HourlyVoiceClockApp).runMigrations()
+            dependencies.settingsRepository.runMigrations()
         }
-        ttsEngine = AndroidTtsEngine(this)
         createNotificationChannel()
     }
 

@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.data.PhraseStyle
-import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.data.TimeFormat
+import com.hourlyvoiceclock.di.DependenciesProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +18,7 @@ import kotlinx.coroutines.delay
 
 class FormatSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val settingsRepo = SettingsRepository(application)
+    private val deps = (application as DependenciesProvider).dependencies
 
     private val _timeFormat = MutableStateFlow(TimeFormat.HOUR_12)
     val timeFormat: StateFlow<TimeFormat> = _timeFormat.asStateFlow()
@@ -46,7 +46,7 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
 
     init {
         viewModelScope.launch {
-            val settings = settingsRepo.settings.first()
+            val settings = deps.settingsRepository.settings.first()
             _timeFormat.value = settings.timeFormat
             _phraseStyle.value = settings.phraseStyle
             _customPrefix.value = settings.customPrefix
@@ -60,14 +60,14 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
 
     fun setTimeFormat(format: TimeFormat) {
         viewModelScope.launch {
-            settingsRepo.setTimeFormat(format)
+            deps.settingsRepository.setTimeFormat(format)
             _timeFormat.value = format
         }
     }
 
     fun setPhraseStyle(style: PhraseStyle) {
         viewModelScope.launch {
-            settingsRepo.setPhraseStyle(style)
+            deps.settingsRepository.setPhraseStyle(style)
             _phraseStyle.value = style
         }
     }
@@ -79,7 +79,7 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
         prefixSaveJob?.cancel()
         prefixSaveJob = viewModelScope.launch {
             delay(500)
-            settingsRepo.setCustomPrefix(prefix)
+            deps.settingsRepository.setCustomPrefix(prefix)
         }
     }
 
@@ -90,34 +90,34 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
         suffixSaveJob?.cancel()
         suffixSaveJob = viewModelScope.launch {
             delay(500)
-            settingsRepo.setCustomSuffix(suffix)
+            deps.settingsRepository.setCustomSuffix(suffix)
         }
     }
 
     fun setChimeSound(sound: ChimeSound) {
         viewModelScope.launch {
-            settingsRepo.setChimeSound(sound)
+            deps.settingsRepository.setChimeSound(sound)
             _chimeSound.value = sound
         }
     }
 
     fun setVibrateBefore(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepo.setVibrateBefore(enabled)
+            deps.settingsRepository.setVibrateBefore(enabled)
             _vibrateBefore.value = enabled
         }
     }
 
     fun setAnnounceDate(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepo.setAnnounceDateOnDemand(enabled)
+            deps.settingsRepository.setAnnounceDateOnDemand(enabled)
             _announceDate.value = enabled
         }
     }
 
     fun setAudioChannel(channel: AudioChannel) {
         viewModelScope.launch {
-            settingsRepo.setAudioChannel(channel)
+            deps.settingsRepository.setAudioChannel(channel)
             _audioChannel.value = channel
         }
     }

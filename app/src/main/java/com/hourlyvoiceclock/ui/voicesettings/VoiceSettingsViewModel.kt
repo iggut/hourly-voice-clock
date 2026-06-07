@@ -3,8 +3,7 @@ package com.hourlyvoiceclock.ui.voicesettings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.hourlyvoiceclock.HourlyVoiceClockApp
-import com.hourlyvoiceclock.data.SettingsRepository
+import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import com.hourlyvoiceclock.tts.VoiceInfo
 import com.hourlyvoiceclock.tts.TtsEngineInfo
@@ -60,8 +59,7 @@ val ESpeakNgVoiceVariants = listOf(
 
 class VoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val settingsRepo = SettingsRepository(application)
-    private val ttsRepo = TtsVoiceRepository((application as HourlyVoiceClockApp).ttsEngine)
+    private val deps = (application as DependenciesProvider).dependencies
 
     private var allNormalVoices = emptyList<VoiceInfo>()
 
@@ -105,20 +103,20 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     init {
         viewModelScope.launch {
-            settingsRepo.runMigrations()
-            ttsRepo.initialize()
+            deps.settingsRepository.runMigrations()
+            deps.ttsVoiceRepository.initialize()
 
-            val settings = settingsRepo.settings.first()
+            val settings = deps.settingsRepository.settings.first()
             _selectedEnginePackage.value = settings.selectedTtsEnginePackage
-                ?: ttsRepo.getEngines().firstOrNull { it.isInstalled }?.packageName
+                ?: deps.ttsVoiceRepository.getEngines().firstOrNull { it.isInstalled }?.packageName
             _isEspeakNgSelected.value = _selectedEnginePackage.value?.contains("espeak", ignoreCase = true) == true
             _selectedVoiceName.value = settings.selectedVoiceName
             _selectedPresetId.value = settings.selectedVoicePresetId
             _pitch.value = settings.pitch
             _speechRate.value = settings.speechRate
 
-            _engines.value = ttsRepo.getEngines()
-            allNormalVoices = ttsRepo.getAllVoices()
+            _engines.value = deps.ttsVoiceRepository.getEngines()
+            allNormalVoices = deps.ttsVoiceRepository.getAllVoices()
             _hasMultipleVoices.value = allNormalVoices.size > 1
 
             reconcileStaleVoiceSelection(settings.selectedVoiceName, settings.selectedLocale)
@@ -133,19 +131,19 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun switchTtsEngine(packageName: String) {
         viewModelScope.launch {
-            val success = ttsRepo.switchEngine(packageName)
+            val success = deps.ttsVoiceRepository.switchEngine(packageName)
             if (success) {
-                settingsRepo.setSelectedTtsEnginePackage(packageName)
+                deps.settingsRepository.setSelectedTtsEnginePackage(packageName)
                 _selectedEnginePackage.value = packageName
                 _isEspeakNgSelected.value = packageName.contains("espeak", ignoreCase = true)
 
-                settingsRepo.setSelectedVoice(null, null)
-                settingsRepo.setSelectedVoicePreset(null)
+                deps.settingsRepository.setSelectedVoice(null, null)
+                deps.settingsRepository.setSelectedVoicePreset(null)
                 _selectedVoiceName.value = null
                 _selectedPresetId.value = null
 
-                _engines.value = ttsRepo.getEngines()
-                allNormalVoices = ttsRepo.getAllVoices()
+                _engines.value = deps.ttsVoiceRepository.getEngines()
+                allNormalVoices = deps.ttsVoiceRepository.getAllVoices()
                 _hasMultipleVoices.value = allNormalVoices.size > 1
 
                 updateFilteredVoices()
@@ -181,16 +179,16 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         }
         if (voiceStillExists) return
 
-        settingsRepo.setSelectedVoice(null, null)
-        settingsRepo.setSelectedVoicePreset(null)
+        deps.settingsRepository.setSelectedVoice(null, null)
+        deps.settingsRepository.setSelectedVoicePreset(null)
         _selectedVoiceName.value = null
         _selectedPresetId.value = null
     }
 
     fun selectVoice(voiceName: String, localeTag: String) {
         viewModelScope.launch {
-            ttsRepo.selectVoice(voiceName, localeTag)
-            settingsRepo.setSelectedVoice(voiceName, localeTag)
+            deps.ttsVoiceRepository.selectVoice(voiceName, localeTag)
+            deps.settingsRepository.setSelectedVoice(voiceName, localeTag)
             _selectedVoiceName.value = voiceName
             _selectedPresetId.value = null
         }
@@ -206,18 +204,18 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         val underlyingVoice = choosePresetVoice(preset)
 
         if (underlyingVoice != null) {
-            ttsRepo.selectVoice(underlyingVoice.name, underlyingVoice.localeTag)
-            settingsRepo.setSelectedVoice(underlyingVoice.name, underlyingVoice.localeTag)
-            settingsRepo.setSelectedVoicePreset(preset.id)
+            deps.ttsVoiceRepository.selectVoice(underlyingVoice.name, underlyingVoice.localeTag)
+            deps.settingsRepository.setSelectedVoice(underlyingVoice.name, underlyingVoice.localeTag)
+            deps.settingsRepository.setSelectedVoicePreset(preset.id)
             _selectedVoiceName.value = underlyingVoice.name
             _selectedPresetId.value = preset.id
 
-            ttsRepo.setPitch(preset.pitch)
-            settingsRepo.setPitch(preset.pitch)
+            deps.ttsVoiceRepository.setPitch(preset.pitch)
+            deps.settingsRepository.setPitch(preset.pitch)
             _pitch.value = preset.pitch
 
-            ttsRepo.setSpeechRate(preset.speechRate)
-            settingsRepo.setSpeechRate(preset.speechRate)
+            deps.ttsVoiceRepository.setSpeechRate(preset.speechRate)
+            deps.settingsRepository.setSpeechRate(preset.speechRate)
             _speechRate.value = preset.speechRate
         }
     }
@@ -246,38 +244,38 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun setPitch(value: Float) {
         viewModelScope.launch {
-            ttsRepo.setPitch(value)
-            settingsRepo.setPitch(value)
+            deps.ttsVoiceRepository.setPitch(value)
+            deps.settingsRepository.setPitch(value)
             _pitch.value = value
         }
     }
 
     fun setSpeechRate(value: Float) {
         viewModelScope.launch {
-            ttsRepo.setSpeechRate(value)
-            settingsRepo.setSpeechRate(value)
+            deps.ttsVoiceRepository.setSpeechRate(value)
+            deps.settingsRepository.setSpeechRate(value)
             _speechRate.value = value
         }
     }
 
     fun previewVoice() {
-        ttsRepo.previewVoice("The time is 3:45 PM.")
+        deps.ttsVoiceRepository.previewVoice("The time is 3:45 PM.")
     }
 
     fun selectAndPreviewVoice(voiceName: String, localeTag: String) {
         viewModelScope.launch {
-            ttsRepo.selectVoice(voiceName, localeTag)
-            settingsRepo.setSelectedVoice(voiceName, localeTag)
+            deps.ttsVoiceRepository.selectVoice(voiceName, localeTag)
+            deps.settingsRepository.setSelectedVoice(voiceName, localeTag)
             _selectedVoiceName.value = voiceName
             _selectedPresetId.value = null
-            ttsRepo.previewVoice("The time is 3:45 PM.")
+            deps.ttsVoiceRepository.previewVoice("The time is 3:45 PM.")
         }
     }
 
     fun selectAndPreviewPreset(preset: SpecialVoicePreset) {
         viewModelScope.launch {
             applyPreset(preset)
-            ttsRepo.previewVoice("The time is 3:45 PM.")
+            deps.ttsVoiceRepository.previewVoice("The time is 3:45 PM.")
         }
     }
 }

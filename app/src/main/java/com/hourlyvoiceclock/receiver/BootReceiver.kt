@@ -4,8 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.hourlyvoiceclock.data.SettingsRepository
-import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
+import com.hourlyvoiceclock.di.DependenciesProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -22,11 +21,10 @@ class BootReceiver : BroadcastReceiver() {
 
         CoroutineScope(Dispatchers.Default).launch {
             try {
-                val settingsRepo = SettingsRepository(appContext)
-                val settings = settingsRepo.settings.first()
+                val deps = (appContext as DependenciesProvider).dependencies
+                val settings = deps.settingsRepository.settings.first()
                 if (settings.hourlyAnnouncementsEnabled) {
-                    val scheduler = AnnouncementScheduler(appContext)
-                    scheduler.scheduleNextHour(settings.exactAlarmsEnabled)
+                    deps.announcementScheduler.scheduleNextHour(settings.exactAlarmsEnabled)
                     Log.d("BootReceiver", "Rescheduled hourly alarm after action: $action")
                 }
             } catch (e: Exception) {

@@ -7,14 +7,11 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.announcer.QuietHoursPolicy
-import com.hourlyvoiceclock.announcer.TimeAnnouncer
-import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.data.SignatureVerifier
 import com.hourlyvoiceclock.data.UpdateDownloader
+import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
-import com.hourlyvoiceclock.tts.TtsVoiceRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,13 +40,10 @@ sealed interface UpdateStatus {
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val settingsRepo = SettingsRepository(application)
-    private val scheduler = AnnouncementScheduler(application)
-    private val ttsRepo = TtsVoiceRepository((application as HourlyVoiceClockApp).ttsEngine)
-    private val announcer = TimeAnnouncer(application, ttsRepo)
+    private val deps = (application as DependenciesProvider).dependencies
     private val updateDownloader = UpdateDownloader()
 
-    val appSettings: StateFlow<com.hourlyvoiceclock.data.AppSettings> = settingsRepo.settings
+    val appSettings: StateFlow<com.hourlyvoiceclock.data.AppSettings> = deps.settingsRepository.settings
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -91,7 +85,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             var previousAutoUpdateEnabled: Boolean? = null
-            settingsRepo.settings.collect { settings ->
+            deps.settingsRepository.settings.collect { settings ->
                 _hourlyEnabled.value = settings.hourlyAnnouncementsEnabled
                 updateQuietStatus(settings)
                 val reEnabled =
@@ -104,7 +98,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            val initOk = ttsRepo.initialize()
+            val initOk = deps.ttsVoiceRepository.initialize()
             if (!initOk) {
                 Toast.makeText(getApplication(), "Text-to-Speech initialization failed. Check your TTS engine in system settings.", Toast.LENGTH_LONG).show()
             }
@@ -146,26 +140,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleHourly(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepo.setHourlyAnnouncements(enabled)
-            val settings = settingsRepo.settings.first()
+            deps.settingsRepository.setHourlyAnnouncements(enabled)
+            val settings = deps.settingsRepository.settings.first()
             if (enabled) {
-                scheduler.scheduleNextHour(settings.exactAlarmsEnabled)
+                deps.announcementScheduler.scheduleNextHour(settings.exactAlarmsEnabled)
             } else {
-                scheduler.cancelHourlyAlarms()
+                deps.announcementScheduler.cancelHourlyAlarms()
             }
         }
     }
 
     fun announceNow(includeDate: Boolean = false) {
         viewModelScope.launch {
-            val settings = settingsRepo.settings.first()
-            announcer.announce(settings, force = true, includeDate = includeDate)
+            val settings = deps.settingsRepository.settings.first()
+            deps.timeAnnouncer.announce(settings, force = true, includeDate = includeDate)
         }
     }
 
     fun setAutoUpdateEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepo.setAutoUpdateEnabled(enabled)
+            deps.settingsRepository.setAutoUpdateEnabled(enabled)
         }
     }
 
