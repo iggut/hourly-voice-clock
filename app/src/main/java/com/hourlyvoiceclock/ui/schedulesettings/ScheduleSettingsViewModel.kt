@@ -7,7 +7,7 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.hourlyvoiceclock.data.SettingsRepository
+import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,8 +19,7 @@ import java.time.LocalTime
 
 class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val settingsRepo = SettingsRepository(application)
-    private val scheduler = AnnouncementScheduler(application)
+    private val deps = (application as DependenciesProvider).dependencies
 
     private val _quietHoursEnabled = MutableStateFlow(false)
     val quietHoursEnabled: StateFlow<Boolean> = _quietHoursEnabled.asStateFlow()
@@ -66,7 +65,7 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
 
     fun refreshAll() {
         viewModelScope.launch {
-            val settings = settingsRepo.settings.first()
+            val settings = deps.settingsRepository.settings.first()
             _quietHoursEnabled.value = settings.quietHoursEnabled
             _quietStart.value = settings.quietHoursStart
             _quietEnd.value = settings.quietHoursEnd
@@ -91,10 +90,10 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         // If permission was previously denied and is now granted, reschedule
         if (wasDenied && can && _exactAlarmsEnabled.value) {
             viewModelScope.launch {
-                val settings = settingsRepo.settings.first()
+                val settings = deps.settingsRepository.settings.first()
                 if (settings.hourlyAnnouncementsEnabled) {
-                    scheduler.cancelHourlyAlarms()
-                    scheduler.scheduleNextHour(exact = true)
+                    deps.announcementScheduler.cancelHourlyAlarms()
+                    deps.announcementScheduler.scheduleNextHour(exact = true)
                 }
             }
         }
@@ -131,35 +130,35 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
 
     fun setQuietHoursEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepo.setQuietHoursEnabled(enabled)
+            deps.settingsRepository.setQuietHoursEnabled(enabled)
             _quietHoursEnabled.value = enabled
         }
     }
 
     fun setQuietStart(time: LocalTime) {
         viewModelScope.launch {
-            settingsRepo.setQuietHoursStart(time)
+            deps.settingsRepository.setQuietHoursStart(time)
             _quietStart.value = time
         }
     }
 
     fun setQuietEnd(time: LocalTime) {
         viewModelScope.launch {
-            settingsRepo.setQuietHoursEnd(time)
+            deps.settingsRepository.setQuietHoursEnd(time)
             _quietEnd.value = time
         }
     }
 
     fun setAllowManualDuringQuiet(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepo.setAllowManualDuringQuiet(enabled)
+            deps.settingsRepository.setAllowManualDuringQuiet(enabled)
             _allowManualDuringQuiet.value = enabled
         }
     }
 
     fun setExactAlarmsEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepo.setExactAlarmsEnabled(enabled)
+            deps.settingsRepository.setExactAlarmsEnabled(enabled)
             _exactAlarmsEnabled.value = enabled
 
             if (enabled) {
@@ -173,17 +172,17 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             }
 
             // Schedule or reschedule
-            val settings = settingsRepo.settings.first()
+            val settings = deps.settingsRepository.settings.first()
             if (settings.hourlyAnnouncementsEnabled) {
-                scheduler.cancelHourlyAlarms()
-                scheduler.scheduleNextHour(enabled && _canScheduleExact.value)
+                deps.announcementScheduler.cancelHourlyAlarms()
+                deps.announcementScheduler.scheduleNextHour(enabled && _canScheduleExact.value)
             }
         }
     }
 
     fun setNotificationLogging(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepo.setNotificationLogging(enabled)
+            deps.settingsRepository.setNotificationLogging(enabled)
             _notificationLogging.value = enabled
         }
     }

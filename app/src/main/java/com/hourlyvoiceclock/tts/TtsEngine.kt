@@ -29,6 +29,7 @@ interface TtsEngine {
     fun setSpeechRate(rate: Float)
     fun setAudioChannel(channel: AudioChannel)
     fun speak(text: String, utteranceId: String)
+    fun speakAsync(text: String, onComplete: (Boolean) -> Unit)
     fun stop()
     fun shutdown()
     suspend fun switchEngine(enginePackage: String?): Boolean
@@ -215,7 +216,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         }
     }
 
-    fun speakAsync(text: String, onComplete: (Boolean) -> Unit) {
+    override fun speakAsync(text: String, onComplete: (Boolean) -> Unit) {
         val id = "hvc_${utteranceCounter.incrementAndGet()}"
         pendingUtterances[id] = onComplete
         speak(text, id)

@@ -13,14 +13,14 @@ import android.widget.Toast
 import com.hourlyvoiceclock.data.AppSettings
 import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.ChimeSound
-import com.hourlyvoiceclock.tts.TtsVoiceRepository
+import com.hourlyvoiceclock.tts.TtsEngine
 import com.hourlyvoiceclock.R
 import java.time.LocalDateTime
 import java.util.Locale
 
 class TimeAnnouncer(
     private val context: Context,
-    private val ttsRepository: TtsVoiceRepository
+    private val ttsEngine: TtsEngine
 ) {
 
     fun announce(
@@ -86,30 +86,30 @@ class TimeAnnouncer(
         usage: Int,
         audioStream: Int
     ) {
-        if (!ttsRepository.isAvailable()) {
+        if (!ttsEngine.isAvailable()) {
             Log.w(TAG, "TTS not available - attempting init")
         }
 
         val voiceSet = settings.selectedVoiceName?.let { voiceName ->
-            ttsRepository.selectVoice(voiceName, settings.selectedLocale ?: "")
+            ttsEngine.setVoice(voiceName, settings.selectedLocale ?: "")
         } ?: false
 
         if (!voiceSet) {
             val localeSet = settings.selectedLocale?.let { locale ->
-                ttsRepository.selectLanguage(locale)
+                ttsEngine.setLanguage(locale)
             } ?: false
             if (!localeSet) {
                 val deviceDefault = Locale.getDefault().toLanguageTag()
-                val defaultSet = ttsRepository.selectLanguage(deviceDefault)
+                val defaultSet = ttsEngine.setLanguage(deviceDefault)
                 if (!defaultSet) {
-                    ttsRepository.selectLanguage("en-US")
+                    ttsEngine.setLanguage("en-US")
                 }
             }
         }
 
-        ttsRepository.setPitch(settings.pitch)
-        ttsRepository.setSpeechRate(settings.speechRate)
-        ttsRepository.setAudioChannel(settings.audioChannel)
+        ttsEngine.setPitch(settings.pitch)
+        ttsEngine.setSpeechRate(settings.speechRate)
+        ttsEngine.setAudioChannel(settings.audioChannel)
 
         val text = AnnouncementFormatter.format(
             dateTime = dateTime,
@@ -139,7 +139,7 @@ class TimeAnnouncer(
             )
         }
 
-        ttsRepository.speak(text)
+        ttsEngine.speakAsync(text) { /* completion handled by engine */ }
 
         if (settings.notificationLogging) {
             postNotification(text)
