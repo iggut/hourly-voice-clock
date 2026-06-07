@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -24,7 +25,11 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 class SettingsRepository(private val context: Context) {
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
-        AppSettings(
+        settingsFromPrefs(prefs)
+    }
+
+    private fun settingsFromPrefs(prefs: Preferences): AppSettings {
+        return AppSettings(
             hourlyAnnouncementsEnabled = prefs[KEY_HOURLY_ANNOUNCEMENTS] ?: false,
             selectedVoiceName = prefs[KEY_SELECTED_VOICE_NAME]?.takeIf { it.isNotBlank() },
             selectedLocale = prefs[KEY_SELECTED_LOCALE]?.takeIf { it.isNotBlank() },
@@ -48,6 +53,31 @@ class SettingsRepository(private val context: Context) {
             selectedTtsEnginePackage = prefs[KEY_SELECTED_TTS_ENGINE_PACKAGE]?.takeIf { it.isNotBlank() },
             autoUpdateEnabled = prefs[KEY_AUTO_UPDATE_ENABLED] ?: true
         )
+    }
+
+    private fun MutablePreferences.writeSettings(settings: AppSettings) {
+        this[KEY_HOURLY_ANNOUNCEMENTS] = settings.hourlyAnnouncementsEnabled
+        if (settings.selectedVoiceName != null) this[KEY_SELECTED_VOICE_NAME] = settings.selectedVoiceName else remove(KEY_SELECTED_VOICE_NAME)
+        if (settings.selectedLocale != null) this[KEY_SELECTED_LOCALE] = settings.selectedLocale else remove(KEY_SELECTED_LOCALE)
+        if (settings.selectedVoicePresetId != null) this[KEY_SELECTED_VOICE_PRESET_ID] = settings.selectedVoicePresetId else remove(KEY_SELECTED_VOICE_PRESET_ID)
+        this[KEY_PITCH] = settings.pitch
+        this[KEY_SPEECH_RATE] = settings.speechRate
+        this[KEY_TIME_FORMAT] = settings.timeFormat.name
+        this[KEY_PHRASE_STYLE] = settings.phraseStyle.name
+        this[KEY_CUSTOM_PREFIX] = settings.customPrefix
+        this[KEY_CUSTOM_SUFFIX] = settings.customSuffix
+        this[KEY_CHIME_SOUND] = settings.chimeSound.name
+        this[KEY_VIBRATE_BEFORE] = settings.vibrateBefore
+        this[KEY_ANNOUNCE_DATE] = settings.announceDateOnDemand
+        this[KEY_QUIET_HOURS_ENABLED] = settings.quietHoursEnabled
+        this[KEY_QUIET_HOURS_START] = formatTime(settings.quietHoursStart)
+        this[KEY_QUIET_HOURS_END] = formatTime(settings.quietHoursEnd)
+        this[KEY_ALLOW_MANUAL_QUIET] = settings.allowManualDuringQuiet
+        this[KEY_EXACT_ALARMS] = settings.exactAlarmsEnabled
+        this[KEY_NOTIFICATION_LOGGING] = settings.notificationLogging
+        this[KEY_AUDIO_CHANNEL] = settings.audioChannel.name
+        if (settings.selectedTtsEnginePackage != null) this[KEY_SELECTED_TTS_ENGINE_PACKAGE] = settings.selectedTtsEnginePackage else remove(KEY_SELECTED_TTS_ENGINE_PACKAGE)
+        this[KEY_AUTO_UPDATE_ENABLED] = settings.autoUpdateEnabled
     }
 
     suspend fun setHourlyAnnouncements(enabled: Boolean) {
@@ -150,6 +180,20 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[KEY_AUTO_UPDATE_ENABLED] = enabled }
     }
 
+    /**
+     * Atomic update: reads current settings, applies [transform], writes back
+     * all fields. More concise than calling individual setters when multiple
+     * fields change together.
+     *
+     * Example: `update { it.copy(pitch = 0.5f, speechRate = 0.8f) }`
+     */
+    suspend fun update(transform: (AppSettings) -> AppSettings) {
+        context.dataStore.edit { prefs ->
+            val current = settingsFromPrefs(prefs)
+            val updated = transform(current)
+            prefs.writeSettings(updated)
+        }
+    }
 
     companion object {
         internal fun parseTime(value: String?, fallback: String): LocalTime {

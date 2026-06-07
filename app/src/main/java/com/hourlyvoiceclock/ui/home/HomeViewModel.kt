@@ -140,7 +140,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleHourly(enabled: Boolean) {
         viewModelScope.launch {
-            deps.settingsRepository.setHourlyAnnouncements(enabled)
+            deps.settingsRepository.update { it.copy(hourlyAnnouncementsEnabled = enabled) }
             val settings = deps.settingsRepository.settings.first()
             if (enabled) {
                 deps.announcementScheduler.scheduleNextHour(settings.exactAlarmsEnabled)
