@@ -200,72 +200,61 @@ fun HomeScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // Clock layout
-                        if (currentTime.isNotBlank() && currentTime.contains(":")) {
-                            val parts = currentTime.split(" ")
-                            val timeString = parts[0]
-                            val amPm = if (parts.size > 1) parts[1] else ""
-                            val timeParts = timeString.split(":")
-                            
-                            if (timeParts.size >= 3) {
-                                val hours = timeParts[0]
-                                val minutes = timeParts[1]
-                                val seconds = timeParts[2]
+                        if (currentTime.hours != "--") {
+                            Row(
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "${currentTime.hours}:${currentTime.minutes}",
+                                    style = MaterialTheme.typography.displayLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.SansSerif,
+                                        letterSpacing = (-1).sp
+                                    ),
+                                    fontSize = 64.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
 
-                                Row(
-                                    verticalAlignment = Alignment.Bottom,
-                                    horizontalArrangement = Arrangement.Center
+                                Column(
+                                    horizontalAlignment = Alignment.Start,
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.padding(bottom = 12.dp)
                                 ) {
-                                    Text(
-                                        text = "$hours:$minutes",
-                                        style = MaterialTheme.typography.displayLarge.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.SansSerif,
-                                            letterSpacing = (-1).sp
-                                        ),
-                                        fontSize = 64.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    
-                                    Column(
-                                        horizontalAlignment = Alignment.Start,
-                                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                                        modifier = Modifier.padding(bottom = 12.dp)
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(6.dp)
-                                                    .clip(CircleShape)
-                                                    .graphicsLayer {
-                                                        alpha = pulseAlpha
-                                                    }
-                                                    .background(MaterialTheme.colorScheme.tertiary)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .clip(CircleShape)
+                                                .graphicsLayer {
+                                                    alpha = pulseAlpha
+                                                }
+                                                .background(MaterialTheme.colorScheme.tertiary)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = currentTime.seconds,
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontFeatureSettings = "tnum"
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    if (currentTime.amPm.isNotEmpty()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
                                             Text(
-                                                text = seconds,
-                                                style = MaterialTheme.typography.titleMedium.copy(
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    fontFamily = FontFamily.Monospace,
-                                                    fontFeatureSettings = "tnum"
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                text = currentTime.amPm,
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
-                                        }
-                                        if (amPm.isNotEmpty()) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(6.dp))
-                                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                                            ) {
-                                                Text(
-                                                    text = amPm,
-                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                )
-                                            }
                                         }
                                     }
                                 }

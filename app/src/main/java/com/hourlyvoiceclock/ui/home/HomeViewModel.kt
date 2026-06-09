@@ -19,6 +19,14 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+data class TimeComponents(
+    val hours: String = "--",
+    val minutes: String = "--",
+    val seconds: String = "--",
+    val amPm: String = ""
+)
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -34,8 +42,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     val updateStatus: StateFlow<UpdateStatus> = updateManager.status
 
-    private val _currentTime = MutableStateFlow("")
-    val currentTime: StateFlow<String> = _currentTime.asStateFlow()
+    private val _currentTime = MutableStateFlow(TimeComponents())
+    val currentTime: StateFlow<TimeComponents> = _currentTime.asStateFlow()
 
     private val _currentDate = MutableStateFlow("")
     val currentDate: StateFlow<String> = _currentDate.asStateFlow()
@@ -90,8 +98,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun updateTime() {
         val now = LocalDateTime.now()
-        // Format time every second
-        _currentTime.value = now.format(TIME_FORMATTER)
+        // Extract time components without heavy string formatting
+        val hour12 = if (now.hour % 12 == 0) 12 else now.hour % 12
+
+        // Optimize: use padStart for speed instead of String.format
+        _currentTime.value = TimeComponents(
+            hours = hour12.toString(),
+            minutes = now.minute.toString().padStart(2, '0'),
+            seconds = now.second.toString().padStart(2, '0'),
+            amPm = if (now.hour < 12) "AM" else "PM"
+        )
 
         // Optimize: Only format date when the day changes
         val today = now.toLocalDate()
@@ -188,7 +204,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun dismissUpdateDialog() = updateManager.dismissUpdateDialog()
 
     companion object {
-        private val TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm:ss a")
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")
         private val NEXT_ANNOUNCEMENT_FORMATTER = DateTimeFormatter.ofPattern("h:mm a")
     }
