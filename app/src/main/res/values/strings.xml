@@ -1,5 +1,16 @@
 <resources>
     <string name="app_name">Hourly Voice Clock</string>
+    <!--
+        Privacy policy URL. Required for Play Store submission. The
+        app collects no personal data (see README "Privacy" section);
+        the policy linked here should mirror that and explain what
+        network calls the app makes (GitHub releases API for
+        updates, network-required TTS voices) and why.
+
+        Replace the placeholder below with the published URL of your
+        privacy policy before submitting to the Play Console.
+    -->
+    <string name="privacy_policy_url" translatable="false">https://github.com/iggut/hourly-voice-clock/blob/main/README.md#privacy</string>
     <string name="home_title">Hourly Voice Clock</string>
     <string name="announce_now">Announce time now</string>
     <string name="initializing_voice">Initializing Voice...</string>

@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3-alpha] - 2026-06-10
+
+### Added
+- **Android App Bundle (AAB) support** for Play Store submission. `bundleRelease` produces a signed .aab; the legacy `assembleRelease` APK is still produced for sideloading.
+- **R8 minification + resource shrinking** for release builds. APK drops from ~11 MB to ~1.2 MB; AAB is 3.2 MB.
+- **Lint baseline** so the 103 pre-existing lint warnings do not block release; new warnings will fail the build.
+- **Privacy policy URL string** (`R.string.privacy_policy_url`) for Play Console. Replace the placeholder before submitting.
+- **`versionCode` / `versionName` overridable from `gradle.properties`** so CI can stamp builds from the version tag without editing `build.gradle.kts`.
+- **Language resource filter** (`en`, `fr`) for an accurate Play Store "supported languages" listing.
+
+### Changed
+- **Compose `Modifier.padding` lint baseline**: documented pre-existing issues rather than disabling the lint check.
+
+### Notes for Play Console submission
+- Replace `R.string.privacy_policy_url` with the published URL of your privacy policy.
+- Data safety: declare "no data collected" — the app makes no analytics or telemetry calls. Two network endpoints are used, both opt-in: GitHub releases API (auto-update check) and network-required TTS voices.
+- Content rating: IARC questionnaire in the Play Console — answer "no" to all data collection questions.
+- Signing: set `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` in CI secrets. The local debug-keystore fallback is for development only.
+
 ## [0.3.0] - 2026-05-29
 
 ### Added
