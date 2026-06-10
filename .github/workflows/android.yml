@@ -87,29 +87,26 @@ jobs:
           echo "sha_file=${APK_NAME}.sha256" >> $GITHUB_OUTPUT
           echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.rename.outputs.version_tag }}
-          name: Release ${{ steps.rename.outputs.version_tag }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
-            ${{ steps.rename.outputs.renamed_apk }}
-            ${{ steps.rename.outputs.sha_file }}
-          draft: true
-          prerelease: false
-
       - name: Upload debug APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload release APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload release APK checksum
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk-checksum
+          path: hourly-voice-clock-*-release.apk.sha256
 
       - name: Upload test reports
         if: always()
@@ -124,3 +121,20 @@ jobs:
         with:
           name: lint-reports
           path: app/build/reports/lint-results-*.html
+
+      - name: Create GitHub Release
+        # Best-effort: a 401 from the release API (auth scope, missing
+        # tag, etc.) must not fail the job. The release APK is already
+        # uploaded as an artifact above, so the build is recoverable
+        # even when the GitHub Release step cannot complete.
+        continue-on-error: true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.rename.outputs.version_tag }}
+          name: Release ${{ steps.rename.outputs.version_tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            ${{ steps.rename.outputs.renamed_apk }}
+            ${{ steps.rename.outputs.sha_file }}
+          draft: true
+          prerelease: false
