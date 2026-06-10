@@ -1,12 +1,10 @@
 package com.hourlyvoiceclock.announcer
 
 import android.content.Context
-import android.media.AudioAttributes
 import android.media.AudioManager
 import android.util.Log
 import android.widget.Toast
 import com.hourlyvoiceclock.data.AppSettings
-import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.tts.TtsEngine
 import java.time.LocalDateTime
@@ -41,23 +39,16 @@ class TimeAnnouncer(
             }
         }
 
-        val (audioStream, usage) = when (settings.audioChannel) {
-            AudioChannel.MEDIA -> AudioManager.STREAM_MUSIC to AudioAttributes.USAGE_MEDIA
-            AudioChannel.NOTIFICATION -> AudioManager.STREAM_NOTIFICATION to AudioAttributes.USAGE_NOTIFICATION
-            AudioChannel.CALL -> AudioManager.STREAM_VOICE_CALL to AudioAttributes.USAGE_VOICE_COMMUNICATION
-        }
+        val channelSpec = AudioChannelMapping.specOf(settings.audioChannel)
+        val audioStream = channelSpec.stream
+        val usage = channelSpec.usage
 
         // Check volume on the selected stream
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
         val streamVolume = audioManager?.getStreamVolume(audioStream) ?: 0
         val streamMax = audioManager?.getStreamMaxVolume(audioStream) ?: 1
         if (streamVolume == 0) {
-            val label = when (settings.audioChannel) {
-                AudioChannel.MEDIA -> "Media"
-                AudioChannel.NOTIFICATION -> "Notification"
-                AudioChannel.CALL -> "Call"
-            }
-            Toast.makeText(context, "$label volume is muted. Turn up volume to hear announcements.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "${channelSpec.shortLabel} volume is muted. Turn up volume to hear announcements.", Toast.LENGTH_LONG).show()
             Log.w(TAG, "Stream volume is 0 for $audioStream - cannot hear TTS")
             return
         }

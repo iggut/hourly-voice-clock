@@ -9,6 +9,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.util.Log
+import com.hourlyvoiceclock.announcer.AudioChannelMapping
 import com.hourlyvoiceclock.data.AudioChannel
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
@@ -242,29 +243,19 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
 
     private fun setupAudioAttributes(ttsInstance: TextToSpeech, channel: AudioChannel) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val (usage, contentType) = when (channel) {
-                AudioChannel.MEDIA ->
-                    AudioAttributes.USAGE_MEDIA to AudioAttributes.CONTENT_TYPE_SPEECH
-                AudioChannel.NOTIFICATION ->
-                    AudioAttributes.USAGE_NOTIFICATION to AudioAttributes.CONTENT_TYPE_SPEECH
-                AudioChannel.CALL ->
-                    AudioAttributes.USAGE_NOTIFICATION_RINGTONE to AudioAttributes.CONTENT_TYPE_SPEECH
-            }
+            val spec = AudioChannelMapping.specOf(channel)
             ttsInstance.setAudioAttributes(
                 AudioAttributes.Builder()
-                    .setUsage(usage)
-                    .setContentType(contentType)
+                    .setUsage(spec.usage)
+                    .setContentType(spec.contentType)
                     .build()
             )
-            Log.d(TAG, "AudioAttributes set to channel=$channel usage=$usage stream=${audioStreamFor(channel)}")
+            Log.d(TAG, "AudioAttributes set to channel=$channel usage=${spec.usage} stream=${spec.stream}")
         }
     }
 
-    private fun audioStreamFor(channel: AudioChannel): Int = when (channel) {
-        AudioChannel.MEDIA -> AudioManager.STREAM_MUSIC
-        AudioChannel.NOTIFICATION -> AudioManager.STREAM_NOTIFICATION
-        AudioChannel.CALL -> AudioManager.STREAM_RING
-    }
+    private fun audioStreamFor(channel: AudioChannel): Int =
+        AudioChannelMapping.specOf(channel).stream
 
     private fun queryVoices(ttsInstance: TextToSpeech): List<VoiceInfo> {
         val allVoices = ttsInstance.voices ?: return emptyList()
