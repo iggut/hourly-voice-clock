@@ -59,6 +59,10 @@ val ESpeakNgVoiceVariants = listOf(
 class VoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val deps = (application as DependenciesProvider).dependencies
+    private val writer = VoicePreferenceWriter(
+        engine = deps.ttsEngine,
+        repo = deps.settingsRepository
+    )
 
     private var allNormalVoices = emptyList<VoiceInfo>()
 
@@ -192,8 +196,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun selectVoice(voiceName: String, localeTag: String) {
         viewModelScope.launch {
-            deps.ttsEngine.setVoice(voiceName, localeTag)
-            deps.settingsRepository.setSelectedVoice(voiceName, localeTag)
+            writer.setVoice(voiceName, localeTag)
             _selectedVoiceName.value = voiceName
             _selectedPresetId.value = null
         }
@@ -209,18 +212,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         val underlyingVoice = choosePresetVoice(preset)
 
         if (underlyingVoice != null) {
-            deps.ttsEngine.setVoice(underlyingVoice.name, underlyingVoice.localeTag)
-            deps.ttsEngine.setPitch(preset.pitch)
-            deps.ttsEngine.setSpeechRate(preset.speechRate)
-            deps.settingsRepository.update {
-                it.copy(
-                    selectedVoiceName = underlyingVoice.name,
-                    selectedLocale = underlyingVoice.localeTag,
-                    selectedVoicePresetId = preset.id,
-                    pitch = preset.pitch,
-                    speechRate = preset.speechRate
-                )
-            }
+            writer.applyPreset(preset, underlyingVoice)
             _selectedVoiceName.value = underlyingVoice.name
             _selectedPresetId.value = preset.id
             _pitch.value = preset.pitch
@@ -252,16 +244,14 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun setPitch(value: Float) {
         viewModelScope.launch {
-            deps.ttsEngine.setPitch(value)
-            deps.settingsRepository.setPitch(value)
+            writer.setPitch(value)
             _pitch.value = value
         }
     }
 
     fun setSpeechRate(value: Float) {
         viewModelScope.launch {
-            deps.ttsEngine.setSpeechRate(value)
-            deps.settingsRepository.setSpeechRate(value)
+            writer.setSpeechRate(value)
             _speechRate.value = value
         }
     }
@@ -272,8 +262,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     fun selectAndPreviewVoice(voiceName: String, localeTag: String) {
         viewModelScope.launch {
-            deps.ttsEngine.setVoice(voiceName, localeTag)
-            deps.settingsRepository.setSelectedVoice(voiceName, localeTag)
+            writer.setVoice(voiceName, localeTag)
             _selectedVoiceName.value = voiceName
             _selectedPresetId.value = null
             deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
