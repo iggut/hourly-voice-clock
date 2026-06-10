@@ -19,7 +19,8 @@ import java.util.Locale
 class TimeAnnouncer(
     private val context: Context,
     private val ttsEngine: TtsEngine,
-    private val chimePlayer: ChimePlayer = ChimePlayer(context)
+    private val chimePlayer: ChimePlayer,
+    private val notifier: AnnouncementNotifier
 ) {
 
     fun announce(
@@ -141,7 +142,7 @@ class TimeAnnouncer(
         ttsEngine.speakAsync(text) { /* completion handled by engine */ }
 
         if (settings.notificationLogging) {
-            postNotification(text)
+            notifier.post(text)
         }
 
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
@@ -152,35 +153,6 @@ class TimeAnnouncer(
                 audioManager?.abandonAudioFocus(null)
             }
         }, 5000)
-    }
-
-    private fun postNotification(text: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val granted = androidx.core.content.ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-
-            if (!granted) {
-                Log.w(TAG, "Notification logging enabled but POST_NOTIFICATIONS is denied")
-                return
-            }
-        }
-
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager ?: return
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            android.app.Notification.Builder(context, com.hourlyvoiceclock.HourlyVoiceClockApp.CHANNEL_ID_STATUS)
-        } else {
-            @Suppress("DEPRECATION")
-            android.app.Notification.Builder(context)
-        }
-        val notification = builder
-            .setContentTitle("Time Announced")
-            .setContentText(text)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setAutoCancel(true)
-            .build()
-        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     private fun vibrate() {
@@ -195,6 +167,5 @@ class TimeAnnouncer(
 
     companion object {
         private const val TAG = "TimeAnnouncer"
-        private const val NOTIFICATION_ID = 2001
     }
 }
