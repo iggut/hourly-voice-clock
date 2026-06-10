@@ -5,8 +5,6 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.util.Log
 import android.widget.Toast
 import com.hourlyvoiceclock.data.AppSettings
@@ -20,7 +18,8 @@ class TimeAnnouncer(
     private val context: Context,
     private val ttsEngine: TtsEngine,
     private val chimePlayer: ChimePlayer,
-    private val notifier: AnnouncementNotifier
+    private val notifier: AnnouncementNotifier,
+    private val hapticPulse: HapticPulse = HapticPulse(context)
 ) {
 
     fun announce(
@@ -66,7 +65,7 @@ class TimeAnnouncer(
         Log.d(TAG, "Stream $audioStream volume: $streamVolume / $streamMax")
 
         if (settings.vibrateBefore) {
-            vibrate()
+            hapticPulse.pulse()
         }
 
         if (settings.chimeSound != ChimeSound.NONE) {
@@ -153,16 +152,6 @@ class TimeAnnouncer(
                 audioManager?.abandonAudioFocus(null)
             }
         }, 5000)
-    }
-
-    private fun vibrate() {
-        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(200)
-        }
     }
 
     companion object {
