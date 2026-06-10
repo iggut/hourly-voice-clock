@@ -1,8 +1,6 @@
 package com.hourlyvoiceclock.tts
 
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.os.Build
@@ -12,15 +10,13 @@ import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.util.Log
 import com.hourlyvoiceclock.data.AudioChannel
-import com.hourlyvoiceclock.data.SettingsRepository
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.flow.first
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
 
 interface TtsEngine {
-    suspend fun initialize(): Boolean
+    suspend fun initialize(enginePackage: String?): Boolean
     fun isAvailable(): Boolean
     fun getVoices(): List<VoiceInfo>
     fun setVoice(voiceName: String, localeTag: String): Boolean
@@ -59,30 +55,15 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
     private var currentEnginePackage: String? = null
     private var currentAudioChannel: AudioChannel = AudioChannel.MEDIA
 
-    override suspend fun initialize(): Boolean {
-        if (initOk) return true
-        
-        // Load the saved engine package name if we haven't set it yet
-        if (currentEnginePackage == null) {
-            try {
-                val repository = SettingsRepository(appContext)
-                val settings = repository.settings.first()
-                currentEnginePackage = settings.selectedTtsEnginePackage
-                currentAudioChannel = settings.audioChannel
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to load saved TTS engine package", e)
-            }
-        }
+    override suspend fun initialize(enginePackage: String?): Boolean {
+        if (initOk && currentEnginePackage == enginePackage) return true
 
-        if (!currentEnginePackage.isNullOrBlank() && !isEngineInstalled(currentEnginePackage!!)) {
-            Log.w(TAG, "Saved TTS engine not installed ($currentEnginePackage), using system default")
-            currentEnginePackage = null
-            try {
-                SettingsRepository(appContext).setSelectedTtsEnginePackage(null)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to clear invalid saved TTS engine package", e)
-            }
+        // A re-init with a different package means the caller is
+        // switching engines. Tear down the previous instance.
+        if (tts != null) {
+            shutdown()
         }
+        currentEnginePackage = enginePackage
 
         val success = suspendCancellableCoroutine { continuation ->
             val initListener = TextToSpeech.OnInitListener { status ->
@@ -101,7 +82,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
                     continuation.resume(false)
                 }
             }
-            
+
             tts = if (currentEnginePackage.isNullOrBlank()) {
                 TextToSpeech(appContext, initListener)
             } else {
@@ -112,9 +93,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
     }
 
     override suspend fun switchEngine(enginePackage: String?): Boolean {
-        shutdown()
-        currentEnginePackage = enginePackage
-        return initialize()
+        return initialize(enginePackage)
     }
 
     override fun getEngines(): List<TtsEngineInfo> {
@@ -126,13 +105,13 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
                 isInstalled = true
             )
         }
-        
+
         // Define standard popular engines to show even if not installed
         val knownEngines = listOf(
             TtsEngineInfo("com.google.android.tts", "Speech Services by Google", false),
             TtsEngineInfo("com.redzoc.ramees.tts.espeak", "eSpeak NG", false)
         )
-        
+
         val result = installed.toMutableList()
         val existingPackageNames = installed.mapTo(HashSet()) { it.packageName }
         for (known in knownEngines) {
@@ -338,29 +317,29 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         "tpf" to "Female",
         "jdf" to "Female",
         "iol" to "Male",
-        
+
         // UK English
         "rjs" to "Male",
         "fis" to "Female",
         "gdb" to "Male",
         "gbd" to "Male",
         "gba" to "Female",
-        
+
         // Australian English
         "afh" to "Female",
         "afp" to "Female",
         "ahp" to "Male",
         "aud" to "Male",
-        
+
         // Indian English
         "cxx" to "Female",
         "ene" to "Male",
         "iie" to "Female",
         "iif" to "Male",
-        
+
         // Irish English
         "lcf" to "Female",
-        
+
         // South African English
         "nfc" to "Female",
 
@@ -383,26 +362,17 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
 
     private val GENDER_SPLIT_REGEX = Regex("[\\-_#\\s]")
 
-    private fun isEngineInstalled(packageName: String): Boolean {
-        val intent = Intent(TextToSpeech.Engine.INTENT_ACTION_TTS_SERVICE)
-        val services = appContext.packageManager.queryIntentServices(
-            intent,
-            PackageManager.MATCH_DEFAULT_ONLY
-        )
-        return services.any { it.serviceInfo.packageName == packageName }
-    }
-
     private fun inferGender(name: String): String? {
         val lower = name.lowercase()
         if (lower.contains("male") && !lower.contains("female")) return "Male"
         if (lower.contains("female")) return "Female"
-        
+
         val segments = lower.split(GENDER_SPLIT_REGEX)
         for (segment in segments) {
             val gender = GENDER_MAP[segment]
             if (gender != null) return gender
         }
-        
+
         return null
     }
 }

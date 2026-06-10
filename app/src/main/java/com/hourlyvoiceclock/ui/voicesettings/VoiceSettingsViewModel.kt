@@ -103,7 +103,8 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     init {
         viewModelScope.launch {
             deps.settingsRepository.runMigrations()
-            deps.ttsEngine.initialize()
+            val selectedPackage = deps.ttsEngineSelector.select()
+            deps.ttsEngine.initialize(selectedPackage)
 
             val settings = deps.settingsRepository.settings.first()
             _selectedEnginePackage.value = settings.selectedTtsEnginePackage

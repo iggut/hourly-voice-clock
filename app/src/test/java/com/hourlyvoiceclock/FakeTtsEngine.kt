@@ -7,6 +7,7 @@ import com.hourlyvoiceclock.tts.VoiceInfo
 class FakeTtsEngine : TtsEngine {
 
     var initialized = false
+    var initializedWithPackage: String? = null
     var lastSpokenText: String? = null
     var lastUtteranceId: String? = null
     var lastPitch = 1.0f
@@ -19,8 +20,9 @@ class FakeTtsEngine : TtsEngine {
         fakeVoices.add(voice)
     }
 
-    override suspend fun initialize(): Boolean {
+    override suspend fun initialize(enginePackage: String?): Boolean {
         initialized = true
+        initializedWithPackage = enginePackage
         return true
     }
 

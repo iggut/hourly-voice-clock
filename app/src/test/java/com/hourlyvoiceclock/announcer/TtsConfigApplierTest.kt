@@ -156,7 +156,7 @@ private class RecordingTtsEngine : TtsEngine {
     val languageResults: MutableMap<String, Boolean> = mutableMapOf()
     val calls: MutableList<String> = mutableListOf()
 
-    override suspend fun initialize(): Boolean = true
+    override suspend fun initialize(enginePackage: String?): Boolean = true
     override fun isAvailable(): Boolean = true
     override fun getVoices() = emptyList<com.hourlyvoiceclock.tts.VoiceInfo>()
     override fun setVoice(voiceName: String, localeTag: String): Boolean {

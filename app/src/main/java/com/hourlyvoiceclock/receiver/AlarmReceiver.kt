@@ -40,7 +40,8 @@ class AlarmReceiver : BroadcastReceiver() {
 
                 // Then do the announcement
                 withContext(Dispatchers.Main) {
-                    deps.ttsEngine.initialize()
+                    val selectedPackage = deps.ttsEngineSelector.select()
+                    deps.ttsEngine.initialize(selectedPackage)
                     // Hourly announcements always say the top of the hour,
                     // even if Doze delays the alarm by several minutes.
                     val scheduledHour = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)

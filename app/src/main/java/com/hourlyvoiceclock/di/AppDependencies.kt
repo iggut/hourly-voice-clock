@@ -10,7 +10,9 @@ import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.data.UpdateManager
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import com.hourlyvoiceclock.tts.AndroidTtsEngine
+import com.hourlyvoiceclock.tts.AndroidTtsPackageProbe
 import com.hourlyvoiceclock.tts.TtsEngine
+import com.hourlyvoiceclock.tts.TtsEngineSelector
 import kotlinx.coroutines.SupervisorJob
 
 /**
@@ -30,6 +32,13 @@ class AppDependencies(context: Context) {
 
     val ttsEngine: TtsEngine by lazy {
         AndroidTtsEngine(appContext)
+    }
+
+    val ttsEngineSelector: TtsEngineSelector by lazy {
+        TtsEngineSelector(
+            settings = settingsRepository,
+            packageProbe = AndroidTtsPackageProbe(appContext)
+        )
     }
 
     val announcementScheduler: AnnouncementScheduler by lazy {
