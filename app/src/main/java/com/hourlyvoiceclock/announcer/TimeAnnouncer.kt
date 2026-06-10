@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.MediaPlayer
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -14,13 +13,13 @@ import com.hourlyvoiceclock.data.AppSettings
 import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.tts.TtsEngine
-import com.hourlyvoiceclock.R
 import java.time.LocalDateTime
 import java.util.Locale
 
 class TimeAnnouncer(
     private val context: Context,
-    private val ttsEngine: TtsEngine
+    private val ttsEngine: TtsEngine,
+    private val chimePlayer: ChimePlayer = ChimePlayer(context)
 ) {
 
     fun announce(
@@ -70,7 +69,7 @@ class TimeAnnouncer(
         }
 
         if (settings.chimeSound != ChimeSound.NONE) {
-            playChime(settings.chimeSound) {
+            chimePlayer.play(settings.chimeSound) {
                 speakText(settings, dateTime, includeDate, audioManager, usage, audioStream)
             }
         } else {
@@ -191,56 +190,6 @@ class TimeAnnouncer(
         } else {
             @Suppress("DEPRECATION")
             vibrator.vibrate(200)
-        }
-    }
-
-    private fun playChime(chimeSound: ChimeSound, onComplete: () -> Unit) {
-        if (chimeSound == ChimeSound.NONE) {
-            onComplete()
-            return
-        }
-
-        val resourceId = getChimeResourceId(chimeSound)
-        if (resourceId == 0) {
-            Log.w(TAG, "No resource found for chime sound: $chimeSound")
-            onComplete()
-            return
-        }
-
-        try {
-            val mediaPlayer = MediaPlayer.create(context, resourceId)
-            if (mediaPlayer != null) {
-                mediaPlayer.setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
-                mediaPlayer.setOnCompletionListener { mp ->
-                    mp.release()
-                    onComplete()
-                }
-                mediaPlayer.start()
-            } else {
-                Log.w(TAG, "Could not create MediaPlayer for chime: $chimeSound")
-                onComplete()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error playing chime: $chimeSound", e)
-            onComplete()
-        }
-    }
-
-    private fun getChimeResourceId(chimeSound: ChimeSound): Int {
-        return when (chimeSound) {
-            ChimeSound.NONE -> 0
-            ChimeSound.CLASSIC_CHIME -> R.raw.classic_chime
-            ChimeSound.BELL -> R.raw.bell
-            ChimeSound.GONG -> R.raw.gong
-            ChimeSound.CYMBALS -> R.raw.cymbals
-            ChimeSound.DIGITAL_BEEP -> R.raw.digital_beep
-            ChimeSound.BIRD_CHIRP -> R.raw.bird_chirp
-            ChimeSound.HONK -> R.raw.honk
         }
     }
 
