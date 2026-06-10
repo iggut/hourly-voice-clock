@@ -12,14 +12,14 @@ import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.tts.TtsEngine
 import java.time.LocalDateTime
-import java.util.Locale
 
 class TimeAnnouncer(
     private val context: Context,
     private val ttsEngine: TtsEngine,
     private val chimePlayer: ChimePlayer,
     private val notifier: AnnouncementNotifier,
-    private val hapticPulse: HapticPulse = HapticPulse(context)
+    private val hapticPulse: HapticPulse = HapticPulse(context),
+    private val ttsConfig: TtsConfigApplier = TtsConfigApplier(ttsEngine)
 ) {
 
     fun announce(
@@ -89,26 +89,13 @@ class TimeAnnouncer(
             Log.w(TAG, "TTS not available - attempting init")
         }
 
-        val voiceSet = settings.selectedVoiceName?.let { voiceName ->
-            ttsEngine.setVoice(voiceName, settings.selectedLocale ?: "")
-        } ?: false
-
-        if (!voiceSet) {
-            val localeSet = settings.selectedLocale?.let { locale ->
-                ttsEngine.setLanguage(locale)
-            } ?: false
-            if (!localeSet) {
-                val deviceDefault = Locale.getDefault().toLanguageTag()
-                val defaultSet = ttsEngine.setLanguage(deviceDefault)
-                if (!defaultSet) {
-                    ttsEngine.setLanguage("en-US")
-                }
-            }
-        }
-
-        ttsEngine.setPitch(settings.pitch)
-        ttsEngine.setSpeechRate(settings.speechRate)
-        ttsEngine.setAudioChannel(settings.audioChannel)
+        ttsConfig.apply(
+            voiceName = settings.selectedVoiceName,
+            savedLocale = settings.selectedLocale,
+            pitch = settings.pitch,
+            speechRate = settings.speechRate,
+            audioChannel = settings.audioChannel
+        )
 
         val text = AnnouncementFormatter.format(
             dateTime = dateTime,
