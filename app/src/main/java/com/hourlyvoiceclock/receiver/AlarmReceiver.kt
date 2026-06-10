@@ -6,10 +6,8 @@ import android.content.Intent
 import android.util.Log
 import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.scheduler.rescheduleAnnouncements
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -19,39 +17,29 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != ACTION_HOURLY_ALARM) return
 
-        val pendingResult = goAsync()
-        val appContext = context.applicationContext
-        val deps = (appContext as DependenciesProvider).dependencies
+        launchAsync(context) { appContext ->
+            val deps = (appContext as DependenciesProvider).dependencies
+            val settings = deps.settingsRepository.settings.first()
 
-        CoroutineScope(Dispatchers.Default).launch {
-            try {
-                val settings = deps.settingsRepository.settings.first()
+            if (!settings.hourlyAnnouncementsEnabled) {
+                Log.d("AlarmReceiver", "Hourly announcements disabled, skipping")
+                return@launchAsync
+            }
 
-                if (!settings.hourlyAnnouncementsEnabled) {
-                    Log.d("AlarmReceiver", "Hourly announcements disabled, skipping")
-                    return@launch
-                }
+            // ALWAYS reschedule first, before any heavy TTS work.
+            // If the process is killed during TTS init/speak, the next
+            // alarm is already set.
+            rescheduleAnnouncements(appContext)
+            Log.d("AlarmReceiver", "Rescheduled next hourly alarm")
 
-                // ALWAYS reschedule first, before any heavy TTS work.
-                // If the process is killed during TTS init/speak, the next
-                // alarm is already set.
-                rescheduleAnnouncements(appContext)
-                Log.d("AlarmReceiver", "Rescheduled next hourly alarm")
-
-                // Then do the announcement
-                withContext(Dispatchers.Main) {
-                    val selectedPackage = deps.ttsEngineSelector.select()
-                    deps.ttsEngine.initialize(selectedPackage)
-                    // Hourly announcements always say the top of the hour,
-                    // even if Doze delays the alarm by several minutes.
-                    val scheduledHour = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
-                    deps.timeAnnouncer.announce(settings, force = false, dateTime = scheduledHour)
-                }
-
-            } catch (e: Exception) {
-                Log.e("AlarmReceiver", "Error handling alarm", e)
-            } finally {
-                pendingResult.finish()
+            // Then do the announcement
+            withContext(Dispatchers.Main) {
+                val selectedPackage = deps.ttsEngineSelector.select()
+                deps.ttsEngine.initialize(selectedPackage)
+                // Hourly announcements always say the top of the hour,
+                // even if Doze delays the alarm by several minutes.
+                val scheduledHour = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
+                deps.timeAnnouncer.announce(settings, force = false, dateTime = scheduledHour)
             }
         }
     }
