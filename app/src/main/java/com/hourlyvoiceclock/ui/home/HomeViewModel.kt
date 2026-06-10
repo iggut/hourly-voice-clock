@@ -20,6 +20,12 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+data class TimeDisplayState(
+    val hoursMinutes: String = "",
+    val seconds: String = "",
+    val amPm: String = ""
+)
+
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val deps = (application as DependenciesProvider).dependencies
@@ -34,8 +40,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     val updateStatus: StateFlow<UpdateStatus> = updateManager.status
 
-    private val _currentTime = MutableStateFlow("")
-    val currentTime: StateFlow<String> = _currentTime.asStateFlow()
+    private val _timeState = MutableStateFlow(TimeDisplayState())
+    val timeState: StateFlow<TimeDisplayState> = _timeState.asStateFlow()
 
     private val _currentDate = MutableStateFlow("")
     val currentDate: StateFlow<String> = _currentDate.asStateFlow()
@@ -53,6 +59,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val canSpeakNow: StateFlow<Boolean> = _canSpeakNow.asStateFlow()
 
     private var startupAutoCheckDone = false
+    private var cachedTimeMinute: LocalDateTime? = null
+    private var cachedHoursMinutes: String = ""
+    private var cachedAmPm: String = ""
     private var cachedDate: java.time.LocalDate? = null
     private var cachedNextAnnouncementTime: LocalDateTime? = null
 
@@ -90,8 +99,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun updateTime() {
         val now = LocalDateTime.now()
-        // Format time every second
-        _currentTime.value = now.format(TIME_FORMATTER)
+        val currentMinute = now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES)
+
+        // Optimize: Only format hours/minutes and am/pm when the minute changes
+        if (currentMinute != cachedTimeMinute) {
+            cachedTimeMinute = currentMinute
+            cachedHoursMinutes = now.format(HOURS_MINUTES_FORMATTER)
+            cachedAmPm = now.format(AM_PM_FORMATTER)
+        }
+
+        // Fast path for seconds to avoid formatter overhead
+        val secondsStr = now.second.toString().padStart(2, '0')
+
+        _timeState.value = TimeDisplayState(
+            hoursMinutes = cachedHoursMinutes,
+            seconds = secondsStr,
+            amPm = cachedAmPm
+        )
 
         // Optimize: Only format date when the day changes
         val today = now.toLocalDate()
@@ -188,7 +212,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun dismissUpdateDialog() = updateManager.dismissUpdateDialog()
 
     companion object {
-        private val TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm:ss a")
+        private val HOURS_MINUTES_FORMATTER = DateTimeFormatter.ofPattern("h:mm")
+        private val AM_PM_FORMATTER = DateTimeFormatter.ofPattern("a")
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")
         private val NEXT_ANNOUNCEMENT_FORMATTER = DateTimeFormatter.ofPattern("h:mm a")
     }
