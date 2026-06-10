@@ -2,9 +2,7 @@ package com.hourlyvoiceclock.announcer
 
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import com.hourlyvoiceclock.data.AppSettings
@@ -19,7 +17,8 @@ class TimeAnnouncer(
     private val chimePlayer: ChimePlayer,
     private val notifier: AnnouncementNotifier,
     private val hapticPulse: HapticPulse = HapticPulse(context),
-    private val ttsConfig: TtsConfigApplier = TtsConfigApplier(ttsEngine)
+    private val ttsConfig: TtsConfigApplier = TtsConfigApplier(ttsEngine),
+    private val audioFocusController: AudioFocusController = AudioFocusController(context)
 ) {
 
     fun announce(
@@ -105,40 +104,16 @@ class TimeAnnouncer(
 
         Log.d(TAG, "Speaking: \"$text\" on channel=${settings.audioChannel}")
 
-        var focusRequest: AudioFocusRequest? = null
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
-                .setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(usage)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build()
-                )
-                .build()
-            audioManager?.requestAudioFocus(focusRequest)
-        } else {
-            @Suppress("DEPRECATION")
-            audioManager?.requestAudioFocus(
-                null,
-                audioStream,
-                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
-            )
-        }
+        // Auto-releases after AudioFocusController's release delay; the
+        // returned handle is intentionally ignored — focus is abandoned
+        // by the timer.
+        audioFocusController.acquire(usage, audioStream)
 
         ttsEngine.speakAsync(text) { /* completion handled by engine */ }
 
         if (settings.notificationLogging) {
             notifier.post(text)
         }
-
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
-            } else {
-                @Suppress("DEPRECATION")
-                audioManager?.abandonAudioFocus(null)
-            }
-        }, 5000)
     }
 
     companion object {
