@@ -11,3 +11,7 @@
 ## 2024-06-03 - Avoid `String.split` in UI on Frame Update
 **Learning:** In Jetpack Compose, passing pre-formatted complex strings (like a full time with seconds) to the UI that must then be split (`String.split`) to be rendered generates unnecessary garbage collection pressure and CPU overhead on every recomposition.
 **Action:** Extract formatters and perform formatting/splitting in the `ViewModel` (or equivalent), passing individual, pre-processed parts in a data class (e.g., `TimeDisplayState`) to the UI, minimizing recomposition overhead.
+
+## 2026-06-11 - Avoid String Allocations in High-Frequency Loops
+**Learning:** In a 1-second `ViewModel` UI tick loop, operations like `now.second.toString().padStart(2, '0')` generate an unnecessary string allocation and put pressure on garbage collection on every single frame.
+**Action:** Cache string conversions and use precomputed arrays (e.g., an array of strings for seconds `00` to `59`) to eliminate garbage collection overhead in high-frequency tick loops.
