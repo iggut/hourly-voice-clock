@@ -24,3 +24,7 @@
 ## 2026-06-10 - Screen reader semantics for Compose Sliders
 **Learning:** Found that `Slider` components in Jetpack Compose do not automatically inherit semantic descriptions from adjacent `Text` elements used as visual labels, leading to screen readers simply announcing "Slider, 50%" without context. This is an accessibility issue pattern specific to custom control layouts.
 **Action:** Always ensure interactive Compose components like `Slider` explicitly define a `contentDescription` using `Modifier.semantics { contentDescription = "[Label]" }` when their visual label is implemented as a separate `Text` component.
+
+## 2024-06-11 - Screen reader fallback descriptions
+**Learning:** Found an IconButton that used an optional description string in its contentDescription without a fallback, which could result in screen readers reading out an incomplete sentence if the data was missing.
+**Action:** Always ensure dynamic string templates used for `contentDescription` implement fallback logic (e.g. `.ifBlank { fallback }`) to guarantee complete and meaningful announcements.

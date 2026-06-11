@@ -661,12 +661,13 @@ fun VoiceItem(
         }
         
         Spacer(modifier = Modifier.width(8.dp))
+        val title = voice.description.ifBlank { voice.name }
         IconButton(
             onClick = { onPreviewVoice(voice.name, voice.localeTag) }
         ) {
             Icon(
                 imageVector = Icons.Default.PlayArrow,
-                contentDescription = "Preview voice ${voice.description}",
+                contentDescription = "Preview voice $title",
                 tint = MaterialTheme.colorScheme.primary
             )
         }
