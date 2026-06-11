@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.hourlyvoiceclock.di.DependenciesProvider
-import com.hourlyvoiceclock.scheduler.rescheduleAnnouncements
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -19,27 +17,21 @@ class AlarmReceiver : BroadcastReceiver() {
 
         launchAsync(context) { appContext ->
             val deps = (appContext as DependenciesProvider).dependencies
-            val settings = deps.settingsRepository.settings.first()
+            val result = deps.hourlySchedulePolicy.onAlarmTriggered()
 
-            if (!settings.hourlyAnnouncementsEnabled) {
+            if (result == null) {
                 Log.d("AlarmReceiver", "Hourly announcements disabled, skipping")
                 return@launchAsync
             }
 
-            // ALWAYS reschedule first, before any heavy TTS work.
-            // If the process is killed during TTS init/speak, the next
-            // alarm is already set.
-            rescheduleAnnouncements(appContext)
             Log.d("AlarmReceiver", "Rescheduled next hourly alarm")
 
             // Then do the announcement
             withContext(Dispatchers.Main) {
                 val selectedPackage = deps.ttsEngineSelector.select()
                 deps.ttsEngine.initialize(selectedPackage)
-                // Hourly announcements always say the top of the hour,
-                // even if Doze delays the alarm by several minutes.
                 val scheduledHour = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
-                deps.timeAnnouncer.announce(settings, force = false, dateTime = scheduledHour)
+                deps.timeAnnouncer.announce(result.settings, force = false, dateTime = scheduledHour)
             }
         }
     }

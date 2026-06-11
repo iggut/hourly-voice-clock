@@ -4,7 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.hourlyvoiceclock.scheduler.rescheduleAnnouncements
+import com.hourlyvoiceclock.di.DependenciesProvider
+import com.hourlyvoiceclock.scheduler.ScheduleReason
 
 class BootReceiver : BroadcastReceiver() {
 
@@ -13,7 +14,8 @@ class BootReceiver : BroadcastReceiver() {
         if (action != Intent.ACTION_BOOT_COMPLETED && action != Intent.ACTION_MY_PACKAGE_REPLACED) return
 
         launchAsync(context) { appContext ->
-            rescheduleAnnouncements(appContext)
+            val deps = (appContext as DependenciesProvider).dependencies
+            deps.hourlySchedulePolicy.applyCurrentPolicy(ScheduleReason.BOOT)
             Log.d("BootReceiver", "Rescheduled hourly alarm after action: $action")
         }
     }

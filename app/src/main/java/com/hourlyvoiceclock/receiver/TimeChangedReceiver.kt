@@ -5,7 +5,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.hourlyvoiceclock.scheduler.rescheduleAnnouncements
+import com.hourlyvoiceclock.di.DependenciesProvider
+import com.hourlyvoiceclock.scheduler.ScheduleReason
 
 class TimeChangedReceiver : BroadcastReceiver() {
 
@@ -16,7 +17,8 @@ class TimeChangedReceiver : BroadcastReceiver() {
             action == AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
         ) {
             launchAsync(context) { appContext ->
-                rescheduleAnnouncements(appContext, cancelFirst = true)
+                val deps = (appContext as DependenciesProvider).dependencies
+                deps.hourlySchedulePolicy.applyCurrentPolicy(ScheduleReason.TIME_CHANGED)
                 Log.d("TimeChangedReceiver", "Rescheduled after action: $action")
             }
         }

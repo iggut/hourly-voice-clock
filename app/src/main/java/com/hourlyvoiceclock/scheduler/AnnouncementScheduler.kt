@@ -10,11 +10,11 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
-class AnnouncementScheduler(private val context: Context) {
+class AnnouncementScheduler(private val context: Context) : HourlyAlarmScheduler {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    fun scheduleNextHour(exact: Boolean) {
+    override fun scheduleNextHour(exact: Boolean) {
         val nextHour = getNextTopOfHour()
         val triggerAtMillis = nextHour.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -51,7 +51,7 @@ class AnnouncementScheduler(private val context: Context) {
         Log.d("AnnouncementScheduler", "Inexact alarm scheduled for $nextHour")
     }
 
-    fun cancelHourlyAlarms() {
+    override fun cancelHourlyAlarms() {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_HOURLY_ALARM
         }

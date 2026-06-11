@@ -9,7 +9,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
-import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
+import com.hourlyvoiceclock.scheduler.ScheduleReason
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -92,8 +92,7 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             viewModelScope.launch {
                 val settings = deps.settingsRepository.settings.first()
                 if (settings.hourlyAnnouncementsEnabled) {
-                    deps.announcementScheduler.cancelHourlyAlarms()
-                    deps.announcementScheduler.scheduleNextHour(exact = true)
+                    deps.hourlySchedulePolicy.applyCurrentPolicy(ScheduleReason.EXACT_PERMISSION_CHANGED)
                 }
             }
         }
@@ -158,25 +157,10 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
 
     fun setExactAlarmsEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            deps.settingsRepository.setExactAlarmsEnabled(enabled)
+            val result = deps.hourlySchedulePolicy.setExactRequested(enabled)
             _exactAlarmsEnabled.value = enabled
-
-            if (enabled) {
-                // Re-check permission immediately
-                checkExactAlarmPermission()
-                // If still can't schedule exact after re-check, we'll show the permission card
-                if (_needsExactPermission.value) {
-                    // Permission not granted yet — don't reschedule with exact timing
-                    return@launch
-                }
-            }
-
-            // Schedule or reschedule
-            val settings = deps.settingsRepository.settings.first()
-            if (settings.hourlyAnnouncementsEnabled) {
-                deps.announcementScheduler.cancelHourlyAlarms()
-                deps.announcementScheduler.scheduleNextHour(enabled && _canScheduleExact.value)
-            }
+            _canScheduleExact.value = result.canScheduleExactAlarms
+            _needsExactPermission.value = result.needsExactPermission
         }
     }
 

@@ -22,9 +22,9 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     )
 )
 
-class SettingsRepository(private val context: Context) {
+class SettingsRepository(private val context: Context) : HourlyScheduleSettingsStore {
 
-    val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
+    override val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
         settingsFromPrefs(prefs)
     }
 
@@ -80,7 +80,7 @@ class SettingsRepository(private val context: Context) {
         this[KEY_AUTO_UPDATE_ENABLED] = settings.autoUpdateEnabled
     }
 
-    suspend fun setHourlyAnnouncements(enabled: Boolean) {
+    override suspend fun setHourlyAnnouncements(enabled: Boolean) {
         context.dataStore.edit { it[KEY_HOURLY_ANNOUNCEMENTS] = enabled }
     }
 
@@ -160,7 +160,7 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[KEY_ALLOW_MANUAL_QUIET] = enabled }
     }
 
-    suspend fun setExactAlarmsEnabled(enabled: Boolean) {
+    override suspend fun setExactAlarmsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[KEY_EXACT_ALARMS] = enabled }
     }
 

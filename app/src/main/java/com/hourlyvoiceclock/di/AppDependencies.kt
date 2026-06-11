@@ -9,6 +9,8 @@ import com.hourlyvoiceclock.data.DefaultUpdateManager
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.data.UpdateManager
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
+import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
+import com.hourlyvoiceclock.scheduler.HourlySchedulePolicy
 import com.hourlyvoiceclock.tts.AndroidTtsEngine
 import com.hourlyvoiceclock.tts.AndroidTtsPackageProbe
 import com.hourlyvoiceclock.tts.TtsEngine
@@ -43,6 +45,14 @@ class AppDependencies(context: Context) {
 
     val announcementScheduler: AnnouncementScheduler by lazy {
         AnnouncementScheduler(appContext)
+    }
+
+    val hourlySchedulePolicy: HourlySchedulePolicy by lazy {
+        HourlySchedulePolicy(
+            settingsStore = settingsRepository,
+            scheduler = announcementScheduler,
+            canScheduleExactAlarms = { AlarmPermissionChecker.canScheduleExactAlarms(appContext) }
+        )
     }
 
     val notifier: AnnouncementNotifier by lazy {
