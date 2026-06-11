@@ -20,3 +20,7 @@
 ## 2024-05-31 - Split long text field labels into label and placeholder
 **Learning:** Found `OutlinedTextField` instances with very long, instructional labels like "Prefix (e.g., 'Hello, it is now ')". This creates visual clutter and text truncation when the label floats up upon focus or input.
 **Action:** Always improve form field labels by splitting long instructional labels into a concise, floating `label` (e.g., "Prefix") and moving the example text into the `placeholder` property (e.g., "e.g., 'Hello, it is now '") to guide users cleanly.
+
+## 2026-06-10 - Screen reader semantics for Compose Sliders
+**Learning:** Found that `Slider` components in Jetpack Compose do not automatically inherit semantic descriptions from adjacent `Text` elements used as visual labels, leading to screen readers simply announcing "Slider, 50%" without context. This is an accessibility issue pattern specific to custom control layouts.
+**Action:** Always ensure interactive Compose components like `Slider` explicitly define a `contentDescription` using `Modifier.semantics { contentDescription = "[Label]" }` when their visual label is implemented as a separate `Text` component.

@@ -58,6 +58,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -298,7 +300,8 @@ fun VoiceSettingsScreen(
                             Slider(
                                 value = pitch,
                                 onValueChange = { viewModel.setPitch(it) },
-                                valueRange = 0.5f..2.0f
+                                valueRange = 0.5f..2.0f,
+                                modifier = Modifier.semantics { contentDescription = "Voice Pitch" }
                             )
                         }
 
@@ -311,7 +314,8 @@ fun VoiceSettingsScreen(
                             Slider(
                                 value = speechRate,
                                 onValueChange = { viewModel.setSpeechRate(it) },
-                                valueRange = 0.5f..2.0f
+                                valueRange = 0.5f..2.0f,
+                                modifier = Modifier.semantics { contentDescription = "Speech Rate" }
                             )
                         }
 
