@@ -110,7 +110,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         // Fast path for seconds to avoid formatter overhead
-        val secondsStr = now.second.toString().padStart(2, '0')
+        val secondsStr = SECONDS_CACHE[now.second]
 
         _timeState.value = TimeDisplayState(
             hoursMinutes = cachedHoursMinutes,
@@ -211,5 +211,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         private val AM_PM_FORMATTER = DateTimeFormatter.ofPattern("a")
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")
         private val NEXT_ANNOUNCEMENT_FORMATTER = DateTimeFormatter.ofPattern("h:mm a")
+
+        // Precompute seconds strings to avoid GC pressure from dynamic allocation in 1-second ticks
+        private val SECONDS_CACHE = Array(60) { it.toString().padStart(2, '0') }
     }
 }
