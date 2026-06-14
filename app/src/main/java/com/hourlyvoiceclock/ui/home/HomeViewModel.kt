@@ -59,7 +59,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val canSpeakNow: StateFlow<Boolean> = _canSpeakNow.asStateFlow()
 
     private var startupAutoCheckDone = false
-    private var cachedTimeMinute: LocalDateTime? = null
+    private var cachedMinute: Int = -1
+    private var cachedHour: Int = -1
     private var cachedHoursMinutes: String = ""
     private var cachedAmPm: String = ""
     private var cachedDate: java.time.LocalDate? = null
@@ -68,9 +69,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch {
             while (isActive) {
-                updateTime()
+                val now = LocalDateTime.now()
+                updateTime(now)
                 if (_hourlyEnabled.value) {
-                    updateNextAnnouncement(true)
+                    updateNextAnnouncement(true, now)
                 }
                 delay(1000)
             }
@@ -98,13 +100,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun updateTime() {
-        val now = LocalDateTime.now()
-        val currentMinute = now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES)
+    private fun updateTime(now: LocalDateTime) {
+        val currentMinute = now.minute
+        val currentHour = now.hour
 
         // Optimize: Only format hours/minutes and am/pm when the minute changes
-        if (currentMinute != cachedTimeMinute) {
-            cachedTimeMinute = currentMinute
+        if (currentMinute != cachedMinute || currentHour != cachedHour) {
+            cachedMinute = currentMinute
+            cachedHour = currentHour
             cachedHoursMinutes = now.format(HOURS_MINUTES_FORMATTER)
             cachedAmPm = now.format(AM_PM_FORMATTER)
         }
@@ -126,15 +129,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun updateNextAnnouncement(enabled: Boolean) {
+    private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime) {
         if (!enabled) {
             _nextAnnouncement.value = ""
             cachedNextAnnouncementTime = null
             return
         }
-        val next = AnnouncementScheduler.getNextTopOfHour()
-        // Optimize: Only format next announcement when the target hour changes
-        if (cachedNextAnnouncementTime != next) {
+
+        // Optimize: Only recalculate next hour when it's null or we've passed the previous target
+        var next = cachedNextAnnouncementTime
+        if (next == null || !now.isBefore(next)) {
+            next = AnnouncementScheduler.getNextTopOfHour(now)
             cachedNextAnnouncementTime = next
             _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
         }

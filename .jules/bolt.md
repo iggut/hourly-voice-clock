@@ -15,3 +15,7 @@
 ## 2024-08-01 - Prevent GC pressure from `padStart` in 1-second ticks
 **Learning:** In high-frequency ViewModel loops (like updating seconds every tick), using `toString().padStart(2, '0')` continually allocates new String objects, putting pressure on garbage collection.
 **Action:** Use a precomputed static array of formatted strings (e.g., `Array(60) { it.toString().padStart(2, '0') }`) and fetch values using primitive indices (like `now.second`) to eliminate string allocations in the update loop.
+
+## 2026-06-14 - Prevent GC pressure from `LocalDateTime` allocations in 1-second loops
+**Learning:** In high-frequency ViewModel loops (like updating the time every second), using operations like `now.truncatedTo(ChronoUnit.MINUTES)` and `now.plusHours(1)` generates new `LocalTime` and `LocalDateTime` objects on every tick, putting immense pressure on garbage collection.
+**Action:** Share a single `LocalDateTime.now()` instance across the tick, and replace expensive object-allocating methods with primitive comparisons (e.g., caching the `minute` and `hour` as `Int`) and only trigger recalculations when the cached primitives change or targets have passed.
