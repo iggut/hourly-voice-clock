@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.4-alpha] - 2026-06-13
+
+### Added
+- **Quiet-hours day-of-week overrides**: `AppSettings` gains a `quietDaysDisabled: Set<DayOfWeek>` so the user can mute announcements on specific days (e.g. weekends) while leaving manual announcements available. Backed by a new `KEY_QUIET_DAYS_DISABLED` DataStore preference and a quiet-day picker in `ScheduleSettingsScreen`. `QuietHoursPolicy` now takes the current day and the disabled-day set; tests cover both the scheduled- and manual-announcement branches.
+- **Local TTS scaffold (Sherpa-ONNX, Phase 1)**: New `tts.local` package (`LocalTtsEngine`, `OnnxModelDownloader`, `VoiceModelRegistry`) and `ui.localvoices` package (`LocalVoiceSettingsScreen` + ViewModel) implement the on-device voice layer described in `docs/local-voice-llm-plan.md`. The engine wraps `sherpa-onnx-1.13.2.aar` (added as a file dependency under `app/libs/`, gitignored). A "Local voices" route is reachable from `VoiceSettingsScreen`. The engine is **not yet wired into `TtsEngineSelector`**; this release exposes the feature surface so the rest of the app can adopt it in 0.5.x.
+- **Voice settings → local voices entry** in `VoiceSettingsScreen`.
+
+### Changed
+- **`TimeAnnouncer` passes the current `dayOfWeek` and the disabled-day set** into `QuietHoursPolicy` so scheduled announcements honor per-day overrides.
+- **`SettingsRepository`** reads/writes the new preference using a comma-joined enum codec.
+
 ## [0.4.3-alpha] - 2026-06-10
 
 ### Added
