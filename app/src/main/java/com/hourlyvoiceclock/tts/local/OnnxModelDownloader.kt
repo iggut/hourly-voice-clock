@@ -3,14 +3,30 @@ package com.hourlyvoiceclock.tts.local
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
+/**
+ * Downloads Piper voice distributions (the .onnx model + its sibling
+ * .onnx.json audio/phoenome-id config) from the HuggingFace
+ * `rhasspy/piper-voices` mirror and verifies the response.
+ *
+ * The "already downloaded" check is **existence-based** (file present
+ * and non-empty), not size-based, so a partial download on the first
+ * try will be re-fetched without false-positive short-circuits.
+ *
+ * Each [downloadModel] call is wrapped in a coroutine bound to
+ * [Dispatchers.IO]. Failures are returned as a [Result] and also
+ * re-thrown as a typed [DownloadException] so the caller can render
+ * a human-readable error in the UI without parsing log lines.
+ */
 class OnnxModelDownloader(private val context: Context) {
 
     private val client = OkHttpClient.Builder()
@@ -25,61 +41,72 @@ class OnnxModelDownloader(private val context: Context) {
         model: VoiceModel,
         onProgress: (Float) -> Unit = {}
     ): Result<File> = withContext(Dispatchers.IO) {
-        try {
-            val modelDir = File(modelsDir, model.id)
-            val modelFile = File(modelDir, model.fileName)
+        val modelDir = File(modelsDir, model.id)
+        val onnxFile = File(modelDir, model.onnxFileName)
+        val jsonFile = File(modelDir, model.onnxJsonFileName)
 
-            if (modelFile.exists() && modelFile.length() == model.sizeBytes) {
-                Log.d(TAG, "Model ${model.id} already downloaded")
-                return@withContext Result.success(modelFile)
-            }
+        // Existence-based early-out: both files present and non-empty.
+        if (isModelDownloaded(model)) {
+            Log.d(TAG, "Model ${model.id} already downloaded")
+            return@withContext Result.success(onnxFile)
+        }
 
+        // Clean any partial state from a previous attempt.
+        if (modelDir.exists()) {
+            onnxFile.delete()
+            jsonFile.delete()
+        } else {
             modelDir.mkdirs()
+        }
 
-            val request = Request.Builder()
-                .url(model.downloadUrl)
-                .build()
-
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                return@withContext Result.failure(
-                    Exception("Download failed: HTTP ${response.code}")
-                )
+        try {
+            val onnxResult = downloadOne(model.onnxDownloadUrl, onnxFile) { fraction ->
+                // The .onnx file is ~99% of total bytes; map it to 0..0.95.
+                onProgress(fraction * 0.95f)
+            }
+            if (onnxResult.isFailure) {
+                onnxFile.delete()
+                return@withContext Result.failure(onnxResult.exceptionOrNull()!!)
             }
 
-            val body = response.body ?: return@withContext Result.failure(
-                Exception("Empty response body")
+            val jsonResult = downloadOne(model.onnxJsonDownloadUrl, jsonFile) { fraction ->
+                onProgress(0.95f + fraction * 0.05f)
+            }
+            if (jsonResult.isFailure) {
+                onnxFile.delete()
+                jsonFile.delete()
+                return@withContext Result.failure(jsonResult.exceptionOrNull()!!)
+            }
+
+            onProgress(1f)
+            Log.d(
+                TAG,
+                "Downloaded model ${model.id} (${onnxFile.length()} + ${jsonFile.length()} bytes)"
             )
-
-            val totalBytes = body.contentLength()
-            var downloadedBytes = 0L
-
-            body.byteStream().use { input ->
-                FileOutputStream(modelFile).use { output ->
-                    val buffer = ByteArray(8192)
-                    var bytesRead: Int
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
-                        ensureActive()
-                        output.write(buffer, 0, bytesRead)
-                        downloadedBytes += bytesRead
-                        if (totalBytes > 0) {
-                            onProgress(downloadedBytes.toFloat() / totalBytes)
-                        }
-                    }
-                }
-            }
-
-            Log.d(TAG, "Downloaded model ${model.id} (${modelFile.length()} bytes)")
-            Result.success(modelFile)
+            Result.success(onnxFile)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download model ${model.id}", e)
+            // Best-effort cleanup of partial state.
+            onnxFile.delete()
+            jsonFile.delete()
             Result.failure(e)
         }
     }
 
+    /**
+     * Returns true if the model is fully present on disk (both .onnx and
+     * .onnx.json, each non-empty). Exposed as a suspend function so it
+     * can be called from a coroutine that already has a dispatcher
+     * (avoids the implicit main-thread File I/O of the original).
+     */
+    suspend fun isModelDownloadedAsync(model: VoiceModel): Boolean = withContext(Dispatchers.IO) {
+        isModelDownloaded(model)
+    }
+
     fun isModelDownloaded(model: VoiceModel): Boolean {
-        val modelFile = File(modelsDir, "${model.id}/${model.fileName}")
-        return modelFile.exists() && modelFile.length() > 0
+        val onnx = File(modelsDir, "${model.id}/${model.onnxFileName}")
+        val json = File(modelsDir, "${model.id}/${model.onnxJsonFileName}")
+        return onnx.exists() && onnx.length() > 0 && json.exists() && json.length() > 0
     }
 
     fun deleteModel(model: VoiceModel): Boolean {
@@ -97,7 +124,57 @@ class OnnxModelDownloader(private val context: Context) {
             .sumOf { it.length() }
     }
 
+    private suspend fun downloadOne(
+        url: String,
+        target: File,
+        onFraction: (Float) -> Unit
+    ): Result<Unit> {
+        val request = Request.Builder().url(url).build()
+        val response = try {
+            client.newCall(request).execute()
+        } catch (e: IOException) {
+            return Result.failure(DownloadException("Network error: ${e.message ?: e.javaClass.simpleName}", e))
+        }
+
+        response.use { r ->
+            if (!r.isSuccessful) {
+                return Result.failure(
+                    DownloadException("Download failed: HTTP ${r.code} for $url")
+                )
+            }
+            val body = r.body
+                ?: return Result.failure(DownloadException("Empty response body for $url"))
+
+            val totalBytes = body.contentLength()
+            var downloaded = 0L
+            try {
+                body.byteStream().use { input ->
+                    FileOutputStream(target).use { output ->
+                        val buffer = ByteArray(8192)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read == -1) break
+                            currentCoroutineContext().ensureActive()
+                            output.write(buffer, 0, read)
+                            downloaded += read
+                            if (totalBytes > 0) {
+                                onFraction(downloaded.toFloat() / totalBytes)
+                            }
+                        }
+                        output.flush()
+                    }
+                }
+            } catch (e: IOException) {
+                target.delete()
+                return Result.failure(DownloadException("I/O error: ${e.message ?: e.javaClass.simpleName}", e))
+            }
+        }
+        return Result.success(Unit)
+    }
+
     companion object {
         private const val TAG = "OnnxModelDownloader"
     }
 }
+
+class DownloadException(message: String, cause: Throwable? = null) : Exception(message, cause)

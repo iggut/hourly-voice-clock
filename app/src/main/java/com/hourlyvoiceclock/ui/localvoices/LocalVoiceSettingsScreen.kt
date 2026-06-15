@@ -22,8 +22,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -77,6 +79,7 @@ fun LocalVoiceSettingsScreen(
     val downloadingModel by viewModel.downloadingModel.collectAsState()
     val downloadProgress by viewModel.downloadProgress.collectAsState()
     val isSpeaking by viewModel.isSpeaking.collectAsState()
+    val errorsByModelId by viewModel.errorsByModelId.collectAsState()
 
     val isDark = isSystemInDarkTheme()
     val bgGradient = Brush.verticalGradient(
@@ -125,6 +128,10 @@ fun LocalVoiceSettingsScreen(
                     )
                 }
 
+                item {
+                    PreviewBanner()
+                }
+
                 val categories = listOf(
                     VoiceCategory.STANDARD to "Standard",
                     VoiceCategory.CHARACTER to "Character",
@@ -147,6 +154,7 @@ fun LocalVoiceSettingsScreen(
                         items(voices) { model ->
                             val isDownloaded = downloadedModels.any { it.id == model.id }
                             val isDownloading = downloadingModel?.id == model.id
+                            val errorMessage = errorsByModelId[model.id]
 
                             VoiceModelCard(
                                 model = model,
@@ -154,10 +162,12 @@ fun LocalVoiceSettingsScreen(
                                 isDownloading = isDownloading,
                                 downloadProgress = if (isDownloading) downloadProgress else 0f,
                                 isSpeaking = isSpeaking,
+                                errorMessage = errorMessage,
                                 onDownload = { viewModel.downloadModel(model) },
                                 onDelete = { viewModel.deleteModel(model) },
                                 onPreview = { viewModel.previewVoice(model) },
                                 onStop = { viewModel.stopSpeaking() },
+                                onClearError = { viewModel.clearError(model.id) },
                                 isDark = isDark
                             )
                         }
@@ -173,16 +183,85 @@ fun LocalVoiceSettingsScreen(
 }
 
 @Composable
+private fun ErrorChip(message: String, onClear: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(
+            Icons.Default.ErrorOutline,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            "Dismiss",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier
+                .clickable { onClear() }
+                .padding(horizontal = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun PreviewBanner() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "Preview build — download works, the \"Preview\" button works once a voice is " +
+                    "downloaded. Wiring this into the hourly announcement flow lands in 0.5.x.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
 private fun VoiceModelCard(
     model: VoiceModel,
     isDownloaded: Boolean,
     isDownloading: Boolean,
     downloadProgress: Float,
     isSpeaking: Boolean,
+    errorMessage: String?,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
     onPreview: () -> Unit,
     onStop: () -> Unit,
+    onClearError: () -> Unit,
     isDark: Boolean
 ) {
     Card(
@@ -253,6 +332,10 @@ private fun VoiceModelCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else if (!isDownloaded) {
+                if (errorMessage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ErrorChip(message = errorMessage, onClear = onClearError)
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = onDownload,
@@ -261,7 +344,10 @@ private fun VoiceModelCard(
                 ) {
                     Icon(Icons.Default.CloudDownload, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Download", fontWeight = FontWeight.Bold)
+                    Text(
+                        if (errorMessage != null) "Retry download" else "Download",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             } else {
                 Spacer(modifier = Modifier.height(8.dp))

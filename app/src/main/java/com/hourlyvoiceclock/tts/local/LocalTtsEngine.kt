@@ -37,7 +37,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         shutdown()
 
         val modelDir = File(context.filesDir, "local_tts/models/${model.id}")
-        val modelFile = File(modelDir, model.fileName)
+        val modelFile = File(modelDir, model.onnxFileName)
         val tokensFile = File(modelDir, "tokens.txt")
         val espeakDataDir = File(modelDir, "espeak-ng-data")
 
@@ -103,7 +103,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             // Initialize synchronously on the calling thread
             shutdown()
             val modelDir = File(context.filesDir, "local_tts/models/${model.id}")
-            val modelFile = File(modelDir, model.fileName)
+            val modelFile = File(modelDir, model.onnxFileName)
             val tokensFile = File(modelDir, "tokens.txt")
             val espeakDataDir = File(modelDir, "espeak-ng-data")
 

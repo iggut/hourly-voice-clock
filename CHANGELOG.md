@@ -2,8 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
-### Changed (CI)
-- **Android CI no longer runs on tag push.** The workflow is now `workflow_dispatch` only; CI is invoked manually with a `version_tag` input. Tag pushes do not start a build, and the release APK is published by the local release process instead. Avoids accidental double-builds and ensures CI only runs when intentionally triggered.
+## [0.4.5-alpha] - 2026-06-15
+
+### Fixed
+- **Local-voice download was silently failing** — `VoiceModelRegistry` pointed at `https://github.com/rhasspy/piper/releases/download/v2.0.0/*.onnx`, which returns HTTP 404 (Piper's GitHub releases only host CLI tarballs, not model weights, and there is no `v2.0.0` tag). The click did nothing visible because:
+  1. The download URL was wrong.
+  2. The downloader only fetched the `.onnx` file but the model needs its sibling `.onnx.json` (audio config + phoneme id map) to load.
+  3. The error was only written to logcat — the screen had no error state to display, so the button just reset to "Download" with no feedback.
+- **`OnnxModelDownloader` rewritten to fetch both files** (`.onnx` + `.onnx.json`) into the model directory, with existence-based early-out (not size-based, so a partial download will be re-fetched), proper IOException → `DownloadException` translation, and cancellation support via `currentCoroutineContext().ensureActive()`.
+- **Registry URLs moved to the HuggingFace `rhasspy/piper-voices` mirror** for all 6 voices. Sizes updated to the actual HF content-lengths (63–78 MB).
+- **Download errors now surface inline** — `LocalVoiceSettingsViewModel` exposes `errorsByModelId: StateFlow<Map<String, String>>`; the card renders an `ErrorChip` with the failure reason and the button switches to "Retry download" until the user dismisses.
+- **A "Preview build" banner** is shown on the Local Voices screen explaining that the wiring into the hourly announcement flow lands in 0.5.x.
+
+### Changed
+- `VoiceModel` gains `onnxFileName`, `onnxJsonFileName`, `onnxDownloadUrl`, `onnxJsonDownloadUrl` (was a single `downloadUrl` + `fileName` pair).
+- `LocalTtsEngine` updated to read from the new field names.
+
+### Added
+- `DownloadException` (typed exception with optional cause) for downloader errors.
+- `OnnxModelDownloaderTest` with 10 Robolectric tests covering URL/file-name consistency, the existence check across the four file states, deletion, and the `DownloadException` shape.
+
+### Verified
+- `./gradlew test` — BUILD SUCCESSFUL, 10 new tests pass.
+- `./gradlew compileDebugKotlin` — clean.
+- Live URL check: `https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx` returns HTTP 200 / 63,201,294 bytes.
 
 ## [0.4.4-alpha] - 2026-06-13
 
@@ -15,6 +37,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **`TimeAnnouncer` passes the current `dayOfWeek` and the disabled-day set** into `QuietHoursPolicy` so scheduled announcements honor per-day overrides.
 - **`SettingsRepository`** reads/writes the new preference using a comma-joined enum codec.
+- **Android CI no longer runs on tag push.** The workflow is now `workflow_dispatch` only; CI is invoked manually with a `version_tag` input. Tag pushes do not start a build, and the release APK is published by the local release process instead. Avoids accidental double-builds and ensures CI only runs when intentionally triggered.
 
 ## [0.4.3-alpha] - 2026-06-10
 

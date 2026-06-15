@@ -6,8 +6,10 @@ data class VoiceModel(
     val description: String,
     val language: String,
     val sizeBytes: Long,
-    val downloadUrl: String,
-    val fileName: String,
+    val onnxDownloadUrl: String,
+    val onnxJsonDownloadUrl: String,
+    val onnxFileName: String,
+    val onnxJsonFileName: String,
     val sampleRate: Int = 22050,
     val category: VoiceCategory = VoiceCategory.STANDARD
 )
@@ -19,7 +21,18 @@ enum class VoiceCategory {
     ACCENT
 }
 
+/**
+ * Catalog of Piper voices hosted on the HuggingFace `rhasspy/piper-voices`
+ * mirror. Each entry resolves both the .onnx model file and its sibling
+ * .onnx.json (audio config + phoneme id map) so Sherpa-ONNX can load it.
+ *
+ * Size values are the actual HF content-lengths as of 2026-06-15 and are
+ * used only for display; the downloader's "already downloaded" check is
+ * existence-based, not size-based, so registry drift is harmless.
+ */
 object VoiceModelRegistry {
+
+    private const val HF_BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
 
     val availableVoices: List<VoiceModel> = listOf(
         VoiceModel(
@@ -27,9 +40,11 @@ object VoiceModelRegistry {
             displayName = "Amy (Friendly)",
             description = "Warm, friendly American English female voice",
             language = "en-US",
-            sizeBytes = 32_000_000,
-            downloadUrl = "https://github.com/rhasspy/piper/releases/download/v2.0.0/en_US-amy-medium.onnx",
-            fileName = "en_US-amy-medium.onnx",
+            sizeBytes = 63_201_294,
+            onnxDownloadUrl = "$HF_BASE/en/en_US/amy/medium/en_US-amy-medium.onnx",
+            onnxJsonDownloadUrl = "$HF_BASE/en/en_US/amy/medium/en_US-amy-medium.onnx.json",
+            onnxFileName = "en_US-amy-medium.onnx",
+            onnxJsonFileName = "en_US-amy-medium.onnx.json",
             sampleRate = 22050,
             category = VoiceCategory.STANDARD
         ),
@@ -38,9 +53,11 @@ object VoiceModelRegistry {
             displayName = "Lessac (Expressive)",
             description = "Expressive American English male voice with natural intonation",
             language = "en-US",
-            sizeBytes = 35_000_000,
-            downloadUrl = "https://github.com/rhasspy/piper/releases/download/v2.0.0/en_US-lessac-medium.onnx",
-            fileName = "en_US-lessac-medium.onnx",
+            sizeBytes = 63_201_294,
+            onnxDownloadUrl = "$HF_BASE/en/en_US/lessac/medium/en_US-lessac-medium.onnx",
+            onnxJsonDownloadUrl = "$HF_BASE/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json",
+            onnxFileName = "en_US-lessac-medium.onnx",
+            onnxJsonFileName = "en_US-lessac-medium.onnx.json",
             sampleRate = 22050,
             category = VoiceCategory.STANDARD
         ),
@@ -49,9 +66,11 @@ object VoiceModelRegistry {
             displayName = "LibriTTS (Narrator)",
             description = "Storytelling voice perfect for announcements",
             language = "en-US",
-            sizeBytes = 38_000_000,
-            downloadUrl = "https://github.com/rhasspy/piper/releases/download/v2.0.0/en_US-libritts_r-medium.onnx",
-            fileName = "en_US-libritts_r-medium.onnx",
+            sizeBytes = 78_580_914,
+            onnxDownloadUrl = "$HF_BASE/en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx",
+            onnxJsonDownloadUrl = "$HF_BASE/en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx.json",
+            onnxFileName = "en_US-libritts_r-medium.onnx",
+            onnxJsonFileName = "en_US-libritts_r-medium.onnx.json",
             sampleRate = 22050,
             category = VoiceCategory.NARRATOR
         ),
@@ -60,9 +79,11 @@ object VoiceModelRegistry {
             displayName = "Alba (British)",
             description = "Elegant British English female voice",
             language = "en-GB",
-            sizeBytes = 33_000_000,
-            downloadUrl = "https://github.com/rhasspy/piper/releases/download/v2.0.0/en_GB-alba-medium.onnx",
-            fileName = "en_GB-alba-medium.onnx",
+            sizeBytes = 63_201_294,
+            onnxDownloadUrl = "$HF_BASE/en/en_GB/alba/medium/en_GB-alba-medium.onnx",
+            onnxJsonDownloadUrl = "$HF_BASE/en/en_GB/alba/medium/en_GB-alba-medium.onnx.json",
+            onnxFileName = "en_GB-alba-medium.onnx",
+            onnxJsonFileName = "en_GB-alba-medium.onnx.json",
             sampleRate = 22050,
             category = VoiceCategory.ACCENT
         ),
@@ -71,9 +92,11 @@ object VoiceModelRegistry {
             displayName = "Arctic (Character)",
             description = "Deep, commanding voice for dramatic time announcements",
             language = "en-US",
-            sizeBytes = 30_000_000,
-            downloadUrl = "https://github.com/rhasspy/piper/releases/download/v2.0.0/en_US-arctic-medium.onnx",
-            fileName = "en_US-arctic-medium.onnx",
+            sizeBytes = 76_766_385,
+            onnxDownloadUrl = "$HF_BASE/en/en_US/arctic/medium/en_US-arctic-medium.onnx",
+            onnxJsonDownloadUrl = "$HF_BASE/en/en_US/arctic/medium/en_US-arctic-medium.onnx.json",
+            onnxFileName = "en_US-arctic-medium.onnx",
+            onnxJsonFileName = "en_US-arctic-medium.onnx.json",
             sampleRate = 22050,
             category = VoiceCategory.CHARACTER
         ),
@@ -82,9 +105,11 @@ object VoiceModelRegistry {
             displayName = "Kusal (Upbeat)",
             description = "Upbeat, energetic American English male voice",
             language = "en-US",
-            sizeBytes = 31_000_000,
-            downloadUrl = "https://github.com/rhasspy/piper/releases/download/v2.0.0/en_US-kusal-medium.onnx",
-            fileName = "en_US-kusal-medium.onnx",
+            sizeBytes = 63_201_294,
+            onnxDownloadUrl = "$HF_BASE/en/en_US/kusal/medium/en_US-kusal-medium.onnx",
+            onnxJsonDownloadUrl = "$HF_BASE/en/en_US/kusal/medium/en_US-kusal-medium.onnx.json",
+            onnxFileName = "en_US-kusal-medium.onnx",
+            onnxJsonFileName = "en_US-kusal-medium.onnx.json",
             sampleRate = 22050,
             category = VoiceCategory.CHARACTER
         )
