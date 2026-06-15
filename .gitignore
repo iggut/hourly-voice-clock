@@ -16,4 +16,5 @@ local.properties
 *.apk
 *.aab
 app/build/
+app/libs/
 .kotlin/

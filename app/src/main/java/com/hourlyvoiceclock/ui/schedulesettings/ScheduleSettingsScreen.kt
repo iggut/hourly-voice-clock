@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,6 +49,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -69,6 +72,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import java.time.DayOfWeek
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
 import com.hourlyvoiceclock.ui.theme.GlassBgLight
@@ -96,6 +100,7 @@ fun ScheduleSettingsScreen(
     val quietStart by viewModel.quietStart.collectAsState()
     val quietEnd by viewModel.quietEnd.collectAsState()
     val allowManual by viewModel.allowManualDuringQuiet.collectAsState()
+    val quietDaysDisabled by viewModel.quietDaysDisabled.collectAsState()
     val exactAlarms by viewModel.exactAlarmsEnabled.collectAsState()
     val canScheduleExact by viewModel.canScheduleExact.collectAsState()
     val needsExactPermission by viewModel.needsExactPermission.collectAsState()
@@ -455,6 +460,57 @@ fun ScheduleSettingsScreen(
                                     onCheckedChange = null
                                 )
                             }
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = if (isDark) GlassBorderDark else GlassBorderLight
+                            )
+
+                            Text(
+                                stringResource(R.string.quiet_days_disabled_label),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val shortNames = mapOf(
+                                    DayOfWeek.MONDAY to stringResource(R.string.day_mon),
+                                    DayOfWeek.TUESDAY to stringResource(R.string.day_tue),
+                                    DayOfWeek.WEDNESDAY to stringResource(R.string.day_wed),
+                                    DayOfWeek.THURSDAY to stringResource(R.string.day_thu),
+                                    DayOfWeek.FRIDAY to stringResource(R.string.day_fri),
+                                    DayOfWeek.SATURDAY to stringResource(R.string.day_sat),
+                                    DayOfWeek.SUNDAY to stringResource(R.string.day_sun)
+                                )
+                                for (day in DayOfWeek.entries) {
+                                    val isDisabled = day in quietDaysDisabled
+                                    FilterChip(
+                                        selected = isDisabled,
+                                        onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
+                                        label = {
+                                            Text(
+                                                shortNames[day] ?: day.name.take(2),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                                            selectedLabelColor = MaterialTheme.colorScheme.error
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                stringResource(R.string.quiet_days_disabled_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

@@ -1,5 +1,6 @@
 package com.hourlyvoiceclock.data
 
+import java.time.DayOfWeek
 import java.time.LocalTime
 
 enum class PhraseStyle {
@@ -49,6 +50,7 @@ data class AppSettings(
     val quietHoursStart: LocalTime = LocalTime.of(22, 0),
     val quietHoursEnd: LocalTime = LocalTime.of(7, 0),
     val allowManualDuringQuiet: Boolean = true,
+    val quietDaysDisabled: Set<DayOfWeek> = emptySet(),
     val exactAlarmsEnabled: Boolean = false,
     val notificationLogging: Boolean = false,
     val audioChannel: AudioChannel = AudioChannel.MEDIA,

@@ -6,7 +6,9 @@ import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.data.TimeFormat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.DayOfWeek
 import java.time.LocalTime
 
 class SettingsRepositoryTest {
@@ -106,5 +108,38 @@ class SettingsRepositoryTest {
         assertEquals("00:00", SettingsRepository.formatTime(LocalTime.of(0, 0)))
         assertEquals("09:05", SettingsRepository.formatTime(LocalTime.of(9, 5)))
         assertEquals("22:30", SettingsRepository.formatTime(LocalTime.of(22, 30)))
+    }
+
+    @Test
+    fun `parseDayOfWeekSet parses valid comma-separated days`() {
+        val result = SettingsRepository.parseDayOfWeekSet("MONDAY,WEDNESDAY,FRIDAY")
+        assertEquals(3, result.size)
+        assertTrue(result.contains(DayOfWeek.MONDAY))
+        assertTrue(result.contains(DayOfWeek.WEDNESDAY))
+        assertTrue(result.contains(DayOfWeek.FRIDAY))
+    }
+
+    @Test
+    fun `parseDayOfWeekSet returns empty set for null or blank`() {
+        assertEquals(emptySet<DayOfWeek>(), SettingsRepository.parseDayOfWeekSet(null))
+        assertEquals(emptySet<DayOfWeek>(), SettingsRepository.parseDayOfWeekSet(""))
+        assertEquals(emptySet<DayOfWeek>(), SettingsRepository.parseDayOfWeekSet("   "))
+    }
+
+    @Test
+    fun `parseDayOfWeekSet returns empty set for invalid input`() {
+        assertEquals(emptySet<DayOfWeek>(), SettingsRepository.parseDayOfWeekSet("INVALID_DAY"))
+    }
+
+    @Test
+    fun `formatDayOfWeekSet produces comma-separated string`() {
+        val result = SettingsRepository.formatDayOfWeekSet(setOf(DayOfWeek.MONDAY, DayOfWeek.SATURDAY))
+        assertTrue(result.contains("MONDAY"))
+        assertTrue(result.contains("SATURDAY"))
+    }
+
+    @Test
+    fun `formatDayOfWeekSet returns empty string for empty set`() {
+        assertEquals("", SettingsRepository.formatDayOfWeekSet(emptySet()))
     }
 }

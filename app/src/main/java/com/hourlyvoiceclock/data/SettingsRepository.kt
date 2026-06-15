@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.DayOfWeek
 import java.time.LocalTime
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
@@ -47,6 +48,7 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
             quietHoursStart = parseTime(prefs[KEY_QUIET_HOURS_START], "22:00"),
             quietHoursEnd = parseTime(prefs[KEY_QUIET_HOURS_END], "07:00"),
             allowManualDuringQuiet = prefs[KEY_ALLOW_MANUAL_QUIET] ?: true,
+            quietDaysDisabled = parseDayOfWeekSet(prefs[KEY_QUIET_DAYS_DISABLED]),
             exactAlarmsEnabled = prefs[KEY_EXACT_ALARMS] ?: false,
             notificationLogging = prefs[KEY_NOTIFICATION_LOGGING] ?: false,
             audioChannel = safeEnumValueOf(prefs[KEY_AUDIO_CHANNEL], AudioChannel.MEDIA),
@@ -73,6 +75,7 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
         this[KEY_QUIET_HOURS_START] = formatTime(settings.quietHoursStart)
         this[KEY_QUIET_HOURS_END] = formatTime(settings.quietHoursEnd)
         this[KEY_ALLOW_MANUAL_QUIET] = settings.allowManualDuringQuiet
+        this[KEY_QUIET_DAYS_DISABLED] = formatDayOfWeekSet(settings.quietDaysDisabled)
         this[KEY_EXACT_ALARMS] = settings.exactAlarmsEnabled
         this[KEY_NOTIFICATION_LOGGING] = settings.notificationLogging
         this[KEY_AUDIO_CHANNEL] = settings.audioChannel.name
@@ -160,6 +163,10 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
         context.dataStore.edit { it[KEY_ALLOW_MANUAL_QUIET] = enabled }
     }
 
+    suspend fun setQuietDaysDisabled(days: Set<DayOfWeek>) {
+        context.dataStore.edit { it[KEY_QUIET_DAYS_DISABLED] = formatDayOfWeekSet(days) }
+    }
+
     override suspend fun setExactAlarmsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[KEY_EXACT_ALARMS] = enabled }
     }
@@ -215,6 +222,19 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
             return String.format("%02d:%02d", time.hour, time.minute)
         }
 
+        internal fun parseDayOfWeekSet(value: String?): Set<DayOfWeek> {
+            if (value.isNullOrBlank()) return emptySet()
+            return try {
+                value.split(",").map { DayOfWeek.valueOf(it.trim()) }.toSet()
+            } catch (e: Exception) {
+                emptySet()
+            }
+        }
+
+        internal fun formatDayOfWeekSet(days: Set<DayOfWeek>): String {
+            return days.joinToString(",") { it.name }
+        }
+
         internal inline fun <reified T : Enum<T>> safeEnumValueOf(value: String?, fallback: T): T {
             if (value == null) return fallback
             return try {
@@ -240,6 +260,7 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
         private val KEY_QUIET_HOURS_START = stringPreferencesKey("quiet_hours_start")
         private val KEY_QUIET_HOURS_END = stringPreferencesKey("quiet_hours_end")
         private val KEY_ALLOW_MANUAL_QUIET = booleanPreferencesKey("allow_manual_quiet")
+        private val KEY_QUIET_DAYS_DISABLED = stringPreferencesKey("quiet_days_disabled")
         private val KEY_EXACT_ALARMS = booleanPreferencesKey("exact_alarms")
         private val KEY_NOTIFICATION_LOGGING = booleanPreferencesKey("notification_logging")
         private val KEY_AUDIO_CHANNEL = stringPreferencesKey("audio_channel")

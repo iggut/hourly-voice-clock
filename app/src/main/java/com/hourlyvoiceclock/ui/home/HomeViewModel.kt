@@ -142,11 +142,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun updateQuietStatus(settings: com.hourlyvoiceclock.data.AppSettings) {
         val now = java.time.LocalTime.now()
+        val today = java.time.LocalDate.now().dayOfWeek
         val inQuiet = QuietHoursPolicy.isQuietTime(
             now,
             settings.quietHoursEnabled,
             settings.quietHoursStart,
-            settings.quietHoursEnd
+            settings.quietHoursEnd,
+            settings.quietDaysDisabled,
+            today
         )
         _quietHoursActive.value = inQuiet
         _canSpeakNow.value = QuietHoursPolicy.canAnnounceManually(
@@ -154,7 +157,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             settings.quietHoursEnabled,
             settings.quietHoursStart,
             settings.quietHoursEnd,
-            settings.allowManualDuringQuiet
+            settings.allowManualDuringQuiet,
+            settings.quietDaysDisabled,
+            today
         )
     }
 

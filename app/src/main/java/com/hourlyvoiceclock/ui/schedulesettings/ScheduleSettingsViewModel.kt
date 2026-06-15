@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.LocalTime
 
 class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -32,6 +33,9 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
 
     private val _allowManualDuringQuiet = MutableStateFlow(true)
     val allowManualDuringQuiet: StateFlow<Boolean> = _allowManualDuringQuiet.asStateFlow()
+
+    private val _quietDaysDisabled = MutableStateFlow<Set<DayOfWeek>>(emptySet())
+    val quietDaysDisabled: StateFlow<Set<DayOfWeek>> = _quietDaysDisabled.asStateFlow()
 
     private val _exactAlarmsEnabled = MutableStateFlow(false)
     val exactAlarmsEnabled: StateFlow<Boolean> = _exactAlarmsEnabled.asStateFlow()
@@ -70,6 +74,7 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             _quietStart.value = settings.quietHoursStart
             _quietEnd.value = settings.quietHoursEnd
             _allowManualDuringQuiet.value = settings.allowManualDuringQuiet
+            _quietDaysDisabled.value = settings.quietDaysDisabled
             _exactAlarmsEnabled.value = settings.exactAlarmsEnabled
             _notificationLogging.value = settings.notificationLogging
             checkExactAlarmPermission()
@@ -152,6 +157,15 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         viewModelScope.launch {
             deps.settingsRepository.setAllowManualDuringQuiet(enabled)
             _allowManualDuringQuiet.value = enabled
+        }
+    }
+
+    fun toggleQuietDay(day: DayOfWeek, disabled: Boolean) {
+        viewModelScope.launch {
+            val current = _quietDaysDisabled.value.toMutableSet()
+            if (disabled) current.add(day) else current.remove(day)
+            deps.settingsRepository.setQuietDaysDisabled(current)
+            _quietDaysDisabled.value = current
         }
     }
 

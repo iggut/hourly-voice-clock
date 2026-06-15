@@ -4,6 +4,7 @@ import com.hourlyvoiceclock.announcer.QuietHoursPolicy
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.DayOfWeek
 import java.time.LocalTime
 
 class QuietHoursPolicyTest {
@@ -122,6 +123,68 @@ class QuietHoursPolicyTest {
         assertFalse(
             QuietHoursPolicy.canAnnounceManually(
                 now, true, LocalTime.of(22, 0), LocalTime.of(7, 0), false
+            )
+        )
+    }
+
+    @Test
+    fun `disabled day suppresses announcements regardless of time`() {
+        val now = LocalTime.of(12, 0)
+        assertTrue(
+            QuietHoursPolicy.isQuietTime(
+                now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
+                quietDaysDisabled = setOf(DayOfWeek.WEDNESDAY),
+                currentDay = DayOfWeek.WEDNESDAY
+            )
+        )
+    }
+
+    @Test
+    fun `non-disabled day does not suppress outside quiet hours`() {
+        val now = LocalTime.of(12, 0)
+        assertFalse(
+            QuietHoursPolicy.isQuietTime(
+                now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
+                quietDaysDisabled = setOf(DayOfWeek.WEDNESDAY),
+                currentDay = DayOfWeek.THURSDAY
+            )
+        )
+    }
+
+    @Test
+    fun `manual announcement blocked on disabled day`() {
+        val now = LocalTime.of(12, 0)
+        assertFalse(
+            QuietHoursPolicy.canAnnounceManually(
+                now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
+                allowManualDuringQuiet = true,
+                quietDaysDisabled = setOf(DayOfWeek.SATURDAY),
+                currentDay = DayOfWeek.SATURDAY
+            )
+        )
+    }
+
+    @Test
+    fun `manual announcement allowed on non-disabled day outside quiet hours`() {
+        val now = LocalTime.of(12, 0)
+        assertTrue(
+            QuietHoursPolicy.canAnnounceManually(
+                now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
+                allowManualDuringQuiet = true,
+                quietDaysDisabled = setOf(DayOfWeek.SATURDAY),
+                currentDay = DayOfWeek.MONDAY
+            )
+        )
+    }
+
+    @Test
+    fun `empty disabled days has no effect`() {
+        val now = LocalTime.of(12, 0)
+        assertFalse(
+            QuietHoursPolicy.isQuietTime(
+                now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
+                quietDaysDisabled = emptySet(),
+                currentDay = DayOfWeek.MONDAY
             )
         )
     }

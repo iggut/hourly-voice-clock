@@ -9,12 +9,14 @@ import com.hourlyvoiceclock.ui.home.HomeScreen
 import com.hourlyvoiceclock.ui.voicesettings.VoiceSettingsScreen
 import com.hourlyvoiceclock.ui.formatsettings.FormatSettingsScreen
 import com.hourlyvoiceclock.ui.schedulesettings.ScheduleSettingsScreen
+import com.hourlyvoiceclock.ui.localvoices.LocalVoiceSettingsScreen
 
 object Routes {
     const val HOME = "home"
     const val VOICE_SETTINGS = "voice_settings"
     const val FORMAT_SETTINGS = "format_settings"
     const val SCHEDULE_SETTINGS = "schedule_settings"
+    const val LOCAL_VOICES = "local_voices"
 }
 
 @Composable
@@ -28,13 +30,19 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
             )
         }
         composable(Routes.VOICE_SETTINGS) {
-            VoiceSettingsScreen(onBack = { navController.popBackStack() })
+            VoiceSettingsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToLocalVoices = { navController.navigate(Routes.LOCAL_VOICES) }
+            )
         }
         composable(Routes.FORMAT_SETTINGS) {
             FormatSettingsScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.SCHEDULE_SETTINGS) {
             ScheduleSettingsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.LOCAL_VOICES) {
+            LocalVoiceSettingsScreen(onBack = { navController.popBackStack() })
         }
     }
 }

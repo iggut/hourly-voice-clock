@@ -1,5 +1,6 @@
 package com.hourlyvoiceclock.announcer
 
+import java.time.DayOfWeek
 import java.time.LocalTime
 
 object QuietHoursPolicy {
@@ -8,9 +9,15 @@ object QuietHoursPolicy {
         now: LocalTime,
         quietHoursEnabled: Boolean,
         quietStart: LocalTime,
-        quietEnd: LocalTime
+        quietEnd: LocalTime,
+        quietDaysDisabled: Set<DayOfWeek> = emptySet(),
+        currentDay: DayOfWeek? = null
     ): Boolean {
         if (!quietHoursEnabled) return false
+
+        if (quietDaysDisabled.isNotEmpty() && currentDay != null) {
+            if (currentDay in quietDaysDisabled) return true
+        }
 
         if (quietStart == quietEnd) return true
 
@@ -26,10 +33,15 @@ object QuietHoursPolicy {
         quietHoursEnabled: Boolean,
         quietStart: LocalTime,
         quietEnd: LocalTime,
-        allowManualDuringQuiet: Boolean
+        allowManualDuringQuiet: Boolean,
+        quietDaysDisabled: Set<DayOfWeek> = emptySet(),
+        currentDay: DayOfWeek? = null
     ): Boolean {
+        if (quietDaysDisabled.isNotEmpty() && currentDay != null) {
+            if (currentDay in quietDaysDisabled) return false
+        }
         if (!quietHoursEnabled) return true
-        val inQuiet = isQuietTime(now, true, quietStart, quietEnd)
+        val inQuiet = isQuietTime(now, true, quietStart, quietEnd, quietDaysDisabled, currentDay)
         return if (inQuiet) allowManualDuringQuiet else true
     }
 }
