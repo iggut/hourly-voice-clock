@@ -18,3 +18,7 @@ local.properties
 app/build/
 app/libs/
 .kotlin/
+
+# JVM crash dumps from Gradle / R8 (also reaped by the agent loop)
+/hs_err_pid*.log
+/replay_pid*.log
