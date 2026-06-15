@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+### Changed (CI)
+- **Android CI no longer runs on tag push.** The workflow is now `workflow_dispatch` only; CI is invoked manually with a `version_tag` input. Tag pushes do not start a build, and the release APK is published by the local release process instead. Avoids accidental double-builds and ensures CI only runs when intentionally triggered.
+
 ## [0.4.4-alpha] - 2026-06-13
 
 ### Added
