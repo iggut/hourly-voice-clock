@@ -33,6 +33,8 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     private var currentModel: VoiceModel? = null
     private var currentAudioChannel: AudioChannel = AudioChannel.MEDIA
     private var isInitialized = false
+    @Volatile private var isSynthesizing = false
+    @Volatile private var cancelRequested = false
     private var tts: OfflineTts? = null
 
     override suspend fun initialize(enginePackage: String?): Boolean {
@@ -44,11 +46,22 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             return false
         }
 
+        synchronized(this) {
+            if (isInitialized && currentModel?.id == model.id && tts != null) {
+                return true
+            }
+            if (isSynthesizing) {
+                Log.w(TAG, "Refusing to reinitialize while synthesis is active for ${currentModel?.id}")
+                return false
+            }
+        }
+
         return try {
             shutdown()
             tts = buildOfflineTts(model)
             currentModel = model
             isInitialized = true
+            cancelRequested = false
             Log.d(TAG, "Initialized with model: ${model.id}")
             true
         } catch (e: Throwable) {
@@ -122,13 +135,20 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     override fun setVoice(voiceName: String, localeTag: String): Boolean {
         val model = VoiceModelRegistry.getVoiceById(voiceName) ?: return false
         if (!downloader.isModelDownloaded(model)) return false
-        if (currentModel?.id == model.id && tts != null) return true
+        synchronized(this) {
+            if (isSynthesizing) {
+                Log.w(TAG, "Refusing to switch voices while synthesis is active")
+                return false
+            }
+            if (currentModel?.id == model.id && tts != null) return true
+        }
 
         return try {
             shutdown()
             tts = buildOfflineTts(model)
             currentModel = model
             isInitialized = true
+            cancelRequested = false
             true
         } catch (e: Throwable) {
             Log.e(TAG, "Failed to init for voice $voiceName", e)
@@ -166,6 +186,15 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             return
         }
         val sampleRate = currentModel?.sampleRate ?: 22050
+        synchronized(this) {
+            if (isSynthesizing) {
+                Log.w(TAG, "speakAsync rejected because synthesis is already active")
+                onComplete(false)
+                return
+            }
+            isSynthesizing = true
+            cancelRequested = false
+        }
 
         Thread {
             var success = false
@@ -184,6 +213,9 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
                     text = text,
                     config = genConfig,
                     callback = { samples ->
+                        if (cancelRequested) {
+                            return@generateWithConfigAndCallback 0
+                        }
                         // Callback runs on the synth thread. Any throw
                         // here aborts generation, so we trap it and
                         // return 0 to stop further chunks.
@@ -196,23 +228,32 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
                         }
                     },
                 )
-                success = true
+                success = !cancelRequested
                 Log.d(TAG, "Spoke with ${currentModel?.displayName}: $text")
             } catch (e: Throwable) {
                 Log.e(TAG, "Async speak failed", e)
             } finally {
+                synchronized(this@LocalTtsEngine) {
+                    isSynthesizing = false
+                    cancelRequested = false
+                }
                 onComplete(success)
             }
         }.start()
     }
 
     override fun stop() {
-        // OfflineTts has no direct stop; the worker thread will exit
-        // when generation completes. AudioTrack playback is
-        // best-effort interrupted on the next call to shutdown().
+        cancelRequested = true
     }
 
     override fun shutdown() {
+        cancelRequested = true
+        synchronized(this) {
+            if (isSynthesizing) {
+                Log.w(TAG, "Deferring shutdown while synthesis is active")
+                return
+            }
+        }
         try {
             tts?.release()
         } catch (e: Throwable) {

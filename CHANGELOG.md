@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.9-alpha] - 2026-06-16
+
+### Fixed
+- Local downloaded-voice preview now avoids tearing down the Sherpa-ONNX engine while synthesis is active, which should stop the native crash race when previewing on-device voices.
+- The local engine now reuses the current model instead of rebuilding it on every preview path.
+
 ## [0.4.8-alpha] - 2026-06-16
 
 ### Fixed
