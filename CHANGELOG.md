@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.8-alpha] - 2026-06-16
+
+### Fixed
+- **Quiet-hours day-of-week layout now adapts to portrait and landscape** so the disabled-day picker remains usable on narrow screens.
+
 ## [0.4.7-alpha] - 2026-06-15
 
 ### Fixed
