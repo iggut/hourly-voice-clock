@@ -32,6 +32,31 @@ jobs:
         with:
           validate-wrappers: false
 
+      - name: Download and sanitize Sherpa-ONNX AAR
+        run: |
+          curl -sL -o app/libs/sherpa-onnx-1.13.3.aar \
+            "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.3/sherpa-onnx-1.13.3.aar"
+          cd app/libs
+          mkdir -p sanitize && cd sanitize
+          unzip -q ../sherpa-onnx-1.13.3.aar
+          cd classes && jar xf ../classes.jar
+          rm -f \
+            com/k2fsa/sherpa/onnx/OfflineTtsConfig.class \
+            com/k2fsa/sherpa/onnx/OfflineTtsModelConfig.class \
+            com/k2fsa/sherpa/onnx/OfflineTtsVitsModelConfig.class \
+            com/k2fsa/sherpa/onnx/OfflineTtsMatchaModelConfig.class \
+            com/k2fsa/sherpa/onnx/OfflineTtsKokoroModelConfig.class \
+            com/k2fsa/sherpa/onnx/OfflineTtsZipVoiceModelConfig.class \
+            com/k2fsa/sherpa/onnx/OfflineTtsKittenModelConfig.class \
+            com/k2fsa/sherpa/onnx/OfflineTtsPocketModelConfig.class \
+            com/k2fsa/sherpa/onnx/OfflineTtsSupertonicModelConfig.class
+          jar cf ../classes.jar .
+          cd ..
+          rm -rf classes
+          zip -q ../sherpa-onnx-1.13.3-sanitized.aar classes.jar AndroidManifest.xml jni/*/*
+          cd ..
+          rm -rf sanitize sherpa-onnx-1.13.3.aar
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
