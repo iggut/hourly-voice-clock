@@ -85,6 +85,7 @@ class OnnxModelDownloaderTest {
         modelDir.mkdirs()
         File(modelDir, model.onnxFileName).writeBytes(ByteArray(16) { 1 })
         File(modelDir, model.onnxJsonFileName).writeBytes(ByteArray(16) { 1 })
+        File(modelDir, "tokens.txt").writeBytes(ByteArray(16) { 1 })
 
         assertTrue(downloader.isModelDownloaded(model))
     }
@@ -143,6 +144,7 @@ class OnnxModelDownloaderTest {
         firstDir.mkdirs()
         File(firstDir, first.onnxFileName).writeBytes(ByteArray(16) { 1 })
         File(firstDir, first.onnxJsonFileName).writeBytes(ByteArray(16) { 1 })
+        File(firstDir, "tokens.txt").writeBytes(ByteArray(16) { 1 })
 
         val secondDir = File(ctx.filesDir, "local_tts/models/${second.id}")
         secondDir.mkdirs()
@@ -166,5 +168,63 @@ class OnnxModelDownloaderTest {
         val cause = RuntimeException("socket closed")
         val ex = DownloadException("Network error: socket closed", cause)
         assertEquals(cause, ex.cause)
+    }
+
+    @Test
+    fun `generateTokensFile produces one token per line in id order`() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val downloader = OnnxModelDownloader(ctx)
+        val tmpDir = tmp.newFolder("tokens_ok")
+        val json = File(tmpDir, "model.onnx.json")
+        // 5 tokens with non-sorted JSON key order
+        json.writeText(
+            """
+            {
+              "audio": {"sample_rate": 22050, "quality": "medium"},
+              "phoneme_id_map": {
+                "_": [0],
+                "a": [2],
+                " ": [1],
+                "b": [3],
+                "^": [4]
+              }
+            }
+            """.trimIndent()
+        )
+        val out = File(tmpDir, "tokens.txt")
+        val result = downloader.generateTokensFile(json, out)
+        assertTrue("generateTokensFile failed: $result", result.isSuccess)
+        val lines = out.readLines()
+        assertEquals(listOf("_", " ", "a", "b", "^"), lines)
+    }
+
+    @Test
+    fun `generateTokensFile fails when phoneme_id_map is missing`() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val downloader = OnnxModelDownloader(ctx)
+        val tmpDir = tmp.newFolder("tokens_no_map")
+        val json = File(tmpDir, "model.onnx.json")
+        json.writeText("""{"audio": {"sample_rate": 22050}}""")
+        val out = File(tmpDir, "tokens.txt")
+        val result = downloader.generateTokensFile(json, out)
+        assertTrue(result.isFailure)
+        assertFalse(out.exists())
+    }
+
+    @Test
+    fun `generateTokensFile fails when ids are not contiguous`() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val downloader = OnnxModelDownloader(ctx)
+        val tmpDir = tmp.newFolder("tokens_gap")
+        val json = File(tmpDir, "model.onnx.json")
+        // Gap at id=1
+        json.writeText(
+            """{"phoneme_id_map": {"_": [0], "a": [2]}}"""
+        )
+        val out = File(tmpDir, "tokens.txt")
+        val result = downloader.generateTokensFile(json, out)
+        assertTrue(result.isFailure)
+        val msg = result.exceptionOrNull()?.message ?: ""
+        assertTrue("expected gap message, got: $msg", msg.contains("gaps"))
     }
 }

@@ -11,20 +11,24 @@ object QuietHoursPolicy {
         quietStart: LocalTime,
         quietEnd: LocalTime,
         quietDaysDisabled: Set<DayOfWeek> = emptySet(),
-        currentDay: DayOfWeek? = null
+        currentDay: DayOfWeek? = null,
+        quietDaysStart: LocalTime = quietStart,
+        quietDaysEnd: LocalTime = quietEnd
     ): Boolean {
         if (!quietHoursEnabled) return false
 
-        if (quietDaysDisabled.isNotEmpty() && currentDay != null) {
-            if (currentDay in quietDaysDisabled) return true
+        val (start, end) = if (currentDay != null && currentDay in quietDaysDisabled) {
+            quietDaysStart to quietDaysEnd
+        } else {
+            quietStart to quietEnd
         }
 
-        if (quietStart == quietEnd) return true
+        if (start == end) return true
 
-        return if (quietStart.isBefore(quietEnd)) {
-            (now == quietStart || now.isAfter(quietStart)) && now.isBefore(quietEnd)
+        return if (start.isBefore(end)) {
+            (now == start || now.isAfter(start)) && now.isBefore(end)
         } else {
-            (now == quietStart || now.isAfter(quietStart)) || now.isBefore(quietEnd)
+            (now == start || now.isAfter(start)) || now.isBefore(end)
         }
     }
 
@@ -35,13 +39,21 @@ object QuietHoursPolicy {
         quietEnd: LocalTime,
         allowManualDuringQuiet: Boolean,
         quietDaysDisabled: Set<DayOfWeek> = emptySet(),
-        currentDay: DayOfWeek? = null
+        currentDay: DayOfWeek? = null,
+        quietDaysStart: LocalTime = quietStart,
+        quietDaysEnd: LocalTime = quietEnd
     ): Boolean {
-        if (quietDaysDisabled.isNotEmpty() && currentDay != null) {
-            if (currentDay in quietDaysDisabled) return false
-        }
         if (!quietHoursEnabled) return true
-        val inQuiet = isQuietTime(now, true, quietStart, quietEnd, quietDaysDisabled, currentDay)
+        val inQuiet = isQuietTime(
+            now,
+            true,
+            quietStart,
+            quietEnd,
+            quietDaysDisabled,
+            currentDay,
+            quietDaysStart,
+            quietDaysEnd
+        )
         return if (inQuiet) allowManualDuringQuiet else true
     }
 }

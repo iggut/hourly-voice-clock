@@ -149,7 +149,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             settings.quietHoursStart,
             settings.quietHoursEnd,
             settings.quietDaysDisabled,
-            today
+            today,
+            settings.quietDaysQuietStart,
+            settings.quietDaysQuietEnd
         )
         _quietHoursActive.value = inQuiet
         _canSpeakNow.value = QuietHoursPolicy.canAnnounceManually(
@@ -159,7 +161,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             settings.quietHoursEnd,
             settings.allowManualDuringQuiet,
             settings.quietDaysDisabled,
-            today
+            today,
+            settings.quietDaysQuietStart,
+            settings.quietDaysQuietEnd
         )
     }
 

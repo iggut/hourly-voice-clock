@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.tts.local.VoiceCategory
 import com.hourlyvoiceclock.tts.local.VoiceModel
 import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
@@ -71,8 +72,10 @@ import com.hourlyvoiceclock.ui.theme.DarkBgEnd
 @Composable
 fun LocalVoiceSettingsScreen(
     onBack: () -> Unit,
-    viewModel: LocalVoiceSettingsViewModel = LocalVoiceSettingsViewModel(
-        LocalContext.current.applicationContext as android.app.Application
+    viewModel: LocalVoiceSettingsViewModel = viewModel(
+        factory = LocalVoiceSettingsViewModelFactory(
+            LocalContext.current.applicationContext as android.app.Application
+        )
     )
 ) {
     val downloadedModels by viewModel.downloadedModels.collectAsState()
@@ -350,6 +353,10 @@ private fun VoiceModelCard(
                     )
                 }
             } else {
+                if (errorMessage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ErrorChip(message = errorMessage, onClear = onClearError)
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     "Installed",

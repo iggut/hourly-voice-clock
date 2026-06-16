@@ -67,8 +67,10 @@
     <string name="chime_digital_beep">Digital Beep</string>
     <string name="chime_bird_chirp">Bird Chirp</string>
     <string name="chime_honk">Honk</string>
-    <string name="quiet_days_disabled_label">Disable announcements on</string>
-    <string name="quiet_days_disabled_desc">Announcements will be suppressed on selected days</string>
+    <string name="quiet_days_alt_label">Alternate quiet hours on</string>
+    <string name="quiet_days_alt_desc">Selected days use these hours instead of the normal schedule</string>
+    <string name="quiet_days_alt_start">Alternate start time</string>
+    <string name="quiet_days_alt_end">Alternate end time</string>
     <string name="day_mon">Mon</string>
     <string name="day_tue">Tue</string>
     <string name="day_wed">Wed</string>

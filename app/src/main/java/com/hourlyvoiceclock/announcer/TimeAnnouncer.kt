@@ -33,7 +33,9 @@ class TimeAnnouncer(
                 settings.quietHoursStart,
                 settings.quietHoursEnd,
                 settings.quietDaysDisabled,
-                dateTime.dayOfWeek
+                dateTime.dayOfWeek,
+                settings.quietDaysQuietStart,
+                settings.quietDaysQuietEnd
             )
             if (inQuiet) {
                 Log.d(TAG, "Blocked by quiet hours")

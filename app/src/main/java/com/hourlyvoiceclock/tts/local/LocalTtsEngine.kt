@@ -17,6 +17,16 @@ import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
 import java.io.File
 
+/**
+ * Local TTS engine backed by Sherpa-ONNX's VITS offline TTS, using
+ * Piper voice distributions downloaded into the app's filesDir.
+ *
+ * The espeak-ng-data phoneme directory is bundled in APK assets and
+ * loaded via [OfflineTts]'s AssetManager-aware constructor. Per-voice
+ * `model.onnx` and `tokens.txt` live in the app's filesDir because
+ * they are too large to bundle (60+ MB each) and to allow the user to
+ * add voices without an app update.
+ */
 class LocalTtsEngine(private val context: Context) : TtsEngine {
 
     private val downloader = OnnxModelDownloader(context)
@@ -34,48 +44,61 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             return false
         }
 
-        shutdown()
-
-        val modelDir = File(context.filesDir, "local_tts/models/${model.id}")
-        val modelFile = File(modelDir, model.onnxFileName)
-        val tokensFile = File(modelDir, "tokens.txt")
-        val espeakDataDir = File(modelDir, "espeak-ng-data")
-
-        if (!modelFile.exists()) {
-            Log.e(TAG, "Model file not found: ${modelFile.absolutePath}")
-            return false
-        }
-
-        // Piper models need tokens.txt and espeak-ng-data
-        // For now, check if tokens exist; if not, model may be incomplete
-        if (!tokensFile.exists()) {
-            Log.w(TAG, "tokens.txt not found at ${tokensFile.absolutePath}, attempting with model only")
-        }
-
-        try {
-            val vitsConfig = OfflineTtsVitsModelConfig(
-                model = modelFile.absolutePath,
-                tokens = if (tokensFile.exists()) tokensFile.absolutePath else "",
-                dataDir = if (espeakDataDir.exists()) espeakDataDir.absolutePath else "",
-            )
-
-            val modelConfig = OfflineTtsModelConfig(
-                vits = vitsConfig,
-                numThreads = 2,
-                debug = false,
-            )
-
-            val config = OfflineTtsConfig(model = modelConfig)
-            tts = OfflineTts(config = config)
-
+        return try {
+            shutdown()
+            tts = buildOfflineTts(model)
             currentModel = model
             isInitialized = true
             Log.d(TAG, "Initialized with model: ${model.id}")
-            return true
-        } catch (e: Exception) {
+            true
+        } catch (e: Throwable) {
             Log.e(TAG, "Failed to initialize ONNX TTS with model ${model.id}", e)
-            return false
+            shutdown()
+            false
         }
+    }
+
+    /**
+     * Build the Sherpa-ONNX OfflineTts for the given voice. The
+     * constructor with an AssetManager resolves `dataDir` against
+     * APK assets; `model` and `tokens` are absolute file paths
+     * because they live in the app's filesDir (downloaded per voice).
+     */
+    private fun buildOfflineTts(model: VoiceModel): OfflineTts {
+        val modelDir = File(context.filesDir, "local_tts/models/${model.id}")
+        val modelFile = File(modelDir, model.onnxFileName)
+        val tokensFile = File(modelDir, "tokens.txt")
+
+        require(modelFile.exists()) { "Model file missing: ${modelFile.absolutePath}" }
+        require(tokensFile.exists()) { "tokens.txt missing: ${tokensFile.absolutePath}" }
+
+        val vitsConfig = OfflineTtsVitsModelConfig(
+            model = modelFile.absolutePath,
+            lexicon = "",
+            tokens = tokensFile.absolutePath,
+            dataDir = ASSET_ESPEAK_DIR,    // resolved by AssetManager
+            dictDir = "",
+            noiseScale = 0.667f,
+            noiseScaleW = 0.8f,
+            lengthScale = 1.0f,
+        )
+
+        val modelConfig = OfflineTtsModelConfig(
+            vits = vitsConfig,
+            numThreads = 2,
+            debug = false,
+            provider = "cpu",
+        )
+
+        val config = OfflineTtsConfig(
+            model = modelConfig,
+            ruleFsts = "",
+            ruleFars = "",
+            maxNumSentences = 1,
+            silenceScale = 0.2f,
+        )
+
+        return OfflineTts(context.assets, config)
     }
 
     override fun isAvailable(): Boolean = isInitialized && tts != null && currentModel != null
@@ -99,33 +122,19 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     override fun setVoice(voiceName: String, localeTag: String): Boolean {
         val model = VoiceModelRegistry.getVoiceById(voiceName) ?: return false
         if (!downloader.isModelDownloaded(model)) return false
-        if (currentModel?.id != model.id) {
-            // Initialize synchronously on the calling thread
+        if (currentModel?.id == model.id && tts != null) return true
+
+        return try {
             shutdown()
-            val modelDir = File(context.filesDir, "local_tts/models/${model.id}")
-            val modelFile = File(modelDir, model.onnxFileName)
-            val tokensFile = File(modelDir, "tokens.txt")
-            val espeakDataDir = File(modelDir, "espeak-ng-data")
-
-            if (!modelFile.exists()) return false
-
-            try {
-                val vitsConfig = OfflineTtsVitsModelConfig(
-                    model = modelFile.absolutePath,
-                    tokens = if (tokensFile.exists()) tokensFile.absolutePath else "",
-                    dataDir = if (espeakDataDir.exists()) espeakDataDir.absolutePath else "",
-                )
-                val modelConfig = OfflineTtsModelConfig(vits = vitsConfig, numThreads = 2, debug = false)
-                tts = OfflineTts(config = OfflineTtsConfig(model = modelConfig))
-                currentModel = model
-                isInitialized = true
-                return true
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to init for voice $voiceName", e)
-                return false
-            }
+            tts = buildOfflineTts(model)
+            currentModel = model
+            isInitialized = true
+            true
+        } catch (e: Throwable) {
+            Log.e(TAG, "Failed to init for voice $voiceName", e)
+            shutdown()
+            false
         }
-        return true
     }
 
     override fun setLanguage(localeTag: String): Boolean {
@@ -135,11 +144,11 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     }
 
     override fun setPitch(pitch: Float) {
-        // Piper VITS models don't support real-time pitch adjustment
+        // Piper VITS models don't support real-time pitch adjustment.
     }
 
     override fun setSpeechRate(rate: Float) {
-        // Piper VITS models don't support real-time rate adjustment
+        // Piper VITS models don't support real-time rate adjustment.
     }
 
     override fun setAudioChannel(channel: AudioChannel) {
@@ -147,29 +156,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     }
 
     override fun speak(text: String, utteranceId: String) {
-        val ttsInstance = tts ?: run {
-            Log.e(TAG, "speak() called but TTS not initialized")
-            return
-        }
-
-        val sampleRate = currentModel?.sampleRate ?: 22050
-
-        Thread {
-            try {
-                val genConfig = GenerationConfig(silenceScale = 0.2f)
-                val audio = ttsInstance.generateWithConfigAndCallback(
-                    text = text,
-                    config = genConfig,
-                    callback = { samples ->
-                        playSamples(samples, sampleRate)
-                        1
-                    }
-                )
-                Log.d(TAG, "Spoke with ${currentModel?.displayName}: $text")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to speak with local engine", e)
-            }
-        }.start()
+        speakAsync(text) { /* fire-and-forget */ }
     }
 
     override fun speakAsync(text: String, onComplete: (Boolean) -> Unit) {
@@ -178,34 +165,59 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             onComplete(false)
             return
         }
-
         val sampleRate = currentModel?.sampleRate ?: 22050
 
         Thread {
+            var success = false
             try {
-                val genConfig = GenerationConfig(silenceScale = 0.2f)
-                val audio = ttsInstance.generateWithConfigAndCallback(
+                val genConfig = GenerationConfig(
+                    silenceScale = 0.2f,
+                    speed = 1.0f,
+                    sid = 0,
+                    referenceAudio = null,
+                    referenceSampleRate = 0,
+                    referenceText = "",
+                    numSteps = 0,
+                    extra = emptyMap(),
+                )
+                ttsInstance.generateWithConfigAndCallback(
                     text = text,
                     config = genConfig,
                     callback = { samples ->
-                        playSamples(samples, sampleRate)
-                        1
-                    }
+                        // Callback runs on the synth thread. Any throw
+                        // here aborts generation, so we trap it and
+                        // return 0 to stop further chunks.
+                        try {
+                            playSamples(samples, sampleRate)
+                            1
+                        } catch (e: Throwable) {
+                            Log.e(TAG, "playSamples failed", e)
+                            0
+                        }
+                    },
                 )
-                onComplete(true)
-            } catch (e: Exception) {
+                success = true
+                Log.d(TAG, "Spoke with ${currentModel?.displayName}: $text")
+            } catch (e: Throwable) {
                 Log.e(TAG, "Async speak failed", e)
-                onComplete(false)
+            } finally {
+                onComplete(success)
             }
         }.start()
     }
 
     override fun stop() {
-        // There's no direct stop method on OfflineTts, but we can release and re-init
+        // OfflineTts has no direct stop; the worker thread will exit
+        // when generation completes. AudioTrack playback is
+        // best-effort interrupted on the next call to shutdown().
     }
 
     override fun shutdown() {
-        tts?.release()
+        try {
+            tts?.release()
+        } catch (e: Throwable) {
+            Log.w(TAG, "Error releasing OfflineTts", e)
+        }
         tts = null
         isInitialized = false
         currentModel = null
@@ -243,11 +255,12 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
             .build()
 
-        val bufferSize = AudioTrack.getMinBufferSize(
+        val minBuffer = AudioTrack.getMinBufferSize(
             sampleRate,
             AudioFormat.CHANNEL_OUT_MONO,
             AudioFormat.ENCODING_PCM_16BIT
         )
+        val bufferSize = maxOf(minBuffer, samples.size * 2)
 
         val track = AudioTrack.Builder()
             .setAudioAttributes(
@@ -257,7 +270,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
                     .build()
             )
             .setAudioFormat(audioFormat)
-            .setBufferSizeInBytes(maxOf(bufferSize, samples.size * 2))
+            .setBufferSizeInBytes(bufferSize)
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
 
@@ -266,18 +279,32 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             (clamped * Short.MAX_VALUE).toInt().toShort()
         }
 
-        track.play()
-        track.write(pcmData, 0, pcmData.size)
-
-        // Wait for playback to finish
-        val playbackDurationMs = (samples.size.toLong() * 1000) / sampleRate
-        Thread.sleep(playbackDurationMs + 50)
-
-        track.stop()
-        track.release()
+        try {
+            track.play()
+            track.write(pcmData, 0, pcmData.size)
+            val playbackDurationMs = (samples.size.toLong() * 1000) / sampleRate
+            Thread.sleep(playbackDurationMs + 50)
+        } finally {
+            try {
+                track.stop()
+            } catch (_: IllegalStateException) {
+                // already stopped
+            }
+            track.release()
+        }
     }
 
     companion object {
         private const val TAG = "LocalTtsEngine"
+
+        /**
+         * Asset path passed to Sherpa-ONNX as the espeak-ng-data
+         * directory. Resolved against the APK's `assets/` via
+         * [android.content.res.AssetManager]. The directory is
+         * populated by extracting `piper/espeak-ng-data/` from the
+         * Piper release tarball at
+         * https://github.com/rhasspy/piper/releases/tag/2023.11.14-2 .
+         */
+        const val ASSET_ESPEAK_DIR = "espeak-ng-data"
     }
 }

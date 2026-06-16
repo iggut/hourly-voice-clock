@@ -47,6 +47,8 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
             quietHoursEnabled = prefs[KEY_QUIET_HOURS_ENABLED] ?: false,
             quietHoursStart = parseTime(prefs[KEY_QUIET_HOURS_START], "22:00"),
             quietHoursEnd = parseTime(prefs[KEY_QUIET_HOURS_END], "07:00"),
+            quietDaysQuietStart = parseTime(prefs[KEY_QUIET_DAYS_START], "10:00"),
+            quietDaysQuietEnd = parseTime(prefs[KEY_QUIET_DAYS_END], "18:00"),
             allowManualDuringQuiet = prefs[KEY_ALLOW_MANUAL_QUIET] ?: true,
             quietDaysDisabled = parseDayOfWeekSet(prefs[KEY_QUIET_DAYS_DISABLED]),
             exactAlarmsEnabled = prefs[KEY_EXACT_ALARMS] ?: false,
@@ -74,6 +76,8 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
         this[KEY_QUIET_HOURS_ENABLED] = settings.quietHoursEnabled
         this[KEY_QUIET_HOURS_START] = formatTime(settings.quietHoursStart)
         this[KEY_QUIET_HOURS_END] = formatTime(settings.quietHoursEnd)
+        this[KEY_QUIET_DAYS_START] = formatTime(settings.quietDaysQuietStart)
+        this[KEY_QUIET_DAYS_END] = formatTime(settings.quietDaysQuietEnd)
         this[KEY_ALLOW_MANUAL_QUIET] = settings.allowManualDuringQuiet
         this[KEY_QUIET_DAYS_DISABLED] = formatDayOfWeekSet(settings.quietDaysDisabled)
         this[KEY_EXACT_ALARMS] = settings.exactAlarmsEnabled
@@ -157,6 +161,14 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
 
     suspend fun setQuietHoursEnd(time: LocalTime) {
         context.dataStore.edit { it[KEY_QUIET_HOURS_END] = formatTime(time) }
+    }
+
+    suspend fun setQuietDaysQuietStart(time: LocalTime) {
+        context.dataStore.edit { it[KEY_QUIET_DAYS_START] = formatTime(time) }
+    }
+
+    suspend fun setQuietDaysQuietEnd(time: LocalTime) {
+        context.dataStore.edit { it[KEY_QUIET_DAYS_END] = formatTime(time) }
     }
 
     suspend fun setAllowManualDuringQuiet(enabled: Boolean) {
@@ -259,6 +271,8 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
         private val KEY_QUIET_HOURS_ENABLED = booleanPreferencesKey("quiet_hours_enabled")
         private val KEY_QUIET_HOURS_START = stringPreferencesKey("quiet_hours_start")
         private val KEY_QUIET_HOURS_END = stringPreferencesKey("quiet_hours_end")
+        private val KEY_QUIET_DAYS_START = stringPreferencesKey("quiet_days_start")
+        private val KEY_QUIET_DAYS_END = stringPreferencesKey("quiet_days_end")
         private val KEY_ALLOW_MANUAL_QUIET = booleanPreferencesKey("allow_manual_quiet")
         private val KEY_QUIET_DAYS_DISABLED = stringPreferencesKey("quiet_days_disabled")
         private val KEY_EXACT_ALARMS = booleanPreferencesKey("exact_alarms")

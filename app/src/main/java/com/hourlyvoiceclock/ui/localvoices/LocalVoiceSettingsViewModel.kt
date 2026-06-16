@@ -3,6 +3,8 @@ package com.hourlyvoiceclock.ui.localvoices
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.tts.local.DownloadException
 import com.hourlyvoiceclock.tts.local.LocalTtsEngine
@@ -105,8 +107,14 @@ class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(a
         }
 
         viewModelScope.launch {
-            val initialized = localEngine.initialize(model.id)
-            if (initialized) {
+            try {
+                val initialized = withContext(Dispatchers.IO) { localEngine.initialize(model.id) }
+                if (!initialized) {
+                    Log.w(TAG, "Preview failed: engine.initialize returned false for ${model.id}")
+                    _errorsByModelId.value = _errorsByModelId.value +
+                        (model.id to "Preview failed: model files are not loadable. Try deleting and re-downloading.")
+                    return@launch
+                }
                 _isSpeaking.value = true
                 localEngine.speakAsync(
                     "It is now ${
@@ -117,9 +125,16 @@ class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(a
                 ) { success ->
                     _isSpeaking.value = false
                     Log.d(TAG, "Preview finished: success=$success")
+                    if (!success) {
+                        _errorsByModelId.value = _errorsByModelId.value +
+                            (model.id to "Preview failed: TTS engine could not synthesize audio")
+                    }
                 }
-            } else {
-                Log.w(TAG, "Preview failed: engine.initialize returned false for ${model.id}")
+            } catch (t: Throwable) {
+                _isSpeaking.value = false
+                Log.e(TAG, "Preview crashed for ${model.id}", t)
+                _errorsByModelId.value = _errorsByModelId.value +
+                    (model.id to (t.message ?: t.javaClass.simpleName))
             }
         }
     }
@@ -143,5 +158,17 @@ class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(a
 
     companion object {
         private const val TAG = "LocalVoiceVM"
+    }
+}
+
+class LocalVoiceSettingsViewModelFactory(
+    private val application: Application
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(LocalVoiceSettingsViewModel::class.java)) {
+            return LocalVoiceSettingsViewModel(application) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

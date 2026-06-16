@@ -31,6 +31,12 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
     private val _quietEnd = MutableStateFlow(LocalTime.of(7, 0))
     val quietEnd: StateFlow<LocalTime> = _quietEnd.asStateFlow()
 
+    private val _quietDaysQuietStart = MutableStateFlow(LocalTime.of(10, 0))
+    val quietDaysQuietStart: StateFlow<LocalTime> = _quietDaysQuietStart.asStateFlow()
+
+    private val _quietDaysQuietEnd = MutableStateFlow(LocalTime.of(18, 0))
+    val quietDaysQuietEnd: StateFlow<LocalTime> = _quietDaysQuietEnd.asStateFlow()
+
     private val _allowManualDuringQuiet = MutableStateFlow(true)
     val allowManualDuringQuiet: StateFlow<Boolean> = _allowManualDuringQuiet.asStateFlow()
 
@@ -73,6 +79,8 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             _quietHoursEnabled.value = settings.quietHoursEnabled
             _quietStart.value = settings.quietHoursStart
             _quietEnd.value = settings.quietHoursEnd
+            _quietDaysQuietStart.value = settings.quietDaysQuietStart
+            _quietDaysQuietEnd.value = settings.quietDaysQuietEnd
             _allowManualDuringQuiet.value = settings.allowManualDuringQuiet
             _quietDaysDisabled.value = settings.quietDaysDisabled
             _exactAlarmsEnabled.value = settings.exactAlarmsEnabled
@@ -150,6 +158,20 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         viewModelScope.launch {
             deps.settingsRepository.setQuietHoursEnd(time)
             _quietEnd.value = time
+        }
+    }
+
+    fun setQuietDaysQuietStart(time: LocalTime) {
+        viewModelScope.launch {
+            deps.settingsRepository.setQuietDaysQuietStart(time)
+            _quietDaysQuietStart.value = time
+        }
+    }
+
+    fun setQuietDaysQuietEnd(time: LocalTime) {
+        viewModelScope.launch {
+            deps.settingsRepository.setQuietDaysQuietEnd(time)
+            _quietDaysQuietEnd.value = time
         }
     }
 

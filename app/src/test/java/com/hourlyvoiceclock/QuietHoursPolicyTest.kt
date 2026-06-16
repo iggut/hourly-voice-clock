@@ -128,51 +128,59 @@ class QuietHoursPolicyTest {
     }
 
     @Test
-    fun `disabled day suppresses announcements regardless of time`() {
+    fun `disabled day uses alternate quiet range - inside`() {
         val now = LocalTime.of(12, 0)
         assertTrue(
             QuietHoursPolicy.isQuietTime(
                 now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
                 quietDaysDisabled = setOf(DayOfWeek.WEDNESDAY),
-                currentDay = DayOfWeek.WEDNESDAY
+                currentDay = DayOfWeek.WEDNESDAY,
+                quietDaysStart = LocalTime.of(10, 0),
+                quietDaysEnd = LocalTime.of(18, 0)
             )
         )
     }
 
     @Test
-    fun `non-disabled day does not suppress outside quiet hours`() {
-        val now = LocalTime.of(12, 0)
+    fun `disabled day uses alternate quiet range - outside`() {
+        val now = LocalTime.of(8, 0)
         assertFalse(
             QuietHoursPolicy.isQuietTime(
                 now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
                 quietDaysDisabled = setOf(DayOfWeek.WEDNESDAY),
-                currentDay = DayOfWeek.THURSDAY
+                currentDay = DayOfWeek.WEDNESDAY,
+                quietDaysStart = LocalTime.of(10, 0),
+                quietDaysEnd = LocalTime.of(18, 0)
             )
         )
     }
 
     @Test
-    fun `manual announcement blocked on disabled day`() {
-        val now = LocalTime.of(12, 0)
-        assertFalse(
-            QuietHoursPolicy.canAnnounceManually(
-                now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
-                allowManualDuringQuiet = true,
-                quietDaysDisabled = setOf(DayOfWeek.SATURDAY),
-                currentDay = DayOfWeek.SATURDAY
-            )
-        )
-    }
-
-    @Test
-    fun `manual announcement allowed on non-disabled day outside quiet hours`() {
+    fun `manual announcement follows alternate quiet range on disabled day`() {
         val now = LocalTime.of(12, 0)
         assertTrue(
             QuietHoursPolicy.canAnnounceManually(
                 now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
                 allowManualDuringQuiet = true,
                 quietDaysDisabled = setOf(DayOfWeek.SATURDAY),
-                currentDay = DayOfWeek.MONDAY
+                currentDay = DayOfWeek.SATURDAY,
+                quietDaysStart = LocalTime.of(10, 0),
+                quietDaysEnd = LocalTime.of(18, 0)
+            )
+        )
+    }
+
+    @Test
+    fun `manual announcement allowed outside alternate quiet range on disabled day`() {
+        val now = LocalTime.of(8, 0)
+        assertTrue(
+            QuietHoursPolicy.canAnnounceManually(
+                now, true, LocalTime.of(22, 0), LocalTime.of(7, 0),
+                allowManualDuringQuiet = true,
+                quietDaysDisabled = setOf(DayOfWeek.SATURDAY),
+                currentDay = DayOfWeek.SATURDAY,
+                quietDaysStart = LocalTime.of(10, 0),
+                quietDaysEnd = LocalTime.of(18, 0)
             )
         )
     }

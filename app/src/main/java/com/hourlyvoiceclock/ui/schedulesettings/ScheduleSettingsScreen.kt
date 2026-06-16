@@ -99,6 +99,8 @@ fun ScheduleSettingsScreen(
     val quietEnabled by viewModel.quietHoursEnabled.collectAsState()
     val quietStart by viewModel.quietStart.collectAsState()
     val quietEnd by viewModel.quietEnd.collectAsState()
+    val quietDaysQuietStart by viewModel.quietDaysQuietStart.collectAsState()
+    val quietDaysQuietEnd by viewModel.quietDaysQuietEnd.collectAsState()
     val allowManual by viewModel.allowManualDuringQuiet.collectAsState()
     val quietDaysDisabled by viewModel.quietDaysDisabled.collectAsState()
     val exactAlarms by viewModel.exactAlarmsEnabled.collectAsState()
@@ -467,7 +469,7 @@ fun ScheduleSettingsScreen(
                             )
 
                             Text(
-                                stringResource(R.string.quiet_days_disabled_label),
+                                stringResource(R.string.quiet_days_alt_label),
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -507,10 +509,54 @@ fun ScheduleSettingsScreen(
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                stringResource(R.string.quiet_days_disabled_desc),
+                                stringResource(R.string.quiet_days_alt_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+
+                            if (quietDaysDisabled.isNotEmpty()) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 12.dp),
+                                    color = if (isDark) GlassBorderDark else GlassBorderLight
+                                )
+
+                                ClickableRow(
+                                    label = stringResource(R.string.quiet_days_alt_start),
+                                    value = formatTime(quietDaysQuietStart),
+                                    onClick = {
+                                        TimePickerDialog(
+                                            context,
+                                            { _, hour, minute ->
+                                                viewModel.setQuietDaysQuietStart(java.time.LocalTime.of(hour, minute))
+                                            },
+                                            quietDaysQuietStart.hour,
+                                            quietDaysQuietStart.minute,
+                                            false
+                                        ).show()
+                                    }
+                                )
+
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 6.dp),
+                                    color = if (isDark) GlassBorderDark.copy(alpha = 0.05f) else GlassBorderLight.copy(alpha = 0.05f)
+                                )
+
+                                ClickableRow(
+                                    label = stringResource(R.string.quiet_days_alt_end),
+                                    value = formatTime(quietDaysQuietEnd),
+                                    onClick = {
+                                        TimePickerDialog(
+                                            context,
+                                            { _, hour, minute ->
+                                                viewModel.setQuietDaysQuietEnd(java.time.LocalTime.of(hour, minute))
+                                            },
+                                            quietDaysQuietEnd.hour,
+                                            quietDaysQuietEnd.minute,
+                                            false
+                                        ).show()
+                                    }
+                                )
+                            }
                         }
                     }
                 }

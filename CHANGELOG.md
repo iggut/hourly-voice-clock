@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.6-alpha] - 2026-06-15
+
+### Fixed
+- **Local voice preview no longer crashes** when tapping preview on a downloaded voice. The local voice screen now uses a stable ViewModel factory, and preview playback is guarded with explicit error handling.
+- **Quiet-hours day overrides now have their own time range.** Days selected in the quiet-day list can use alternate quiet hours instead of the normal hours, so users can keep some announcements on those days without using the main schedule.
+- **Piper voice download logic remains complete**: the downloader still fetches the `.onnx`, `.onnx.json`, and generated `tokens.txt` contract required by Sherpa-ONNX.
+
 ## [0.4.5-alpha] - 2026-06-15
 
 ### Fixed

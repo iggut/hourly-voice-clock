@@ -49,6 +49,8 @@ data class AppSettings(
     val quietHoursEnabled: Boolean = false,
     val quietHoursStart: LocalTime = LocalTime.of(22, 0),
     val quietHoursEnd: LocalTime = LocalTime.of(7, 0),
+    val quietDaysQuietStart: LocalTime = LocalTime.of(10, 0),
+    val quietDaysQuietEnd: LocalTime = LocalTime.of(18, 0),
     val allowManualDuringQuiet: Boolean = true,
     val quietDaysDisabled: Set<DayOfWeek> = emptySet(),
     val exactAlarmsEnabled: Boolean = false,
