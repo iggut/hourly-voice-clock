@@ -25,9 +25,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -86,7 +93,7 @@ import com.hourlyvoiceclock.ui.theme.DarkBgEnd
 import com.hourlyvoiceclock.ui.theme.dialogContainerColor
 import com.hourlyvoiceclock.ui.theme.dialogContentColor
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ScheduleSettingsScreen(
     onBack: () -> Unit,
@@ -474,37 +481,78 @@ fun ScheduleSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                val shortNames = mapOf(
-                                    DayOfWeek.MONDAY to stringResource(R.string.day_mon),
-                                    DayOfWeek.TUESDAY to stringResource(R.string.day_tue),
-                                    DayOfWeek.WEDNESDAY to stringResource(R.string.day_wed),
-                                    DayOfWeek.THURSDAY to stringResource(R.string.day_thu),
-                                    DayOfWeek.FRIDAY to stringResource(R.string.day_fri),
-                                    DayOfWeek.SATURDAY to stringResource(R.string.day_sat),
-                                    DayOfWeek.SUNDAY to stringResource(R.string.day_sun)
-                                )
-                                for (day in DayOfWeek.entries) {
-                                    val isDisabled = day in quietDaysDisabled
-                                    FilterChip(
-                                        selected = isDisabled,
-                                        onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
-                                        label = {
-                                            Text(
-                                                shortNames[day] ?: day.name.take(2),
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold
+                            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                                val configuration = LocalConfiguration.current
+                                val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                                val showFullText = isLandscape || maxWidth >= 600.dp
+
+                                if (showFullText) {
+                                    FlowRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        for (day in DayOfWeek.entries) {
+                                            val isDisabled = day in quietDaysDisabled
+                                            FilterChip(
+                                                selected = isDisabled,
+                                                onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
+                                                label = {
+                                                    Text(
+                                                        day.getDisplayName(
+                                                            java.time.format.TextStyle.FULL,
+                                                            java.util.Locale.getDefault()
+                                                        ),
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                                                    selectedLabelColor = MaterialTheme.colorScheme.error
+                                                )
                                             )
-                                        },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
-                                            selectedLabelColor = MaterialTheme.colorScheme.error
-                                        ),
-                                        modifier = Modifier.weight(1f)
-                                    )
+                                        }
+                                    }
+                                } else {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        for (day in DayOfWeek.entries) {
+                                            val isDisabled = day in quietDaysDisabled
+                                            val narrowName = day.getDisplayName(
+                                                java.time.format.TextStyle.NARROW,
+                                                java.util.Locale.getDefault()
+                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .clip(CircleShape)
+                                                    .background(
+                                                        if (isDisabled) MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
+                                                        else Color.Transparent
+                                                    )
+                                                    .border(
+                                                        width = 1.dp,
+                                                        color = if (isDisabled) MaterialTheme.colorScheme.error
+                                                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                                        shape = CircleShape
+                                                    )
+                                                    .clickable { viewModel.toggleQuietDay(day, !isDisabled) },
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = narrowName,
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isDisabled) MaterialTheme.colorScheme.error
+                                                    else MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             Spacer(modifier = Modifier.height(4.dp))
