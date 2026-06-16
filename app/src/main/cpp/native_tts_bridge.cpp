@@ -8,6 +8,12 @@
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
+static SherpaOnnxOfflineTts* (*pfnCreate)(const SherpaOnnxOfflineTtsConfig*) = nullptr;
+static void (*pfnDestroy)(SherpaOnnxOfflineTts*) = nullptr;
+static int32_t (*pfnSampleRate)(const SherpaOnnxOfflineTts*) = nullptr;
+static SherpaOnnxGeneratedAudio (*pfnGenerate)(const SherpaOnnxOfflineTts*, const char*, int32_t, float) = nullptr;
+static void (*pfnDestroyAudio)(SherpaOnnxGeneratedAudio*) = nullptr;
+
 static bool resolveSymbols() {
     if (pfnCreate) return true;
     // Android loads dependencies with RTLD_LOCAL, so dlsym(RTLD_DEFAULT)
