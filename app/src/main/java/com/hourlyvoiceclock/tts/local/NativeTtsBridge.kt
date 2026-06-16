@@ -1,26 +1,43 @@
 package com.hourlyvoiceclock.tts.local
 
+import com.k2fsa.sherpa.onnx.OfflineTtsConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
+
 class NativeTtsBridge(private val ptr: Long) {
     val sampleRate: Int
-        get() = nativeSampleRate(ptr)
+        get() = if (ptr != 0L) nativeSampleRate(ptr) else 0
 
     fun generate(text: String, sid: Int = 0, speed: Float = 1.0f): FloatArray? {
-        return nativeGenerate(ptr, text, sid, speed)
+        return if (ptr != 0L) nativeGenerate(ptr, text, sid, speed) else null
     }
 
     fun destroy() {
-        nativeDestroy(ptr)
+        if (ptr != 0L) nativeDestroy(ptr)
     }
 
     companion object {
         init {
-            System.loadLibrary("sherpa-onnx-c-api")
-            System.loadLibrary("sherpa-onnx-jni")
             System.loadLibrary("native-tts-bridge")
         }
 
+        fun create(modelPath: String, tokensPath: String, dataDir: String): NativeTtsBridge? {
+            val config = OfflineTtsConfig().apply {
+                model = OfflineTtsModelConfig().apply {
+                    vits = OfflineTtsVitsModelConfig().apply {
+                        this.model = modelPath
+                        this.tokens = tokensPath
+                        this.dataDir = dataDir
+                        lengthScale = 1.0f
+                    }
+                }
+            }
+            val ptr = nativeCreate(config)
+            return if (ptr != 0L) NativeTtsBridge(ptr) else null
+        }
+
         @JvmStatic
-        external fun nativeCreate(modelPath: String, tokensPath: String, dataDir: String): Long
+        external fun nativeCreate(config: OfflineTtsConfig): Long
 
         @JvmStatic
         external fun nativeDestroy(ptr: Long)

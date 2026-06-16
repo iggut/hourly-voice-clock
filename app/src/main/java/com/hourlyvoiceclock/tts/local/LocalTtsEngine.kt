@@ -78,16 +78,16 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             copyAssetsToFiles(ASSET_ESPEAK_DIR, espeakDataDir)
         }
 
-        val ptr = NativeTtsBridge.nativeCreate(
+        val bridge = NativeTtsBridge.create(
             modelFile.absolutePath,
             tokensFile.absolutePath,
             espeakDataDir.absolutePath
         )
-        if (ptr == 0L) {
+        if (bridge == null) {
             throw IllegalStateException("Failed to create NativeTtsBridge (symbol resolution or native initialization failed)")
         }
 
-        return NativeTtsBridge(ptr)
+        return bridge
     }
 
     private fun copyAssetsToFiles(assetPath: String, destDir: File) {

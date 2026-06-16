@@ -4,13 +4,10 @@ project("native_tts_bridge")
 add_library(
     native-tts-bridge
     SHARED
-    native_tts_bridge.cpp
-    diag_jni.cpp)
+    native_tts_bridge.cpp)
 
 find_library(log-lib log)
-find_library(dl-lib dl)
 
 target_link_libraries(
     native-tts-bridge
-    ${log-lib}
-    ${dl-lib})
+    ${log-lib})
