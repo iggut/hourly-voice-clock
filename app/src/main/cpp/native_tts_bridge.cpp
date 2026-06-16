@@ -42,6 +42,7 @@ Java_com_hourlyvoiceclock_tts_local_NativeTtsBridge_nativeCreate(
     jstring jDataDir) {
 
     if (!resolveSymbols()) return 0;
+    if (!jModelPath || !jTokensPath || !jDataDir) return 0;
 
     const char* modelPath = env->GetStringUTFChars(jModelPath, nullptr);
     const char* tokensPath = env->GetStringUTFChars(jTokensPath, nullptr);
@@ -84,7 +85,7 @@ Java_com_hourlyvoiceclock_tts_local_NativeTtsBridge_nativeSampleRate(
 extern "C" JNIEXPORT jfloatArray JNICALL
 Java_com_hourlyvoiceclock_tts_local_NativeTtsBridge_nativeGenerate(
     JNIEnv* env, jobject /*thiz*/, jlong ptr, jstring jText, jint sid, jfloat speed) {
-    if (!pfnGenerate || ptr == 0) return nullptr;
+    if (!pfnGenerate || ptr == 0 || !jText) return nullptr;
 
     const char* text = env->GetStringUTFChars(jText, nullptr);
     if (!text) return nullptr;
