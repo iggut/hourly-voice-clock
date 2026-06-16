@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.10-alpha] - 2026-06-16
+
+### Fixed
+- Local downloaded-voice preview is hardened further against lifecycle races, and the preview screen now uses the stable Compose ViewModel factory path.
+- Quiet hours now support a separate alternate time range on disabled days, so users can still allow announcements on those days but outside the normal quiet window.
+
 ## [0.4.9-alpha] - 2026-06-16
 
 ### Fixed
