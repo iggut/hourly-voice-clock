@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.12-alpha] - 2026-06-16
+
+### Fixed
+- **In-app updater signature verification fixed.** The signature checker was trying to parse the APK file as a raw X.509 certificate stream, which always failed. Replaced with `PackageManager.getPackageArchiveInfo()`, the proper Android API for reading APK signatures.
+
+## [0.4.11-alpha] - 2026-06-16
+
+### Fixed
+- **Local downloaded-voice preview crash fixed.** The root cause was R8/ProGuard obfuscating the Sherpa-ONNX JNI classes, causing a `NoSuchFieldError` in native code when initializing the TTS engine. Added `-keep class com.k2fsa.sherpa.onnx.** { *; }` to `proguard-rules.pro`.
+
 ## [0.4.10-alpha] - 2026-06-16
 
 ### Fixed

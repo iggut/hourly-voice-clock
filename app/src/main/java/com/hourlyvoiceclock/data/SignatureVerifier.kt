@@ -3,11 +3,7 @@ package com.hourlyvoiceclock.data
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log
-import java.io.File
 import java.security.MessageDigest
-import java.security.NoSuchAlgorithmException
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
 
 /**
  * Utility for verifying APK signatures and detecting certificate mismatches.
@@ -62,46 +58,46 @@ object SignatureVerifier {
     }
 
     /**
-     * Get the signature fingerprint of an APK file.
+     * Get the signature fingerprint of an APK file using PackageManager.
      * Returns null if the APK cannot be parsed.
      */
-    fun getApkSignatureFingerprint(apkPath: String): String? {
+    fun getApkSignatureFingerprint(context: Context, apkPath: String): String? {
         return try {
-            val file = File(apkPath)
-            if (!file.exists()) {
-                Log.e(TAG, "APK file does not exist: $apkPath")
+            val packageInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                context.packageManager.getPackageArchiveInfo(
+                    apkPath,
+                    PackageManager.GET_SIGNING_CERTIFICATES
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageArchiveInfo(
+                    apkPath,
+                    PackageManager.GET_SIGNATURES
+                )
+            }
+
+            if (packageInfo == null) {
+                Log.e(TAG, "Could not parse APK: $apkPath")
                 return null
             }
 
-            val cf = CertificateFactory.getInstance("X.509")
-            val fis = java.io.FileInputStream(file)
-            val bis = java.io.BufferedInputStream(fis)
-            
-            var cert: X509Certificate? = null
-            while (bis.available() > 0) {
-                try {
-                    cert = cf.generateCertificate(bis) as? X509Certificate
-                    if (cert != null) break
-                } catch (e: Exception) {
-                    // Continue reading - APK may have multiple certificates
-                }
+            val signatures = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                packageInfo.signingInfo?.apkContentsSigners
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.signatures
             }
-            bis.close()
-            fis.close()
 
-            if (cert == null) {
-                Log.e(TAG, "No certificate found in APK")
+            if (signatures.isNullOrEmpty()) {
+                Log.e(TAG, "No signatures found in APK")
                 return null
             }
 
-            val publicKey = cert.publicKey
+            val signature = signatures[0]
+            val cert = signature.toByteArray()
             val md = MessageDigest.getInstance("SHA-256")
-            val keyBytes = publicKey.encoded ?: cert.encoded
-            val fingerprint = md.digest(keyBytes)
-            bytesToHex(fingerprint)
-        } catch (e: NoSuchAlgorithmException) {
-            Log.e(TAG, "SHA-256 algorithm not available", e)
-            null
+            val publicKeyHash = md.digest(cert)
+            bytesToHex(publicKeyHash)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get APK signature", e)
             null
@@ -114,7 +110,7 @@ object SignatureVerifier {
      */
     fun verifyUpdateCompatibility(context: Context, apkPath: String): VerifyResult {
         val localFingerprint = getInstalledAppSignatureFingerprint(context)
-        val apkFingerprint = getApkSignatureFingerprint(apkPath)
+        val apkFingerprint = getApkSignatureFingerprint(context, apkPath)
 
         if (localFingerprint == null) {
             return VerifyResult.Error("Could not read local app signature")
