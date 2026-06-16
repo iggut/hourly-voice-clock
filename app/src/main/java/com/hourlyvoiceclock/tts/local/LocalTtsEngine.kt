@@ -10,22 +10,16 @@ import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.tts.TtsEngine
 import com.hourlyvoiceclock.tts.TtsEngineInfo
 import com.hourlyvoiceclock.tts.VoiceInfo
-import com.k2fsa.sherpa.onnx.GenerationConfig
-import com.k2fsa.sherpa.onnx.OfflineTts
-import com.k2fsa.sherpa.onnx.OfflineTtsConfig
-import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
-import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
 import java.io.File
 
 /**
- * Local TTS engine backed by Sherpa-ONNX's VITS offline TTS, using
- * Piper voice distributions downloaded into the app's filesDir.
+ * Local TTS engine backed by Sherpa-ONNX's VITS offline TTS via the C API,
+ * using Piper voice distributions downloaded into the app's filesDir.
  *
- * The espeak-ng-data phoneme directory is bundled in APK assets and
- * loaded via [OfflineTts]'s AssetManager-aware constructor. Per-voice
- * `model.onnx` and `tokens.txt` live in the app's filesDir because
- * they are too large to bundle (60+ MB each) and to allow the user to
- * add voices without an app update.
+ * The native Java JNI layer in the Sherpa-ONNX AAR crashes on some devices
+ * (Android 16 / Samsung) due to a JNI field-ID mismatch in
+ * OfflineTts.newFromAsset. We bypass it entirely by calling the stable C
+ * API through a tiny custom JNI bridge (libnative-tts-bridge.so).
  */
 class LocalTtsEngine(private val context: Context) : TtsEngine {
 
@@ -35,7 +29,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     private var isInitialized = false
     @Volatile private var isSynthesizing = false
     @Volatile private var cancelRequested = false
-    private var tts: OfflineTts? = null
+    private var tts: NativeTtsBridge? = null
 
     override suspend fun initialize(enginePackage: String?): Boolean {
         val modelId = enginePackage ?: return false
@@ -58,7 +52,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
         return try {
             shutdown()
-            tts = buildOfflineTts(model)
+            tts = buildTts(model)
             currentModel = model
             isInitialized = true
             cancelRequested = false
@@ -71,13 +65,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         }
     }
 
-    /**
-     * Build the Sherpa-ONNX OfflineTts for the given voice. The
-     * constructor with an AssetManager resolves `dataDir` against
-     * APK assets; `model` and `tokens` are absolute file paths
-     * because they live in the app's filesDir (downloaded per voice).
-     */
-    private fun buildOfflineTts(model: VoiceModel): OfflineTts {
+    private fun buildTts(model: VoiceModel): NativeTtsBridge {
         val modelDir = File(context.filesDir, "local_tts/models/${model.id}")
         val modelFile = File(modelDir, model.onnxFileName)
         val tokensFile = File(modelDir, "tokens.txt")
@@ -85,33 +73,40 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         require(modelFile.exists()) { "Model file missing: ${modelFile.absolutePath}" }
         require(tokensFile.exists()) { "tokens.txt missing: ${tokensFile.absolutePath}" }
 
-        val vitsConfig = OfflineTtsVitsModelConfig(
-            model = modelFile.absolutePath,
-            lexicon = "",
-            tokens = tokensFile.absolutePath,
-            dataDir = ASSET_ESPEAK_DIR,    // resolved by AssetManager
-            dictDir = "",
-            noiseScale = 0.667f,
-            noiseScaleW = 0.8f,
-            lengthScale = 1.0f,
-        )
+        val espeakDataDir = File(context.filesDir, "local_tts/$ASSET_ESPEAK_DIR")
+        if (!espeakDataDir.exists()) {
+            copyAssetsToFiles(ASSET_ESPEAK_DIR, espeakDataDir)
+        }
 
-        val modelConfig = OfflineTtsModelConfig(
-            vits = vitsConfig,
-            numThreads = 2,
-            debug = false,
-            provider = "cpu",
+        val ptr = NativeTtsBridge.nativeCreate(
+            modelFile.absolutePath,
+            tokensFile.absolutePath,
+            espeakDataDir.absolutePath
         )
+        if (ptr == 0L) {
+            throw IllegalStateException("Failed to create NativeTtsBridge (symbol resolution or native initialization failed)")
+        }
 
-        val config = OfflineTtsConfig(
-            model = modelConfig,
-            ruleFsts = "",
-            ruleFars = "",
-            maxNumSentences = 1,
-            silenceScale = 0.2f,
-        )
+        return NativeTtsBridge(ptr)
+    }
 
-        return OfflineTts(context.assets, config)
+    private fun copyAssetsToFiles(assetPath: String, destDir: File) {
+        destDir.mkdirs()
+        val assetList = context.assets.list(assetPath) ?: return
+        for (name in assetList) {
+            val assetChild = "$assetPath/$name"
+            val destChild = File(destDir, name)
+            val children = context.assets.list(assetChild)
+            if (children.isNullOrEmpty()) {
+                context.assets.open(assetChild).use { input ->
+                    destChild.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            } else {
+                copyAssetsToFiles(assetChild, destChild)
+            }
+        }
     }
 
     override fun isAvailable(): Boolean = isInitialized && tts != null && currentModel != null
@@ -145,7 +140,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
         return try {
             shutdown()
-            tts = buildOfflineTts(model)
+            tts = buildTts(model)
             currentModel = model
             isInitialized = true
             cancelRequested = false
@@ -185,7 +180,6 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             onComplete(false)
             return
         }
-        val sampleRate = currentModel?.sampleRate ?: 22050
         synchronized(this) {
             if (isSynthesizing) {
                 Log.w(TAG, "speakAsync rejected because synthesis is already active")
@@ -199,36 +193,11 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         Thread {
             var success = false
             try {
-                val genConfig = GenerationConfig(
-                    silenceScale = 0.2f,
-                    speed = 1.0f,
-                    sid = 0,
-                    referenceAudio = null,
-                    referenceSampleRate = 0,
-                    referenceText = "",
-                    numSteps = 0,
-                    extra = emptyMap(),
-                )
-                ttsInstance.generateWithConfigAndCallback(
-                    text = text,
-                    config = genConfig,
-                    callback = { samples ->
-                        if (cancelRequested) {
-                            return@generateWithConfigAndCallback 0
-                        }
-                        // Callback runs on the synth thread. Any throw
-                        // here aborts generation, so we trap it and
-                        // return 0 to stop further chunks.
-                        try {
-                            playSamples(samples, sampleRate)
-                            1
-                        } catch (e: Throwable) {
-                            Log.e(TAG, "playSamples failed", e)
-                            0
-                        }
-                    },
-                )
-                success = !cancelRequested
+                val samples = ttsInstance.generate(text, sid = 0, speed = 1.0f)
+                if (samples != null && !cancelRequested) {
+                    playSamples(samples, ttsInstance.sampleRate)
+                    success = true
+                }
                 Log.d(TAG, "Spoke with ${currentModel?.displayName}: $text")
             } catch (e: Throwable) {
                 Log.e(TAG, "Async speak failed", e)
@@ -255,9 +224,9 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             }
         }
         try {
-            tts?.release()
+            tts?.destroy()
         } catch (e: Throwable) {
-            Log.w(TAG, "Error releasing OfflineTts", e)
+            Log.w(TAG, "Error destroying NativeTtsBridge", e)
         }
         tts = null
         isInitialized = false
@@ -337,15 +306,6 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
     companion object {
         private const val TAG = "LocalTtsEngine"
-
-        /**
-         * Asset path passed to Sherpa-ONNX as the espeak-ng-data
-         * directory. Resolved against the APK's `assets/` via
-         * [android.content.res.AssetManager]. The directory is
-         * populated by extracting `piper/espeak-ng-data/` from the
-         * Piper release tarball at
-         * https://github.com/rhasspy/piper/releases/tag/2023.11.14-2 .
-         */
         const val ASSET_ESPEAK_DIR = "espeak-ng-data"
     }
 }
