@@ -13,7 +13,13 @@
 #  * OkHttp is on the classpath; rules ship in its AAR.
 #  * No JSON serialisation in production code — UpdateChecker parses
 #    org.json manually and does not reflect on a model class.
-#  * No JNI / native methods.
+# * No JNI / native methods.
+#
+# NOTE: The above was written before Sherpa-ONNX was integrated.
+# Sherpa-ONNX uses JNI reflection to access Java fields from native
+# code. R8 MUST NOT obfuscate or remove any class in the
+# com.k2fsa.sherpa.onnx package, or the native layer will crash
+# with NoSuchFieldError / ClassNotFoundException at runtime.
 
 # ── Our code: keep things that R8 might over-prune ───────────────────────
 
@@ -69,6 +75,11 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# Sherpa-ONNX JNI — native code accesses these classes/fields by
+# name through JNI FindClass / GetFieldID. R8 obfuscation breaks
+# the native→Java binding and produces NoSuchFieldError crashes.
+-keep class com.k2fsa.sherpa.onnx.** { *; }
 
 # kotlinx-coroutines debug agent (only used in -coroutines-core debug
 # builds, not in release, but R8 may still warn about missing classes
