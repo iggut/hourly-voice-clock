@@ -257,22 +257,36 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun previewVoice() {
-        deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
+        viewModelScope.launch {
+            runCatching {
+                if (!deps.ttsEngine.isAvailable()) {
+                    deps.ttsEngine.initialize(_selectedEnginePackage.value)
+                }
+                deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
+            }.onFailure { t ->
+                // Keep the screen alive even if the engine is in a bad state.
+                // The UI already reflects selection and settings separately.
+            }
+        }
     }
 
     fun selectAndPreviewVoice(voiceName: String, localeTag: String) {
         viewModelScope.launch {
-            writer.setVoice(voiceName, localeTag)
-            _selectedVoiceName.value = voiceName
-            _selectedPresetId.value = null
-            deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
+            runCatching {
+                writer.setVoice(voiceName, localeTag)
+                _selectedVoiceName.value = voiceName
+                _selectedPresetId.value = null
+                deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
+            }
         }
     }
 
     fun selectAndPreviewPreset(preset: SpecialVoicePreset) {
         viewModelScope.launch {
-            applyPreset(preset)
-            deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
+            runCatching {
+                applyPreset(preset)
+                deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
+            }
         }
     }
 }

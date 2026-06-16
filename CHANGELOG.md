@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.7-alpha] - 2026-06-15
+
+### Fixed
+- Voice preview is now more crash-resistant: the Android TTS engine uses thread-safe utterance tracking, and preview actions fail soft instead of propagating engine errors.
+- Local voice preview and main voice preview both guard their `speakAsync` calls so a bad engine state does not tear down the screen.
+
 ## [0.4.6-alpha] - 2026-06-15
 
 ### Fixed

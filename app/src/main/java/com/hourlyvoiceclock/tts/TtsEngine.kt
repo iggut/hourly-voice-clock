@@ -13,6 +13,7 @@ import com.hourlyvoiceclock.announcer.AudioChannelMapping
 import com.hourlyvoiceclock.data.AudioChannel
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
 
@@ -52,7 +53,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
     private var voices: List<VoiceInfo> = emptyList()
     private var initOk = false
     private val utteranceCounter = AtomicInteger(0)
-    private val pendingUtterances = mutableMapOf<String, (Boolean) -> Unit>()
+    private val pendingUtterances = ConcurrentHashMap<String, (Boolean) -> Unit>()
     private var currentEnginePackage: String? = null
     private var currentAudioChannel: AudioChannel = AudioChannel.MEDIA
 
