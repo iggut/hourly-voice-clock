@@ -42,7 +42,8 @@ class TimeAnnouncer(
         settings: AppSettings,
         force: Boolean = false,
         includeDate: Boolean = false,
-        dateTime: LocalDateTime = LocalDateTime.now()
+        dateTime: LocalDateTime = LocalDateTime.now(),
+        onComplete: (Boolean) -> Unit = {}
     ) {
 
         if (!force) {
@@ -58,6 +59,7 @@ class TimeAnnouncer(
             )
             if (inQuiet) {
                 Log.d(TAG, "Blocked by quiet hours")
+                onComplete(false)
                 return
             }
         }
@@ -73,6 +75,7 @@ class TimeAnnouncer(
         if (streamVolume == 0) {
             Toast.makeText(context, "${channelSpec.shortLabel} volume is muted. Turn up volume to hear announcements.", Toast.LENGTH_LONG).show()
             Log.w(TAG, "Stream volume is 0 for $audioStream - cannot hear TTS")
+            onComplete(false)
             return
         }
         Log.d(TAG, "Stream $audioStream volume: $streamVolume / $streamMax")
@@ -83,10 +86,10 @@ class TimeAnnouncer(
 
         if (settings.chimeSound != ChimeSound.NONE) {
             chimePlayer.play(settings.chimeSound) {
-                speakText(settings, dateTime, includeDate, audioManager, usage, audioStream)
+                speakText(settings, dateTime, includeDate, audioManager, usage, audioStream, onComplete)
             }
         } else {
-            speakText(settings, dateTime, includeDate, audioManager, usage, audioStream)
+            speakText(settings, dateTime, includeDate, audioManager, usage, audioStream, onComplete)
         }
     }
 
@@ -96,7 +99,8 @@ class TimeAnnouncer(
         includeDate: Boolean,
         audioManager: AudioManager?,
         usage: Int,
-        audioStream: Int
+        audioStream: Int,
+        onComplete: (Boolean) -> Unit
     ) {
         // Route to the user-selected engine: downloaded on-device voice
         // (LocalTtsEngine) if one is selected and loadable, otherwise
@@ -141,7 +145,7 @@ class TimeAnnouncer(
         // engine's onStart fires before the output is stable and the
         // opening syllable of the announcement is lost (clipped).
         Handler(Looper.getMainLooper()).postDelayed({
-            engine.speakAsync(text) { /* completion handled by engine */ }
+            engine.speakAsync(text) { success -> onComplete(success) }
         }, preSpeakSettleMs)
 
         if (settings.notificationLogging) {
