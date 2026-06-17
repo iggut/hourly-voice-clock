@@ -76,7 +76,11 @@ class OnnxModelDownloaderTest {
     }
 
     @Test
-    fun `isModelDownloaded returns true when both files are present and non-empty`() {
+    fun `isModelDownloaded returns false when current loader marker is missing`() {
+        // Older installs (and 0.4.29-alpha builds) wrote model files
+        // without a loader marker. They must be treated as not
+        // downloaded so the next Download press forces a clean
+        // re-fetch from upstream.
         val ctx = RuntimeEnvironment.getApplication()
         val downloader = OnnxModelDownloader(ctx)
         val model = VoiceModelRegistry.availableVoices.first()
@@ -86,6 +90,23 @@ class OnnxModelDownloaderTest {
         File(modelDir, model.onnxFileName).writeBytes(ByteArray(16) { 1 })
         File(modelDir, model.onnxJsonFileName).writeBytes(ByteArray(16) { 1 })
         File(modelDir, "tokens.txt").writeBytes(ByteArray(16) { 1 })
+        // No .local-tts-loader-v4 file.
+
+        assertFalse(downloader.isModelDownloaded(model))
+    }
+
+    @Test
+    fun `isModelDownloaded returns true when both files are present and non-empty`() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val downloader = OnnxModelDownloader(ctx)
+        val model = VoiceModelRegistry.availableVoices.first()
+
+        val modelDir = File(ctx.filesDir, "local_tts/models/${model.id}")
+        modelDir.mkdirs()
+        writeFakePiperModel(modelDir, model)
+        // Current loader marker must also be present — older installs
+        // that lack it are treated as not downloaded and re-fetched.
+        File(modelDir, ".local-tts-loader-v4").writeText("loader-v4")
 
         assertTrue(downloader.isModelDownloaded(model))
     }
@@ -142,9 +163,8 @@ class OnnxModelDownloaderTest {
         // Fully install the first voice; leave the second half-installed.
         val firstDir = File(ctx.filesDir, "local_tts/models/${first.id}")
         firstDir.mkdirs()
-        File(firstDir, first.onnxFileName).writeBytes(ByteArray(16) { 1 })
-        File(firstDir, first.onnxJsonFileName).writeBytes(ByteArray(16) { 1 })
-        File(firstDir, "tokens.txt").writeBytes(ByteArray(16) { 1 })
+        writeFakePiperModel(firstDir, first)
+        File(firstDir, ".local-tts-loader-v4").writeText("loader-v4")
 
         val secondDir = File(ctx.filesDir, "local_tts/models/${second.id}")
         secondDir.mkdirs()
@@ -230,5 +250,34 @@ class OnnxModelDownloaderTest {
         assertTrue(result.isFailure)
         val msg = result.exceptionOrNull()?.message ?: ""
         assertTrue("expected gap message, got: $msg", msg.contains("gaps"))
+    }
+
+    /**
+     * Write a fake Piper model directory that passes [OnnxModelDownloader.validateModelFiles]:
+     * - the onnx stub is at least max(MIN_ONNX_BYTES=1MB, model.sizeBytes/5) (the
+     *   current models in the registry are ~63MB, so the min is ~12.6MB). We pad
+     *   to 16MB to cover the full set without per-model arithmetic in the test.
+     * - the prefix is non-ASCII-printable so it cannot be a Git-LFS pointer or HTML
+     * - the json file is a real Piper .onnx.json with a non-empty phoneme_id_map
+     * - the tokens file is non-empty
+     */
+    private fun writeFakePiperModel(modelDir: File, model: VoiceModel) {
+        val onnxBytes = ByteArray(16_000_000) { (it and 0x7F).toByte() }
+        File(modelDir, model.onnxFileName).writeBytes(onnxBytes)
+        File(modelDir, model.onnxJsonFileName).writeText(
+            """
+            {
+              "audio": { "sample_rate": 22050, "quality": "medium" },
+              "phoneme_id_map": {
+                "_": [0],
+                "^": [1],
+                "a": [2],
+                " ": [3],
+                "b": [4]
+              }
+            }
+            """.trimIndent()
+        )
+        File(modelDir, "tokens.txt").writeBytes(ByteArray(64) { 1 })
     }
 }
