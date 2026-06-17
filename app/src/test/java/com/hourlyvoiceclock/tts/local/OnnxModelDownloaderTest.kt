@@ -195,7 +195,11 @@ class OnnxModelDownloaderTest {
         val result = downloader.generateTokensFile(json, out)
         assertTrue("generateTokensFile failed: $result", result.isSuccess)
         val lines = out.readLines()
-        assertEquals(listOf("_", " ", "a", "b", "^"), lines)
+        // Sherpa-ONNX's Piper token parser expects each line to be
+        // "<token> <id>" — except the space token, which is encoded
+        // as a single numeric column with the id alone (the parser
+        // treats a single-column numeric line as the space token).
+        assertEquals(listOf("_ 0", "1", "a 2", "b 3", "^ 4"), lines)
     }
 
     @Test
