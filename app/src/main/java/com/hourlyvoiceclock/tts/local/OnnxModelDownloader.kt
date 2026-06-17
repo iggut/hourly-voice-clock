@@ -16,6 +16,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.math.max
 
 /**
  * Downloads Piper voice distributions for use with Sherpa-ONNX's VITS
@@ -24,16 +25,16 @@ import java.util.concurrent.TimeUnit
  *   1. `model.onnx`            — the ONNX model weights
  *   2. `model.onnx.json`       — audio config + phoneme id map
  *   3. `tokens.txt`            — one token per line, id-ordered, derived
- *                                from the `phoneme_id_map` keys in
- *                                `model.onnx.json`
+ *                                from `model.onnx.json`
  *
  * The espeak-ng-data phoneme directory is bundled in APK assets and
  * loaded via [com.hourlyvoiceclock.tts.local.LocalTtsEngine] — it is
  * shared across all voices and not downloaded per-voice.
  *
- * The "already downloaded" check is **existence-based** (all three files
- * present and non-empty), not size-based, so a partial download is
- * re-fetched cleanly on the next attempt.
+ * The "already downloaded" check validates the local files enough to reject
+ * partial downloads, HTML error pages, Git-LFS pointer files, and malformed
+ * Piper JSON. Invalid existing files are treated as not installed so the next
+ * Download press starts from a clean model directory.
  *
  * Errors are returned as a [Result] and re-thrown as a typed
  * [DownloadException] so the caller can render a human-readable error
@@ -63,7 +64,7 @@ class OnnxModelDownloader(private val context: Context) {
             return@withContext Result.success(onnxFile)
         }
 
-        // Clean any partial state from a previous attempt.
+        // Clean any partial, stale, or invalid state from a previous attempt.
         if (modelDir.exists()) {
             onnxFile.delete()
             jsonFile.delete()
@@ -100,6 +101,14 @@ class OnnxModelDownloader(private val context: Context) {
                 jsonFile.delete()
                 tokensFile.delete()
                 return@withContext Result.failure(tokensResult.exceptionOrNull()!!)
+            }
+
+            val validation = validateModelFiles(model, onnxFile, jsonFile, tokensFile)
+            if (validation.isFailure) {
+                onnxFile.delete()
+                jsonFile.delete()
+                tokensFile.delete()
+                return@withContext Result.failure(validation.exceptionOrNull()!!)
             }
 
             onProgress(1f)
@@ -210,6 +219,54 @@ class OnnxModelDownloader(private val context: Context) {
         }
     }
 
+    internal fun validateModelFiles(
+        model: VoiceModel,
+        onnxFile: File,
+        jsonFile: File,
+        tokensFile: File
+    ): Result<Unit> {
+        if (!onnxFile.exists() || onnxFile.length() <= 0L) {
+            return Result.failure(DownloadException("ONNX model missing for ${model.displayName}"))
+        }
+        if (!jsonFile.exists() || jsonFile.length() <= 0L) {
+            return Result.failure(DownloadException("ONNX JSON missing for ${model.displayName}"))
+        }
+        if (!tokensFile.exists() || tokensFile.length() <= 0L) {
+            return Result.failure(DownloadException("tokens.txt missing for ${model.displayName}"))
+        }
+
+        val minExpectedBytes = max(MIN_ONNX_BYTES, model.sizeBytes / 5L)
+        if (onnxFile.length() < minExpectedBytes) {
+            return Result.failure(
+                DownloadException(
+                    "Downloaded ONNX is too small for ${model.displayName}: " +
+                        "${onnxFile.length()} bytes; expected at least $minExpectedBytes"
+                )
+            )
+        }
+
+        val prefix = readPrefix(onnxFile).trimStart()
+        if (prefix.startsWith("version https://git-lfs.github.com/spec/v1")) {
+            return Result.failure(DownloadException("Downloaded ${model.displayName} is a Git-LFS pointer, not ONNX weights"))
+        }
+        if (prefix.startsWith("<") || prefix.startsWith("{") || prefix.startsWith("<!DOCTYPE", ignoreCase = true)) {
+            return Result.failure(DownloadException("Downloaded ${model.displayName} is not an ONNX binary"))
+        }
+
+        return try {
+            val payload = jsonFile.source().buffer().use { it.readUtf8() }
+            val root = JSONObject(payload)
+            val map = root.optJSONObject("phoneme_id_map")
+                ?: return Result.failure(DownloadException("phoneme_id_map missing in ${jsonFile.name}"))
+            if (map.length() == 0) {
+                return Result.failure(DownloadException("phoneme_id_map is empty in ${jsonFile.name}"))
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(DownloadException("Invalid ONNX JSON for ${model.displayName}: ${e.message ?: e.javaClass.simpleName}", e))
+        }
+    }
+
     suspend fun isModelDownloadedAsync(model: VoiceModel): Boolean = withContext(Dispatchers.IO) {
         isModelDownloaded(model)
     }
@@ -218,9 +275,11 @@ class OnnxModelDownloader(private val context: Context) {
         val onnx = File(modelsDir, "${model.id}/${model.onnxFileName}")
         val json = File(modelsDir, "${model.id}/${model.onnxJsonFileName}")
         val tokens = File(modelsDir, "${model.id}/tokens.txt")
-        return onnx.exists() && onnx.length() > 0 &&
-            json.exists() && json.length() > 0 &&
-            tokens.exists() && tokens.length() > 0
+        val valid = validateModelFiles(model, onnx, json, tokens).isSuccess
+        if (!valid && (onnx.exists() || json.exists() || tokens.exists())) {
+            Log.w(TAG, "Ignoring invalid local model files for ${model.id}")
+        }
+        return valid
     }
 
     fun deleteModel(model: VoiceModel): Boolean {
@@ -286,8 +345,17 @@ class OnnxModelDownloader(private val context: Context) {
         return Result.success(Unit)
     }
 
+    private fun readPrefix(file: File): String {
+        val buffer = ByteArray(PREFIX_BYTES)
+        val read = file.inputStream().use { it.read(buffer) }
+        if (read <= 0) return ""
+        return buffer.copyOf(read).toString(Charsets.UTF_8)
+    }
+
     companion object {
         private const val TAG = "OnnxModelDownloader"
+        private const val MIN_ONNX_BYTES = 1_000_000L
+        private const val PREFIX_BYTES = 512
     }
 }
 
