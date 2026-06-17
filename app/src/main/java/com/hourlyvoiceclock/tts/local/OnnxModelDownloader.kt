@@ -33,8 +33,8 @@ import kotlin.math.max
  *
  * The "already downloaded" check validates the local files enough to reject
  * partial downloads, HTML error pages, Git-LFS pointer files, and malformed
- * Piper JSON. Invalid existing files are treated as not installed so the next
- * Download press starts from a clean model directory.
+ * Piper JSON. It also requires the current loader marker so models touched by
+ * older unsafe metadata patches are re-downloaded from clean upstream files.
  *
  * Errors are returned as a [Result] and re-thrown as a typed
  * [DownloadException] so the caller can render a human-readable error
@@ -58,6 +58,7 @@ class OnnxModelDownloader(private val context: Context) {
         val onnxFile = File(modelDir, model.onnxFileName)
         val jsonFile = File(modelDir, model.onnxJsonFileName)
         val tokensFile = File(modelDir, "tokens.txt")
+        val markerFile = File(modelDir, CURRENT_LOADER_MARKER)
 
         if (isModelDownloaded(model)) {
             Log.d(TAG, "Model ${model.id} already downloaded")
@@ -69,6 +70,7 @@ class OnnxModelDownloader(private val context: Context) {
             onnxFile.delete()
             jsonFile.delete()
             tokensFile.delete()
+            markerFile.delete()
         } else {
             modelDir.mkdirs()
         }
@@ -108,8 +110,11 @@ class OnnxModelDownloader(private val context: Context) {
                 onnxFile.delete()
                 jsonFile.delete()
                 tokensFile.delete()
+                markerFile.delete()
                 return@withContext Result.failure(validation.exceptionOrNull()!!)
             }
+
+            markerFile.writeText(CURRENT_LOADER_MARKER)
 
             onProgress(1f)
             Log.d(
@@ -124,6 +129,7 @@ class OnnxModelDownloader(private val context: Context) {
             onnxFile.delete()
             jsonFile.delete()
             tokensFile.delete()
+            markerFile.delete()
             Result.failure(e)
         }
     }
@@ -272,9 +278,19 @@ class OnnxModelDownloader(private val context: Context) {
     }
 
     fun isModelDownloaded(model: VoiceModel): Boolean {
-        val onnx = File(modelsDir, "${model.id}/${model.onnxFileName}")
-        val json = File(modelsDir, "${model.id}/${model.onnxJsonFileName}")
-        val tokens = File(modelsDir, "${model.id}/tokens.txt")
+        val modelDir = File(modelsDir, model.id)
+        val onnx = File(modelDir, model.onnxFileName)
+        val json = File(modelDir, model.onnxJsonFileName)
+        val tokens = File(modelDir, "tokens.txt")
+        val marker = File(modelDir, CURRENT_LOADER_MARKER)
+
+        if (!marker.exists()) {
+            if (onnx.exists() || json.exists() || tokens.exists()) {
+                Log.w(TAG, "Ignoring ${model.id}: missing current loader marker; re-download required")
+            }
+            return false
+        }
+
         val valid = validateModelFiles(model, onnx, json, tokens).isSuccess
         if (!valid && (onnx.exists() || json.exists() || tokens.exists())) {
             Log.w(TAG, "Ignoring invalid local model files for ${model.id}")
@@ -356,6 +372,7 @@ class OnnxModelDownloader(private val context: Context) {
         private const val TAG = "OnnxModelDownloader"
         private const val MIN_ONNX_BYTES = 1_000_000L
         private const val PREFIX_BYTES = 512
+        private const val CURRENT_LOADER_MARKER = ".local-tts-loader-v4"
     }
 }
 
