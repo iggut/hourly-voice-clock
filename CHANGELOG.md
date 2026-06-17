@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.32-alpha] - 2026-06-17
+
+### Fixed
+- **Hourly announcements are now kept alive when the phone is locked or the screen is off.** The alarm receiver now hands scheduled announcement work to `HourlyAnnouncementService`, which runs as a foreground service and holds a short partial wake lock while it reschedules the next alarm, initializes TTS, waits through the pre-speak audio-routing delay, and waits for TTS completion. This prevents Android from suspending or killing the short-lived broadcast receiver path before speech starts.
+- `TimeAnnouncer.announce()` now exposes an optional completion callback so service code can keep the foreground execution window open until the selected TTS engine reports success, failure, or timeout.
+
 ## [0.4.31-alpha] - 2026-06-17
 
 ### Tests
@@ -51,6 +57,6 @@ All notable changes to this project will be documented in this file.
 ## [0.4.25-alpha] - 2026-06-16
 
 ### Fixed
-- **Hourly announcements no longer cut off at the start.** The first syllable of an announcement was being clipped because the TTS engine was dispatched the instant audio focus was granted — before the audio HAL had finished rerouting to the requested stream. `TimeAnnouncer` now waits 120 ms after focus is acquired before calling `speakAsync`, giving the routing layer time to land on the speech stream.
+- **Hourly announcements no longer cut off at the start.** The first syllable of an announcement was being clipped because the TTS engine was dispatched the instant audio focus was granted — before the audio HAL had finished rerouting to the requested stream. `TimeAnnouncer` now waits 120 ms after audio focus is acquired before calling `speakAsync`, giving the routing layer time to land on the speech stream.
 - **Friendly style greeting no longer collapses to "Hello" for late-night hours.** The `FRIENDLY` phrase style used to say "Hello" between 22:00 and 04:59, and only used a named greeting between 05:00 and 21:59. The bands are now widened so every hour maps to a named greeting: 05–11 morning, 12–16 afternoon, 17–21 evening, 22–04 night. A user at 03:00 now hears "Good night. It is 3 AM." instead of "Hello. It is 3 AM."
 - **Downloaded on-device voices now appear as selectable voice options.** Previously, downloading a Piper voice in Local Voices only let you preview it — picking one for the hourly announcement required going through the system TTS path, which could not load Piper models. Downloaded voices are now listed in the main Voice Settings screen as a "Local AI Voices" section with an "On-device" badge; selecting one routes the hourly announcement through `LocalTtsEngine` with the chosen model. The Home screen subtitle updates to "Local: <Voice Name>" when a local voice is active. A "Use system voice" row is offered in the same section to fall back to the system TTS path.
