@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.30-alpha] - 2026-06-17
+
+### Fixed
+- **Crash when pressing play/preview on downloaded local voices.** The previous metadata migration tried to strip legacy ONNX metadata by parsing and rewriting the ONNX protobuf by hand. That parser only handled one-byte field tags, while real ONNX `ModelProto` files contain multi-byte tags, so it could corrupt downloaded model files before Sherpa-ONNX loaded them. The fix removes the unsafe metadata rewrite completely and only appends missing metadata keys.
+- **Force clean re-download after the unsafe patch.** Local voice downloads now require a current loader marker (`.local-tts-loader-v4`). Existing files created or touched by older local-TTS builds are treated as not installed, so the next Download press deletes and re-fetches clean upstream `.onnx`, `.onnx.json`, and `tokens.txt` files.
+
 ## [0.4.29-alpha] - 2026-06-17
 
 ### Fixed
