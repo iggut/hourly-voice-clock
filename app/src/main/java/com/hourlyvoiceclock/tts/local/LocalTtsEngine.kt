@@ -135,19 +135,21 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     }
 
     private fun ensurePiperOnnxMetadata(modelFile: File, jsonFile: File) {
-        // Migration: older patches used `language=en_US` (wrong key, and
-        // an underscore that eSpeak-ng rejects). Strip any such legacy
-        // entries first so the new patch below produces a clean file.
-        stripOnnxMetadataKey(modelFile, "language")
-        stripOnnxMetadataKey(modelFile, "comment")
-
         // Sherpa-ONNX v1.13.x reads VITS metadata (sample_rate, n_speakers,
         // voice, comment, etc.) from ONNX custom metadata. Piper ships its
-        // config in the sibling .onnx.json. Patch them in-place:
+        // config in the sibling .onnx.json. Patch missing keys in-place:
         //   sample_rate  <- json.audio.sample_rate
         //   n_speakers   <- json.num_speakers  (default 1)
         //   voice        <- json.espeak.voice  (e.g. "en-us")
         //   comment      <- "piper"  (so meta_data_.is_piper = true)
+        //
+        // Do NOT try to strip or rewrite existing metadata entries here.
+        // Earlier code attempted to parse and rebuild the ONNX protobuf by hand
+        // to remove legacy keys. That parser only handled one-byte field tags;
+        // real ONNX ModelProto files contain multi-byte tags, so the rewrite
+        // could corrupt downloaded models and make the native loader abort the
+        // app process. Appending missing metadata_props entries is safe because
+        // protobuf permits repeated fields and the native loader reads by key.
         val json = jsonFile.readText()
         val sampleRate = Regex(""""sample_rate"\s*:\s*(\d+)""")
             .find(json)
@@ -159,13 +161,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             ?.groupValues
             ?.getOrNull(1)
             ?: "1"
-        // espeak.voice is required for VITS/Piper — it is the name passed
-        // to espeak_SetVoiceByName. Without it the native code calls
-        // espeak_SetVoiceByName("") which throws std::runtime_error
-        // ("Failed to set eSpeak-ng voice"), escaping the JNI boundary
-        // and aborting the process. Fall back to en-us (the rhasspy
-        // piper-voices default) if the JSON omits it.
-        val espeakVoice = Regex(""""voice"\s*:\s*"([^"]+)"""")
+        val espeakVoice = Regex(""""voice"\s*:\s*"([^"]+)""")
             .find(json)
             ?.groupValues
             ?.getOrNull(1)
@@ -183,154 +179,6 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
         appendOnnxMetadataProps(modelFile, props)
         Log.d(TAG, "Patched ${modelFile.name} ONNX metadata ${props.joinToString { "${it.first}=${it.second}" }}")
-    }
-
-    /**
-     * Strip all ONNX metadata_props entries whose key field equals [key].
-     * This rebuilds the file, so the returned byte length may be smaller.
-     * Used to clean up legacy patches that wrote wrong-keyed entries.
-     */
-    private fun stripOnnxMetadataKey(file: File, key: String) {
-        val bytes = file.readBytes()
-        // Walk the protobuf, find every ModelProto.metadata_props entry,
-        // drop entries whose StringStringEntryProto.key == [key].
-        // metadata_props is field 14, length-delimited.
-        val out = ArrayList<Byte>(bytes.size)
-        var i = 0
-        var modified = false
-        val needle = key.toByteArray(StandardCharsets.UTF_8)
-
-        while (i < bytes.size) {
-            val tag = bytes[i].toInt() and 0xFF
-            val wireType = tag and 0x07
-            val fieldNum = tag ushr 3
-
-            if (fieldNum == 14 && wireType == 2) {
-                // Read length varint
-                i++
-                var len = 0
-                var shift = 0
-                while (i < bytes.size && bytes[i].toInt() and 0x80 != 0) {
-                    len = len or ((bytes[i].toInt() and 0x7F) shl shift)
-                    shift += 7
-                    i++
-                }
-                if (i < bytes.size) {
-                    len = len or (bytes[i].toInt() shl shift)
-                    i++
-                }
-                val entryEnd = i + len
-                if (entryEnd > bytes.size) {
-                    // Corrupt — abort stripping, keep file intact.
-                    return
-                }
-                val entryBytes = bytes.copyOfRange(i, entryEnd)
-                val entryKey = readStringStringEntryKey(entryBytes)
-                if (entryKey != null && entryKey.contentEquals(needle)) {
-                    // Drop this entry entirely.
-                    modified = true
-                    i = entryEnd
-                    continue
-                }
-                // Keep the original tag + length + entry bytes.
-                // Emit tag byte
-                out.add(tag.toByte())
-                // Re-emit the length varint we just decoded
-                var lv = len
-                val temp = ArrayList<Byte>()
-                while (lv >= 0x80) {
-                    temp.add(((lv and 0x7F) or 0x80).toByte())
-                    lv = lv ushr 7
-                }
-                temp.add(lv.toByte())
-                out.addAll(temp)
-                for (b in entryBytes) out.add(b)
-                i = entryEnd
-                continue
-            }
-
-            // Pass through any other field unchanged.
-            out.add(bytes[i])
-            i++
-            if (wireType == 2) {
-                // length-delimited: re-emit the length and payload
-                var len = 0
-                var shift = 0
-                while (i < bytes.size && bytes[i].toInt() and 0x80 != 0) {
-                    len = len or ((bytes[i].toInt() and 0x7F) shl shift)
-                    shift += 7
-                    i++
-                }
-                if (i < bytes.size) {
-                    len = len or (bytes[i].toInt() shl shift)
-                    i++
-                }
-                var lv = len
-                val temp = ArrayList<Byte>()
-                while (lv >= 0x80) {
-                    temp.add(((lv and 0x7F) or 0x80).toByte())
-                    lv = lv ushr 7
-                }
-                temp.add(lv.toByte())
-                out.addAll(temp)
-                for (k in 0 until len) {
-                    if (i + k < bytes.size) out.add(bytes[i + k])
-                }
-                i += len
-            } else if (wireType == 0 || wireType == 1 || wireType == 5) {
-                // varint: read bytes with high bit set + final byte
-                // 32-bit (wireType=5) / 64-bit (wireType=1) need to consume
-                // a fixed number of bytes; we just consume until high bit clear
-                // for varint, and 4 / 8 bytes for fixed.
-                if (wireType == 0) {
-                    while (i < bytes.size && bytes[i].toInt() and 0x80 != 0) {
-                        out.add(bytes[i])
-                        i++
-                    }
-                    if (i < bytes.size) {
-                        out.add(bytes[i])
-                        i++
-                    }
-                } else {
-                    val n = if (wireType == 5) 4 else 8
-                    for (k in 0 until n) {
-                        if (i + k < bytes.size) out.add(bytes[i + k])
-                    }
-                    i += n
-                }
-            }
-            // wireType 3 / 4 are deprecated
-        }
-
-        if (modified) {
-            file.writeBytes(out.toByteArray())
-            Log.d(TAG, "Stripped legacy metadata key '$key' from ${file.name}")
-        }
-    }
-
-    private fun readStringStringEntryKey(entry: ByteArray): ByteArray? {
-        // StringStringEntryProto: field 1 (key) wire 2, then field 2 (value) wire 2.
-        var i = 0
-        // tag
-        if (i >= entry.size) return null
-        val tag = entry[i].toInt() and 0xFF
-        val wire = tag and 0x07
-        val field = tag ushr 3
-        if (field != 1 || wire != 2) return null
-        i++
-        var len = 0
-        var shift = 0
-        while (i < entry.size && entry[i].toInt() and 0x80 != 0) {
-            len = len or ((entry[i].toInt() and 0x7F) shl shift)
-            shift += 7
-            i++
-        }
-        if (i < entry.size) {
-            len = len or (entry[i].toInt() shl shift)
-            i++
-        }
-        if (i + len > entry.size) return null
-        return entry.copyOfRange(i, i + len)
     }
 
     private fun fileContainsAscii(file: File, needle: String): Boolean {
