@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.31-alpha] - 2026-06-17
+
+### Tests
+- **Align `OnnxModelDownloaderTest` with the v4 loader marker.** `isModelDownloaded` now requires a `.local-tts-loader-v4` marker; tests that simulate a "fully downloaded" voice write it. The 16-byte ONNX stubs the old tests used are rejected by `validateModelFiles()` (size below the `max(1MB, sizeBytes/5)` threshold), so the helper now writes a 16MB stub plus a real Piper `.onnx.json` with a non-empty `phoneme_id_map` to pass the same validation a real download would.
+- **New test: `isModelDownloaded returns false when current loader marker is missing`.** Mirrors the force-redownload contract in `OnnxModelDownloader.isModelDownloaded` — a model directory with files but no marker is treated as not downloaded.
+
 ## [0.4.30-alpha] - 2026-06-17
 
 ### Fixed
