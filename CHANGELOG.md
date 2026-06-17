@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.28-alpha] - 2026-06-17
+
+### Fixed
+- **Crash on local voice preview/play — wrong ONNX metadata key.** The native Sherpa-ONNX code in `piper-phonemize/phonemize.cpp` calls `espeak_SetVoiceByName(meta_data.voice.c_str())`. The value of `meta_data.voice` is read from the **ONNX metadata key `voice`** (`SHERPA_ONNX_READ_META_DATA_STR_WITH_DEFAULT(meta_data_.voice, "voice", "")` in `offline-tts-vits-model.cc`). The previous patch (0.4.25-alpha, still in 0.4.27-alpha) set ONNX key `language` instead — that field is required but is not used for the eSpeak voice lookup. With `voice=""`, `espeak_SetVoiceByName("")` returns non-zero and the C++ runtime throws `std::runtime_error("Failed to set eSpeak-ng voice")`. The exception escapes the JNI boundary as a SIGABRT.
+  - **Correct field:** the ONNX metadata key is now `voice` (not `language`). The value is read from `json.espeak.voice` (e.g. `en-us`), lowercased.
+  - **Migration for already-downloaded models:** the new patch first strips the legacy `language` and `comment` entries that the broken 0.4.27-alpha patch added, then appends the correct `voice` entry. The other fields (`sample_rate`, `n_speakers`) are preserved.
+  - **Fresh downloads:** the patch now writes the four correct entries on first use, so future installs need no migration.
+  - **Defensive defaults:** if the JSON omits `espeak.voice`, the patch falls back to `en-us` (the rhasspy `piper-voices` default) rather than letting the native code call `espeak_SetVoiceByName("")`.
+
+### Added
+- `OnnxMetadataPatchTest` with 5 unit tests covering the protobuf structure (`metadata_props` field-14 tag, `StringStringEntryProto` field-1-then-2 layout), the post-patch key set (`voice`, `sample_rate`, `n_speakers`, `comment`), the absence of the legacy `language` key, and the regex that extracts `espeak.voice` from the JSON.
+
 ## [0.4.27-alpha] - 2026-06-17
 
 ### Fixed
