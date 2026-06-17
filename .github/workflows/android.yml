@@ -35,37 +35,36 @@ jobs:
       - name: Download and sanitize Sherpa-ONNX AAR
         run: |
           set -eux
-          mkdir -p app/libs
-          curl -fsSL -o app/libs/sherpa-onnx-1.13.3.aar \
+          # Use absolute paths so the `cd sanitize / cd .. / cd ..`
+          # dance does not leave the working directory in a state
+          # where the final AAR lands in the wrong place.
+          APP_LIBS="${GITHUB_WORKSPACE}/app/libs"
+          mkdir -p "${APP_LIBS}"
+          curl -fsSL -o "${APP_LIBS}/sherpa-onnx-1.13.3.aar" \
             "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.3/sherpa-onnx-1.13.3.aar"
-          cd app/libs
-          mkdir -p sanitize
-          cd sanitize
-          unzip -q ../sherpa-onnx-1.13.3.aar
+          rm -rf "${APP_LIBS}/sanitize" "${APP_LIBS}/sherpa-onnx-1.13.3-sanitized.aar"
+          mkdir -p "${APP_LIBS}/sanitize"
+          unzip -q "${APP_LIBS}/sherpa-onnx-1.13.3.aar" -d "${APP_LIBS}/sanitize"
           # The AAR ships classes.jar as a file at the top level, NOT
           # as a `classes/` directory. Create the directory ourselves
           # before extracting the jar into it.
-          mkdir -p classes
-          cd classes
-          jar xf ../classes.jar
-          cd ..
+          mkdir -p "${APP_LIBS}/sanitize/classes"
+          (cd "${APP_LIBS}/sanitize/classes" && jar xf "${APP_LIBS}/sanitize/classes.jar")
           rm -f \
-            com/k2fsa/sherpa/onnx/OfflineTtsConfig.class \
-            com/k2fsa/sherpa/onnx/OfflineTtsModelConfig.class \
-            com/k2fsa/sherpa/onnx/OfflineTtsVitsModelConfig.class \
-            com/k2fsa/sherpa/onnx/OfflineTtsMatchaModelConfig.class \
-            com/k2fsa/sherpa/onnx/OfflineTtsKokoroModelConfig.class \
-            com/k2fsa/sherpa/onnx/OfflineTtsZipVoiceModelConfig.class \
-            com/k2fsa/sherpa/onnx/OfflineTtsKittenModelConfig.class \
-            com/k2fsa/sherpa/onnx/OfflineTtsPocketModelConfig.class \
-            com/k2fsa/sherpa/onnx/OfflineTtsSupertonicModelConfig.class
-          jar cf ../classes.jar .
-          cd ..
-          rm -rf classes
-          zip -q ../sherpa-onnx-1.13.3-sanitized.aar classes.jar AndroidManifest.xml jni/*/*
-          cd ..
-          rm -rf sanitize sherpa-onnx-1.13.3.aar
-          ls -la app/libs/sherpa-onnx-1.13.3-sanitized.aar
+            "${APP_LIBS}/sanitize/classes/com/k2fsa/sherpa/onnx/OfflineTtsConfig.class" \
+            "${APP_LIBS}/sanitize/classes/com/k2fsa/sherpa/onnx/OfflineTtsModelConfig.class" \
+            "${APP_LIBS}/sanitize/classes/com/k2fsa/sherpa/onnx/OfflineTtsVitsModelConfig.class" \
+            "${APP_LIBS}/sanitize/classes/com/k2fsa/sherpa/onnx/OfflineTtsMatchaModelConfig.class" \
+            "${APP_LIBS}/sanitize/classes/com/k2fsa/sherpa/onnx/OfflineTtsKokoroModelConfig.class" \
+            "${APP_LIBS}/sanitize/classes/com/k2fsa/sherpa/onnx/OfflineTtsZipVoiceModelConfig.class" \
+            "${APP_LIBS}/sanitize/classes/com/k2fsa/sherpa/onnx/OfflineTtsKittenModelConfig.class" \
+            "${APP_LIBS}/sanitize/classes/com/k2fsa/sherpa/onnx/OfflineTtsPocketModelConfig.class" \
+            "${APP_LIBS}/sanitize/classes/com/k2fsa/sherpa/onnx/OfflineTtsSupertonicModelConfig.class"
+          (cd "${APP_LIBS}/sanitize/classes" && jar cf "${APP_LIBS}/sanitize/classes.jar" .)
+          rm -rf "${APP_LIBS}/sanitize/classes"
+          (cd "${APP_LIBS}/sanitize" && zip -q "${APP_LIBS}/sherpa-onnx-1.13.3-sanitized.aar" classes.jar AndroidManifest.xml jni/*/*)
+          rm -rf "${APP_LIBS}/sanitize" "${APP_LIBS}/sherpa-onnx-1.13.3.aar"
+          ls -la "${APP_LIBS}/sherpa-onnx-1.13.3-sanitized.aar"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
