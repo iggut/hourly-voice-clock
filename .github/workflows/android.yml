@@ -34,17 +34,21 @@ jobs:
 
       - name: Download and sanitize Sherpa-ONNX AAR
         run: |
+          set -eux
           mkdir -p app/libs
           curl -fsSL -o app/libs/sherpa-onnx-1.13.3.aar \
             "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.3/sherpa-onnx-1.13.3.aar"
           cd app/libs
-          mkdir -p sanitize && cd sanitize
+          mkdir -p sanitize
+          cd sanitize
           unzip -q ../sherpa-onnx-1.13.3.aar
           # The AAR ships classes.jar as a file at the top level, NOT
           # as a `classes/` directory. Create the directory ourselves
           # before extracting the jar into it.
-          mkdir classes
-          cd classes && jar xf ../classes.jar && cd ..
+          mkdir -p classes
+          cd classes
+          jar xf ../classes.jar
+          cd ..
           rm -f \
             com/k2fsa/sherpa/onnx/OfflineTtsConfig.class \
             com/k2fsa/sherpa/onnx/OfflineTtsModelConfig.class \
@@ -61,6 +65,7 @@ jobs:
           zip -q ../sherpa-onnx-1.13.3-sanitized.aar classes.jar AndroidManifest.xml jni/*/*
           cd ..
           rm -rf sanitize sherpa-onnx-1.13.3.aar
+          ls -la app/libs/sherpa-onnx-1.13.3-sanitized.aar
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
