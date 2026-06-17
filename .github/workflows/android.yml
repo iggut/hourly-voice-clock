@@ -40,7 +40,11 @@ jobs:
           cd app/libs
           mkdir -p sanitize && cd sanitize
           unzip -q ../sherpa-onnx-1.13.3.aar
-          cd classes && jar xf ../classes.jar
+          # The AAR ships classes.jar as a file at the top level, NOT
+          # as a `classes/` directory. Create the directory ourselves
+          # before extracting the jar into it.
+          mkdir classes
+          cd classes && jar xf ../classes.jar && cd ..
           rm -f \
             com/k2fsa/sherpa/onnx/OfflineTtsConfig.class \
             com/k2fsa/sherpa/onnx/OfflineTtsModelConfig.class \
