@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.34-alpha] - 2026-06-17
+
+### Added
+- **Two BibEBobberson/Piper voices from HuggingFace.** `Trump (BibEBobberson)` and `George Carlin (BibEBobberson)` from [huggingface.co/BibEBobberson/Piper](https://huggingface.co/BibEBobberson/Piper/tree/main). Both ship as `.tar.gz` archives (the real ones contain a Piper `en_US-<name>-high.onnx` + `en_US-<name>-high.onnx.json` pair — verified locally by extracting the downloaded archives and inspecting the protobuf header + `.onnx.json` phoneme_id_map).
+- **Archive-style download support in `OnnxModelDownloader`.** `.zip`, `.tar.gz`, and `.tgz` URLs are now supported via a new optional `VoiceModel.archiveDownloadUrl` field. The downloader streams the archive to a temp file, then extracts the first `.onnx` and matching `.onnx.json` (or `config.json`) into the canonical filenames. Real archives with directory-prefixed entries (like `./en_US-trump-high.onnx`) work — the directory entry is skipped and the padding to the next 512-byte boundary is honored. Falls back to a clean error (with partially-written files deleted) when the pair is missing.
+
+### Skipped
+- **Homer from BibEBobberson/Piper.** `Homer.zip` is a Coqui/TTS PyTorch checkpoint (`.ckpt` + `.pth`) plus reference audio — not a Piper ONNX voice and not loadable by Sherpa-ONNX. Documented in the registry comment block; will be added back if/when an ONNX export is published upstream.
+
+### Tests
+- `OnnxModelDownloaderTest` gained 6 archive tests (5 unit + 1 directory-prefix tar): tar.gz extract, zip extract, no-onnx failure, no-json failure, config.json fallback, directory-prefixed entries, plus updated registry consistency checks that allow archive-backed voices. 142/142 unit tests pass.
+
+## [0.4.33-alpha] - 2026-06-17
+
+### Added
+- **Four simoniz0r community voices: Bobby, Carl, Eminem, Patrick.** Each entry points at the verified GitHub Releases asset URL from [simoniz0r/piper-voice-models](https://github.com/simoniz0r/piper-voice-models/releases) (asset filenames `en_US-<name>-medium.onnx` and `en_US-<name>-medium.onnx.json` were confirmed via the GitHub Releases API; URLs return HTTP 200). Descriptions are neutral and call out likeness-rights concerns where relevant. Marked personal-testing-only.
+
+### Not added
+- **Donald Trump / George Carlin / Homer from `BibEBobberson/Piper`.** That user/repo could not be located on first pass (the URL was tested as a HuggingFace dataset; the real source is a HuggingFace model repo at `BibEBobberson/Piper`). Resolution and archive-support work landed in 0.4.34-alpha.
+- **Archive-style download support (.zip / .tar.gz / .tgz).** No working archive-backed voices were wired up yet, so archive support was deferred until a real upstream archive could be verified. Shipped in 0.4.34-alpha.
+
 ## [0.4.32-alpha] - 2026-06-17
 
 ### Fixed

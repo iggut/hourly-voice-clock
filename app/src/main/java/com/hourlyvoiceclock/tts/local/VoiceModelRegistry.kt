@@ -11,7 +11,17 @@ data class VoiceModel(
     val onnxFileName: String,
     val onnxJsonFileName: String,
     val sampleRate: Int = 22050,
-    val category: VoiceCategory = VoiceCategory.STANDARD
+    val category: VoiceCategory = VoiceCategory.STANDARD,
+    /**
+     * Optional archive (.zip, .tar.gz, .tgz) URL that, when set, takes
+     * precedence over the direct `onnxDownloadUrl` / `onnxJsonDownloadUrl`
+     * pair. The downloader streams the archive to a temp file, extracts
+     * the first `.onnx` model plus its matching `.onnx.json` (or
+     * `config.json`), writes them under the canonical names
+     * `onnxFileName` / `onnxJsonFileName`, then continues the usual
+     * `tokens.txt` + validation pipeline.
+     */
+    val archiveDownloadUrl: String? = null
 )
 
 enum class VoiceCategory {
@@ -358,6 +368,126 @@ object VoiceModelRegistry {
             onnxJsonFileName = "en_US-libritts-high.onnx.json",
             sampleRate = 22050,
             category = VoiceCategory.STANDARD
+        ),
+
+        // ----------------------------------------------------------------
+        // simoniz0r/piper-voice-models (GitHub releases)
+        //
+        // Sourced from https://github.com/simoniz0r/piper-voice-models/releases.
+        // Each release ships two assets: `en_US-<name>-medium.onnx` and the
+        // matching `en_US-<name>-medium.onnx.json`. Asset names were
+        // verified against the GitHub Releases API; URLs were confirmed
+        // to return HTTP 200.
+        //
+        // Character-likeness rights are unclear for several of these
+        // voices (Eminem, Bobby, Patrick); descriptions stay neutral and
+        // mark them as personal-testing-only.
+        // ----------------------------------------------------------------
+
+        VoiceModel(
+            id = "simoniz0r_bobby_medium",
+            displayName = "Bobby (simoniz0r)",
+            description = "American English medium voice (community). Source: github.com/simoniz0r/piper-voice-models. Repository does not clearly establish source-media rights; personal-testing only.",
+            language = "en-US",
+            sizeBytes = 63_516_050,
+            onnxDownloadUrl = "https://github.com/simoniz0r/piper-voice-models/releases/download/bobby/en_US-bobby-medium.onnx",
+            onnxJsonDownloadUrl = "https://github.com/simoniz0r/piper-voice-models/releases/download/bobby/en_US-bobby-medium.onnx.json",
+            onnxFileName = "en_US-bobby-medium.onnx",
+            onnxJsonFileName = "en_US-bobby-medium.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "simoniz0r_carl_medium",
+            displayName = "Carl (simoniz0r)",
+            description = "American English medium voice (community). Source: github.com/simoniz0r/piper-voice-models. Repository license unclear; personal-testing only.",
+            language = "en-US",
+            sizeBytes = 63_516_050,
+            onnxDownloadUrl = "https://github.com/simoniz0r/piper-voice-models/releases/download/carl/en_US-carl-medium.onnx",
+            onnxJsonDownloadUrl = "https://github.com/simoniz0r/piper-voice-models/releases/download/carl/en_US-carl-medium.onnx.json",
+            onnxFileName = "en_US-carl-medium.onnx",
+            onnxJsonFileName = "en_US-carl-medium.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "simoniz0r_eminem_medium",
+            displayName = "Eminem (simoniz0r)",
+            description = "American English medium voice (community). Source: github.com/simoniz0r/piper-voice-models. Repository does not clearly establish source-media rights; strong performer-likeness concerns. Personal-testing only.",
+            language = "en-US",
+            sizeBytes = 63_516_050,
+            onnxDownloadUrl = "https://github.com/simoniz0r/piper-voice-models/releases/download/eminem/en_US-eminem-medium.onnx",
+            onnxJsonDownloadUrl = "https://github.com/simoniz0r/piper-voice-models/releases/download/eminem/en_US-eminem-medium.onnx.json",
+            onnxFileName = "en_US-eminem-medium.onnx",
+            onnxJsonFileName = "en_US-eminem-medium.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "simoniz0r_patrick_medium",
+            displayName = "Patrick (simoniz0r)",
+            description = "American English medium voice (community). Source: github.com/simoniz0r/piper-voice-models. Repository does not clearly establish source-media rights; personal-testing only.",
+            language = "en-US",
+            sizeBytes = 63_516_050,
+            onnxDownloadUrl = "https://github.com/simoniz0r/piper-voice-models/releases/download/patrick/en_US-patrick-medium.onnx",
+            onnxJsonDownloadUrl = "https://github.com/simoniz0r/piper-voice-models/releases/download/patrick/en_US-patrick-medium.onnx.json",
+            onnxFileName = "en_US-patrick-medium.onnx",
+            onnxJsonFileName = "en_US-patrick-medium.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+
+        // ----------------------------------------------------------------
+        // BibEBobberson/Piper (HuggingFace model repo)
+        //
+        // Sourced from https://huggingface.co/BibEBobberson/Piper.
+        // The repo ships `Donald Trump.tar.gz`, `George-Carlin.tar.gz`,
+        // and `Homer.zip` at the top level. Each tar.gz contains a
+        // Piper `en_US-<name>-high.onnx` + `en_US-<name>-high.onnx.json`
+        // pair (verified locally — the .onnx is a valid PyTorch-exported
+        // ONNX protobuf and the .onnx.json has a populated
+        // phoneme_id_map + espeak voice "en-us").
+        //
+        // Homer.zip is a Coqui/TTS PyTorch checkpoint (`.ckpt` + `.pth`)
+        // and reference audio, NOT a Piper ONNX voice. It cannot be
+        // loaded by Sherpa-ONNX, so it is intentionally omitted. If a
+        // Piper-format Homer is later added upstream, it'll ship then.
+        //
+        // Trump/Carlin ship as compressed archives; the downloader
+        // streams the archive to a temp file and extracts the inner
+        // .onnx + .onnx.json.
+        //
+        // Likeness rights are obvious for both — descriptions stay
+        // neutral and the entries are marked personal-testing-only.
+        // ----------------------------------------------------------------
+
+        VoiceModel(
+            id = "bibebobberson_trump_high",
+            displayName = "Trump (BibEBobberson)",
+            description = "American English high voice (community). Source: huggingface.co/BibEBobberson/Piper. Shipped as a .tar.gz archive; downloader extracts the .onnx + .onnx.json. Strong performer-likeness concerns. Personal-testing only.",
+            language = "en-US",
+            sizeBytes = 109_000_000,
+            onnxDownloadUrl = "https://huggingface.co/BibEBobberson/Piper/resolve/main/Donald%20Trump.tar.gz",
+            onnxJsonDownloadUrl = "",
+            onnxFileName = "en_US-trump-high.onnx",
+            onnxJsonFileName = "en_US-trump-high.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER,
+            archiveDownloadUrl = "https://huggingface.co/BibEBobberson/Piper/resolve/main/Donald%20Trump.tar.gz"
+        ),
+        VoiceModel(
+            id = "bibebobberson_carlin_high",
+            displayName = "George Carlin (BibEBobberson)",
+            description = "American English high voice (community). Source: huggingface.co/BibEBobberson/Piper. Shipped as a .tar.gz archive; downloader extracts the .onnx + .onnx.json. Strong performer-likeness concerns. Personal-testing only.",
+            language = "en-US",
+            sizeBytes = 109_000_000,
+            onnxDownloadUrl = "https://huggingface.co/BibEBobberson/Piper/resolve/main/George-Carlin.tar.gz",
+            onnxJsonDownloadUrl = "",
+            onnxFileName = "en_US-carlin-high.onnx",
+            onnxJsonFileName = "en_US-carlin-high.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER,
+            archiveDownloadUrl = "https://huggingface.co/BibEBobberson/Piper/resolve/main/George-Carlin.tar.gz"
         )
     )
 

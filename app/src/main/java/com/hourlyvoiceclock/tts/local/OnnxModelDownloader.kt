@@ -12,10 +12,14 @@ import okio.BufferedSource
 import okio.buffer
 import okio.source
 import org.json.JSONObject
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
+import java.util.zip.GZIPInputStream
+import java.util.zip.ZipInputStream
 import kotlin.math.max
 
 /**
@@ -76,23 +80,41 @@ class OnnxModelDownloader(private val context: Context) {
         }
 
         try {
-            // .onnx -> 0.0 .. 0.85
-            val onnxResult = downloadOne(model.onnxDownloadUrl, onnxFile) { fraction ->
-                onProgress(fraction * 0.85f)
-            }
-            if (onnxResult.isFailure) {
-                onnxFile.delete()
-                return@withContext Result.failure(onnxResult.exceptionOrNull()!!)
-            }
+            if (model.archiveDownloadUrl != null) {
+                // Archive-backed voice (BibEBobberson-style .zip / .tar.gz /
+                // .tgz). Stream the whole archive to a temp file, then
+                // extract the first .onnx + matching .onnx.json into the
+                // canonical filenames.
+                val archiveResult = downloadArchiveAndExtract(
+                    model = model,
+                    modelDir = modelDir,
+                    onnxFile = onnxFile,
+                    jsonFile = jsonFile,
+                    onProgress = onProgress
+                )
+                if (archiveResult.isFailure) {
+                    return@withContext Result.failure(archiveResult.exceptionOrNull()!!)
+                }
+            } else {
+                // Direct-pair voice (default path). Two HTTP GETs.
+                // .onnx -> 0.0 .. 0.85
+                val onnxResult = downloadOne(model.onnxDownloadUrl, onnxFile) { fraction ->
+                    onProgress(fraction * 0.85f)
+                }
+                if (onnxResult.isFailure) {
+                    onnxFile.delete()
+                    return@withContext Result.failure(onnxResult.exceptionOrNull()!!)
+                }
 
-            // .onnx.json -> 0.85 .. 0.98
-            val jsonResult = downloadOne(model.onnxJsonDownloadUrl, jsonFile) { fraction ->
-                onProgress(0.85f + fraction * 0.13f)
-            }
-            if (jsonResult.isFailure) {
-                onnxFile.delete()
-                jsonFile.delete()
-                return@withContext Result.failure(jsonResult.exceptionOrNull()!!)
+                // .onnx.json -> 0.85 .. 0.98
+                val jsonResult = downloadOne(model.onnxJsonDownloadUrl, jsonFile) { fraction ->
+                    onProgress(0.85f + fraction * 0.13f)
+                }
+                if (jsonResult.isFailure) {
+                    onnxFile.delete()
+                    jsonFile.delete()
+                    return@withContext Result.failure(jsonResult.exceptionOrNull()!!)
+                }
             }
 
             // Generate tokens.txt from the phoneme id map in the JSON.
@@ -366,6 +388,321 @@ class OnnxModelDownloader(private val context: Context) {
         val read = file.inputStream().use { it.read(buffer) }
         if (read <= 0) return ""
         return buffer.copyOf(read).toString(Charsets.UTF_8)
+    }
+
+    /**
+     * Download a voice archive (.zip, .tar.gz, or .tgz) and extract the
+     * first `.onnx` model plus its matching `.onnx.json` (or fallback
+     * `config.json`) into [onnxFile] / [jsonFile]. The rest of the
+     * pipeline (`tokens.txt`, `validateModelFiles`, marker write)
+     * continues unchanged because the canonical filenames are now
+     * populated.
+     *
+     * Archive layout expectations:
+     *  - one file whose path ends in `.onnx`
+     *  - one file whose path ends in `.onnx.json`, or a sibling
+     *    `config.json` (Coqui/Piper convention used by some authors)
+     *
+     * On any failure the partially-written [onnxFile] / [jsonFile] are
+     * deleted so the next attempt starts from a clean model directory.
+     */
+    private suspend fun downloadArchiveAndExtract(
+        model: VoiceModel,
+        modelDir: File,
+        onnxFile: File,
+        jsonFile: File,
+        onProgress: (Float) -> Unit
+    ): Result<Unit> {
+        val archiveUrl = model.archiveDownloadUrl ?: return Result.failure(
+            DownloadException("archiveDownloadUrl is null for ${model.id}")
+        )
+
+        val ext = archiveUrl.substringAfterLast('?', "")
+            .substringAfterLast('/').lowercase()
+            .let { filename ->
+                when {
+                    filename.endsWith(".tar.gz") -> "tar.gz"
+                    filename.endsWith(".tgz") -> "tgz"
+                    filename.endsWith(".zip") -> "zip"
+                    else -> "unknown"
+                }
+            }
+        if (ext == "unknown") {
+            return Result.failure(
+                DownloadException(
+                    "Archive type not recognised for ${model.id} (need .zip, .tar.gz, or .tgz): $archiveUrl"
+                )
+            )
+        }
+
+        // Stream the whole archive to a temp file. We can't pipe straight
+        // into ZipInputStream / GZIPInputStream because we need to know the
+        // archive's total length to drive the progress callback, and we
+        // need seekable random access to skip tar headers efficiently.
+        val tempArchive = File.createTempFile("voice-${model.id}-", ".$ext", modelDir)
+        val outcome: Result<Unit> = try {
+            // 0.0 .. 0.85 for the raw download, 0.85 .. 0.98 for the extract.
+            val downloadResult = downloadOne(archiveUrl, tempArchive) { fraction ->
+                onProgress(fraction * 0.85f)
+            }
+            if (downloadResult.isFailure) {
+                downloadResult
+            } else {
+                onProgress(0.86f)
+                val extractResult = extractArchive(tempArchive, onnxFile, jsonFile)
+                if (extractResult.isFailure) {
+                    onnxFile.delete()
+                    jsonFile.delete()
+                } else {
+                    Log.d(
+                        TAG,
+                        "Extracted ${model.id} from $ext archive " +
+                            "(onnx=${onnxFile.length()}, json=${jsonFile.length()})"
+                    )
+                }
+                extractResult
+            }
+        } finally {
+            tempArchive.delete()
+        }
+        return outcome
+    }
+
+    /**
+     * Extract a voice archive (.zip, .tar.gz, or .tgz) on disk to
+     * [onnxOut] / [jsonOut]. Public seam used by the [downloadArchiveAndExtract]
+     * pipeline and by tests that build synthetic archives.
+     *
+     * Archive layout expectations:
+     *  - one file whose path ends in `.onnx`
+     *  - one file whose path ends in `.onnx.json`, or a sibling
+     *    `config.json` (Coqui/Piper convention used by some authors)
+     *
+     * On failure the partially-written [onnxOut] / [jsonOut] are
+     * deleted so the caller can start from a clean directory.
+     */
+    internal fun extractArchive(
+        archive: File,
+        onnxOut: File,
+        jsonOut: File
+    ): Result<Unit> {
+        val name = archive.name.lowercase()
+        return try {
+            when {
+                name.endsWith(".zip") -> extractFromZip(archive, onnxOut, jsonOut)
+                name.endsWith(".tar.gz") || name.endsWith(".tgz") ->
+                    extractFromTarGz(archive, onnxOut, jsonOut)
+                else -> Result.failure(
+                    DownloadException("Archive type not recognised: ${archive.name}")
+                )
+            }
+        } catch (e: Exception) {
+            Result.failure(
+                DownloadException(
+                    "Failed to extract ${archive.name}: ${e.message ?: e.javaClass.simpleName}",
+                    e
+                )
+            )
+        }
+    }
+
+    /**
+     * Walk a .zip archive sequentially, writing the first `.onnx` entry
+     * to [onnxOut] and the first `.onnx.json` (or `config.json`) entry
+     * to [jsonOut]. Fails if either is missing; partial outputs are
+     * cleaned up so the caller can start from a clean directory.
+     */
+    private fun extractFromZip(
+        archive: File,
+        onnxOut: File,
+        jsonOut: File
+    ): Result<Unit> {
+        var foundOnnx = false
+        var foundJson = false
+        try {
+            archive.inputStream().use { fis ->
+                ZipInputStream(fis).use { zis ->
+                    var entry = zis.nextEntry
+                    while (entry != null) {
+                        val name = entry.name.substringAfterLast('/')
+                        when {
+                            !foundOnnx && name.endsWith(".onnx") && !entry.isDirectory -> {
+                                onnxOut.outputStream().use { out -> zis.copyTo(out) }
+                                foundOnnx = true
+                            }
+                            !foundJson && !entry.isDirectory && (
+                                name.endsWith(".onnx.json") || name == "config.json"
+                            ) -> {
+                                jsonOut.outputStream().use { out -> zis.copyTo(out) }
+                                foundJson = true
+                            }
+                        }
+                        if (foundOnnx && foundJson) break
+                        entry = zis.nextEntry
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            onnxOut.delete()
+            jsonOut.delete()
+            throw e
+        }
+        return when {
+            !foundOnnx -> {
+                onnxOut.delete()
+                jsonOut.delete()
+                Result.failure(DownloadException("Archive did not contain a .onnx file"))
+            }
+            !foundJson -> {
+                onnxOut.delete()
+                jsonOut.delete()
+                Result.failure(DownloadException("Archive did not contain a .onnx.json or config.json"))
+            }
+            else -> Result.success(Unit)
+        }
+    }
+
+    /**
+     * Walk a .tar (or .tar.gz after GZIP decompression) archive, writing
+     * the first `.onnx` entry to [onnxOut] and the first `.onnx.json`
+     * (or `config.json`) entry to [jsonOut]. Fails if either is missing
+     * or the tar header is malformed.
+     *
+     * Tar entries use 512-byte headers with named fields at fixed
+     * offsets (POSIX.1-1988 / `ustar`). This implementation only reads
+     * the subset we need: name, size, and end-of-archive (two
+     * consecutive 512-byte zero blocks).
+     */
+    private fun extractFromTarGz(
+        archive: File,
+        onnxOut: File,
+        jsonOut: File
+    ): Result<Unit> {
+        var foundOnnx = false
+        var foundJson = false
+        try {
+            archive.inputStream().use { fis ->
+                GZIPInputStream(fis).use { gz ->
+                    val tar = BufferedInputStream(gz)
+                    val header = ByteArray(512)
+                    while (true) {
+                        val read = readFully(tar, header, 0, 512)
+                        if (read == 0) break
+                        if (read < 512) {
+                            return Result.failure(
+                                DownloadException("Truncated tar header (read $read bytes)")
+                            )
+                        }
+                        // End-of-archive: two consecutive zero blocks. We only
+                        // need to check the first.
+                        if (header.isAllZeros()) break
+
+                        val name = readTarString(header, 0, 100)
+                        val sizeStr = readTarString(header, 124, 12).trim()
+                        // Tar sizes are octal (POSIX ustar). Parse base 8.
+                        val size = sizeStr.toLongOrNull(8) ?: return Result.failure(
+                            DownloadException("Bad tar size '$sizeStr' for entry '$name'")
+                        )
+                        // Round up to 512-byte boundary.
+                        val blocks = ((size + 511) / 512).toInt()
+                        val dataBytes = blocks * 512
+
+                        val baseName = name.substringAfterLast('/')
+                        val isOnnx = !foundOnnx && baseName.endsWith(".onnx")
+                        val isJson = !foundJson && (
+                            baseName.endsWith(".onnx.json") || baseName == "config.json"
+                        )
+
+                        if (isOnnx || isJson) {
+                            val out = if (isOnnx) onnxOut else jsonOut
+                            if (isOnnx) foundOnnx = true else foundJson = true
+                            out.outputStream().use { sink ->
+                                tar.copyToLimited(sink, size)
+                            }
+                            // Skip any padding that rounded the entry
+                            // up to a 512-byte boundary. Without this
+                            // the next header read lands inside the
+                            // padding zeros.
+                            val pad = dataBytes - size
+                            if (pad > 0) tar.skipNBytesCompat(pad)
+                        } else {
+                            tar.skipNBytesCompat(dataBytes.toLong())
+                        }
+
+                        if (foundOnnx && foundJson) break
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            onnxOut.delete()
+            jsonOut.delete()
+            throw e
+        }
+        return when {
+            !foundOnnx -> {
+                onnxOut.delete()
+                jsonOut.delete()
+                Result.failure(DownloadException("Archive did not contain a .onnx file"))
+            }
+            !foundJson -> {
+                onnxOut.delete()
+                jsonOut.delete()
+                Result.failure(DownloadException("Archive did not contain a .onnx.json or config.json"))
+            }
+            else -> Result.success(Unit)
+        }
+    }
+
+    /** Read exactly [len] bytes from [src] into [buf] starting at [off]. */
+    private fun readFully(src: InputStream, buf: ByteArray, off: Int, len: Int): Int {
+        var total = 0
+        while (total < len) {
+            val n = src.read(buf, off + total, len - total)
+            if (n < 0) return if (total == 0) 0 else total
+            total += n
+        }
+        return total
+    }
+
+    /** Copy exactly [count] bytes from this stream to [out]. */
+    private fun InputStream.copyToLimited(out: java.io.OutputStream, count: Long) {
+        val buf = ByteArray(8192)
+        var remaining = count
+        while (remaining > 0) {
+            val toRead = if (remaining < buf.size) remaining.toInt() else buf.size
+            val read = this.read(buf, 0, toRead)
+            if (read < 0) throw IOException("Unexpected EOF in tar entry (wanted $count bytes)")
+            out.write(buf, 0, read)
+            remaining -= read
+        }
+    }
+
+    /** Skip [n] bytes. Works on InputStream (skipNBytes is JDK 12+). */
+    private fun InputStream.skipNBytesCompat(n: Long) {
+        var remaining = n
+        val buf = ByteArray(8192)
+        while (remaining > 0) {
+            val toRead = if (remaining < buf.size) remaining.toInt() else buf.size
+            val read = this.read(buf, 0, toRead)
+            if (read < 0) throw IOException("Unexpected EOF in tar skip (wanted $n bytes)")
+            remaining -= read
+        }
+    }
+
+    /**
+     * Decode a NUL-terminated ASCII tar string field. Tar string fields
+     * are right-padded with NULs and never contain UTF-8.
+     */
+    private fun readTarString(buf: ByteArray, offset: Int, length: Int): String {
+        var end = offset
+        val limit = offset + length
+        while (end < limit && buf[end] != 0.toByte()) end++
+        return String(buf, offset, end - offset, Charsets.US_ASCII)
+    }
+
+    private fun ByteArray.isAllZeros(): Boolean {
+        for (b in this) if (b != 0.toByte()) return false
+        return true
     }
 
     companion object {
