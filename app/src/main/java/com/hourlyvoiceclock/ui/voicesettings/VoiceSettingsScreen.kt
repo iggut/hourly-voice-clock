@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.tts.VoiceInfo
+import com.hourlyvoiceclock.tts.local.VoiceModel
 import com.hourlyvoiceclock.ui.theme.GlassBgLight
 import com.hourlyvoiceclock.ui.theme.GlassBgDark
 import com.hourlyvoiceclock.ui.theme.GlassBorderLight
@@ -98,6 +99,8 @@ fun VoiceSettingsScreen(
     val engines by viewModel.engines.collectAsState()
     val selectedEnginePackage by viewModel.selectedEnginePackage.collectAsState()
     val isEspeakNgSelected by viewModel.isEspeakNgSelected.collectAsState()
+    val downloadedLocalModels by viewModel.downloadedLocalModels.collectAsState()
+    val selectedLocalModelId by viewModel.selectedLocalModelId.collectAsState()
     val context = LocalContext.current
 
     val isDark = isSystemInDarkTheme()
@@ -107,6 +110,14 @@ fun VoiceSettingsScreen(
             if (isDark) DarkBgEnd else LightBgEnd
         )
     )
+
+    // Refresh the list of on-device voices whenever the screen
+    // becomes active. The user can navigate to the Local Voices
+    // screen, download or delete a model, then return here — we
+    // need the new list to be visible on the way back.
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.refreshDownloadedLocalModels()
+    }
 
     Box(
         modifier = Modifier
@@ -414,6 +425,60 @@ fun VoiceSettingsScreen(
                                     isSelected = selectedPresetId == preset.id,
                                     onSelectPreset = { viewModel.selectVoicePreset(preset) },
                                     onPreviewPreset = { viewModel.selectAndPreviewPreset(preset) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Local AI voices — downloaded Piper / Sherpa-ONNX models.
+                // These appear as first-class voice options so the user can
+                // pick one as the active hourly-announcement voice. The
+                // announcer routes through LocalTtsEngine when a local
+                // model is selected, bypassing the system TTS path.
+                if (downloadedLocalModels.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isDark) GlassBgDark else GlassBgLight
+                        ),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (isDark) GlassBorderDark else GlassBorderLight
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(vertical = 10.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.OfflineBolt,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Local AI Voices",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+                            downloadedLocalModels.forEach { model ->
+                                LocalVoiceItem(
+                                    model = model,
+                                    isSelected = selectedLocalModelId == model.id,
+                                    onSelect = { viewModel.selectLocalModel(model) },
+                                    onPreview = { viewModel.previewLocalModel(model) }
+                                )
+                            }
+                            // A row to clear the local voice selection and
+                            // fall back to whichever system voice is set.
+                            if (selectedLocalModelId != null) {
+                                LocalVoiceClearRow(
+                                    onClear = { viewModel.clearLocalModelSelection() }
                                 )
                             }
                         }
@@ -738,4 +803,125 @@ private fun Icon(imageVector: androidx.compose.ui.graphics.vector.ImageVector, c
         tint = tint,
         modifier = Modifier.size(size)
     )
+}
+
+/**
+ * Row in the voice list representing a downloaded on-device Piper
+ * voice. Selecting it routes the hourly announcer through
+ * [com.hourlyvoiceclock.tts.local.LocalTtsEngine] for this model.
+ */
+@Composable
+fun LocalVoiceItem(
+    model: VoiceModel,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    onPreview: () -> Unit
+) {
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f)
+    } else {
+        Color.Transparent
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelect)
+            .background(backgroundColor)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = isSelected,
+            onClick = null
+        )
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = model.displayName,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                ),
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // "On-device" badge so the user can tell this voice
+                // does not hit a network at announcement time.
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Filled.OfflineBolt,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "On-device",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                }
+                Text(
+                    text = model.description,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        IconButton(onClick = onPreview) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = "Preview ${model.displayName}",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+/**
+ * "Use system voice" row that appears at the bottom of the Local AI
+ * Voices list when a local model is the current selection. Clears
+ * [com.hourlyvoiceclock.data.AppSettings.selectedLocalModelId] and
+ * hands control back to the system TTS path.
+ */
+@Composable
+private fun LocalVoiceClearRow(onClear: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClear)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = false, onClick = null)
+        Spacer(modifier = Modifier.width(14.dp))
+        Column {
+            Text(
+                text = "Use system voice",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Fall back to the selected Android TTS engine and voice",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }

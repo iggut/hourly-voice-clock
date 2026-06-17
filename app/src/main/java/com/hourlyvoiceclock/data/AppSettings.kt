@@ -37,6 +37,17 @@ data class AppSettings(
     val selectedVoiceName: String? = null,
     val selectedLocale: String? = null,
     val selectedVoicePresetId: String? = null,
+    /**
+     * When non-null, the user has picked a downloaded on-device voice
+     * (a Sherpa-ONNX / Piper model) as the active voice for the hourly
+     * announcement. The hourly announcer routes through the
+     * [com.hourlyvoiceclock.tts.local.LocalTtsEngine] with this model
+     * id instead of the system TTS engine. `null` means "use the
+     * normal system TTS path" — i.e. honour
+     * [selectedTtsEnginePackage], [selectedVoiceName], and
+     * [selectedLocale].
+     */
+    val selectedLocalModelId: String? = null,
     val pitch: Float = 1.0f,
     val speechRate: Float = 1.0f,
     val timeFormat: TimeFormat = TimeFormat.HOUR_12,

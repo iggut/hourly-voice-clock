@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.25-alpha] - 2026-06-16
+
+### Fixed
+- **Hourly announcements no longer cut off at the start.** The first syllable of an announcement was being clipped because the TTS engine was dispatched the instant audio focus was granted — before the audio HAL had finished rerouting to the requested stream. `TimeAnnouncer` now waits 120 ms after focus is acquired before calling `speakAsync`, giving the routing layer time to land on the speech stream.
+- **Friendly style greeting no longer collapses to "Hello" for late-night hours.** The `FRIENDLY` phrase style used to say "Hello" between 22:00 and 04:59, and only used a named greeting between 05:00 and 21:59. The bands are now widened so every hour maps to a named greeting: 05–11 morning, 12–16 afternoon, 17–21 evening, 22–04 night. A user at 03:00 now hears "Good night. It is 3 AM." instead of "Hello. It is 3 AM."
+- **Downloaded on-device voices now appear as selectable voice options.** Previously, downloading a Piper voice in Local Voices only let you preview it — picking one for the hourly announcement required going through the system TTS path, which could not load Piper models. Downloaded voices are now listed in the main Voice Settings screen as a "Local AI Voices" section with an "On-device" badge; selecting one routes the hourly announcement through `LocalTtsEngine` with the chosen model. The Home screen subtitle updates to "Local: <Voice Name>" when a local voice is active. A "Use system voice" row is offered in the same section to fall back to the system TTS path.
+
+### Internal
+- New `TtsEngineRouter` selects between the primary `AndroidTtsEngine` and the on-device `LocalTtsEngine` based on `AppSettings.selectedLocalModelId`. The local engine is created lazily on first use so the Sherpa-ONNX native init cost is not paid on cold start.
+- New `LocalVoicesStore` is a process-wide cache of downloaded on-device voices, shared between the dedicated Local Voices screen (which downloads/deletes) and the main Voice Settings screen (which lists and selects). The Local Voices screen publishes updates; the main screen reads them.
+- Home screen `Scaffold` no longer renders a `CenterAlignedTopAppBar` with an empty title. The empty title was reserving ~64dp of dead space at the top of the main column.
+- R8/ProGuard disabled in `release` build (`isMinifyEnabled = false`) because the Sherpa-ONNX AAR's `TtsKt.getOfflineTtsConfig` factory uses synthetic constructors that R8's full-mode optimization strips. ProGuard rules for the Sherpa-ONNX JNI bindings are kept in `proguard-rules.pro` so R8 can be re-enabled once the AAR ships `consumer-rules.pro`.
+- CI workflow downloads the Sherpa-ONNX AAR with `curl -fsSL` and creates `app/libs/` first, so a fresh checkout no longer fails on a missing AAR directory.
+
 ## [0.4.12-alpha] - 2026-06-16
 
 ### Fixed

@@ -6,9 +6,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.tts.local.DownloadException
 import com.hourlyvoiceclock.tts.local.LocalTtsEngine
-import com.hourlyvoiceclock.tts.local.OnnxModelDownloader
 import com.hourlyvoiceclock.tts.local.VoiceModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +19,7 @@ import kotlinx.coroutines.withContext
 
 class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val deps = (application as DependenciesProvider).dependencies
     private val localEngine = LocalTtsEngine(application)
     private val downloader = localEngine.getModelDownloader()
 
@@ -50,6 +51,10 @@ class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(a
         viewModelScope.launch {
             val models = withContext(Dispatchers.IO) { downloader.getDownloadedModels() }
             _downloadedModels.value = models
+            // Publish to the app-wide store so the main voice settings
+            // screen sees the same list (it cannot share this VM
+            // because the two screens have different ViewModelStoreOwners).
+            deps.localVoicesStore.setDownloadedModels(models)
         }
     }
 
@@ -116,13 +121,7 @@ class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(a
                     return@launch
                 }
                 _isSpeaking.value = true
-                localEngine.speakAsync(
-                    "It is now ${
-                        java.time.LocalTime.now().format(
-                            java.time.format.DateTimeFormatter.ofPattern("h:mm a")
-                        )
-                    }"
-                ) { success ->
+                localEngine.speakAsync("Hello from Hourly Voice Clock") { success ->
                     _isSpeaking.value = false
                     Log.d(TAG, "Preview finished: success=$success")
                     if (!success) {

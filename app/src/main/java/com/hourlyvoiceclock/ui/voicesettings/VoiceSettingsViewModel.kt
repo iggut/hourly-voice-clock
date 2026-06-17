@@ -6,11 +6,16 @@ import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.tts.VoiceInfo
 import com.hourlyvoiceclock.tts.TtsEngineInfo
+import com.hourlyvoiceclock.tts.local.LocalTtsEngine
+import com.hourlyvoiceclock.tts.local.VoiceModel
+import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class VoiceListFilter {
     ALL,
@@ -104,6 +109,34 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     private val _selectedEnginePackage = MutableStateFlow<String?>(null)
     val selectedEnginePackage: StateFlow<String?> = _selectedEnginePackage.asStateFlow()
 
+    /**
+     * On-device Piper voices the user has downloaded. Surfaced in the
+     * "Voices" list so the user can pick a local voice as the active
+     * hourly-announcement voice (which then routes through
+     * [LocalTtsEngine] in the announcer).
+     *
+     * Backed by the app-wide [com.hourlyvoiceclock.tts.local.LocalVoicesStore]
+     * so the local-voices screen can publish updates (after a
+     * download or delete) and the main voice screen sees them
+     * without having to re-scan the disk.
+     */
+    val downloadedLocalModels: StateFlow<List<VoiceModel>> =
+        deps.localVoicesStore.downloadedModels
+
+    /**
+     * Currently-selected downloaded on-device voice id, or `null` if
+     * the user is using the system TTS path.
+     */
+    private val _selectedLocalModelId = MutableStateFlow<String?>(null)
+    val selectedLocalModelId: StateFlow<String?> = _selectedLocalModelId.asStateFlow()
+
+    /**
+     * Lightweight probe so the voice settings screen can read which
+     * local models exist on disk without forcing the (heavy) full
+     * Sherpa-ONNX native init.
+     */
+    private val localTtsProbe = LocalTtsEngine(getApplication<Application>())
+
     init {
         viewModelScope.launch {
             deps.settingsRepository.runMigrations()
@@ -125,6 +158,90 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
             reconcileStaleVoiceSelection(settings.selectedVoiceName, settings.selectedLocale)
             updateFilteredVoices()
+
+            // Refresh the list of on-device voices the user has
+            // downloaded, and surface the user's selected local model
+            // (if any) from settings.
+            _selectedLocalModelId.value = settings.selectedLocalModelId
+            refreshDownloadedLocalModels()
+        }
+    }
+
+    /**
+     * Re-scan the on-device voice directory and publish the result
+     * to the app-wide [com.hourlyvoiceclock.tts.local.LocalVoicesStore]
+     * so every observer (the voice-settings screen, the local-voices
+     * screen) sees the same list.
+     */
+    fun refreshDownloadedLocalModels() {
+        viewModelScope.launch {
+            val models = withContext(Dispatchers.IO) {
+                localTtsProbe.getInstalledModels()
+            }
+            deps.localVoicesStore.setDownloadedModels(models)
+        }
+    }
+
+    /**
+     * Select a downloaded on-device voice as the active hourly
+     * announcement voice. Persists the choice and clears any
+     * previously selected system-voice fields so the new selection
+     * is unambiguous.
+     */
+    fun selectLocalModel(model: VoiceModel) {
+        viewModelScope.launch {
+            deps.settingsRepository.update {
+                it.copy(
+                    selectedLocalModelId = model.id,
+                    selectedVoiceName = null,
+                    selectedLocale = null,
+                    selectedVoicePresetId = null
+                )
+            }
+            _selectedVoiceName.value = null
+            _selectedPresetId.value = null
+            _selectedLocalModelId.value = model.id
+        }
+    }
+
+    /**
+     * Clear the on-device voice selection and fall back to the system
+     * TTS path. The next announcement will use the engine and voice
+     * stored in [AppSettings.selectedTtsEnginePackage] /
+     * [AppSettings.selectedVoiceName].
+     */
+    fun clearLocalModelSelection() {
+        viewModelScope.launch {
+            deps.settingsRepository.setSelectedLocalModelId(null)
+            _selectedLocalModelId.value = null
+            // The voice name in the system TTS engine is still the
+            // last-known one; reload it from settings so the radio
+            // button reflects the actual active selection.
+            val s = deps.settingsRepository.settings.first()
+            _selectedVoiceName.value = s.selectedVoiceName
+            _selectedPresetId.value = s.selectedVoicePresetId
+        }
+    }
+
+    /**
+     * Preview a downloaded on-device voice by routing through the
+     * [LocalTtsEngine] probe. This is a fire-and-forget preview used
+     * by the voice list rows next to each downloaded model.
+     */
+    fun previewLocalModel(model: VoiceModel, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            val initialized = withContext(Dispatchers.IO) {
+                localTtsProbe.initialize(model.id)
+            }
+            if (!initialized) {
+                onError("Preview failed: model files are not loadable. Try deleting and re-downloading.")
+                return@launch
+            }
+            withContext(Dispatchers.IO) {
+                localTtsProbe.speakAsync("Hello from Hourly Voice Clock") { ok ->
+                    if (!ok) onError("Preview failed: TTS engine could not synthesize audio")
+                }
+            }
         }
     }
 

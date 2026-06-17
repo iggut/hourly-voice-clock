@@ -160,7 +160,7 @@ class OnnxModelDownloader(private val context: Context) {
                 entries.add(id to key)
             }
 
-            val byId = entries.sortedBy { it.first }.map { it.second }
+            val byId = entries.sortedBy { it.first }
             val maxId = entries.maxOfOrNull { it.first }
             if (maxId == null) {
                 return Result.failure(
@@ -187,7 +187,18 @@ class OnnxModelDownloader(private val context: Context) {
             }
 
             tokensFile.bufferedWriter(Charsets.UTF_8).use { out ->
-                byId.forEach { token -> out.write(token); out.newLine() }
+                byId.forEach { (id, token) ->
+                    if (token == " ") {
+                        // Sherpa's Piper token parser treats a single-column
+                        // numeric line as the space token with that id.
+                        out.write(id.toString())
+                    } else {
+                        out.write(token)
+                        out.write(' '.code)
+                        out.write(id.toString())
+                    }
+                    out.newLine()
+                }
             }
             Result.success(Unit)
         } catch (e: IOException) {

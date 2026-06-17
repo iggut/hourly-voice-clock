@@ -63,7 +63,23 @@ class AnnouncementFormatterTest {
         val dt = LocalDateTime.of(2024, 1, 15, 3, 0)
         val settings = AppSettings(timeFormat = TimeFormat.HOUR_12, phraseStyle = PhraseStyle.FRIENDLY)
         val result = AnnouncementFormatter.format(dt, settings, false)
-        assertEquals("Hello. It is 3 AM.", result)
+        assertEquals("Good night. It is 3 AM.", result)
+    }
+
+    @Test
+    fun `friendly late evening`() {
+        val dt = LocalDateTime.of(2024, 1, 15, 23, 0)
+        val settings = AppSettings(timeFormat = TimeFormat.HOUR_12, phraseStyle = PhraseStyle.FRIENDLY)
+        val result = AnnouncementFormatter.format(dt, settings, false)
+        assertEquals("Good night. It is 11 PM.", result)
+    }
+
+    @Test
+    fun `friendly early morning`() {
+        val dt = LocalDateTime.of(2024, 1, 15, 4, 30)
+        val settings = AppSettings(timeFormat = TimeFormat.HOUR_12, phraseStyle = PhraseStyle.FRIENDLY)
+        val result = AnnouncementFormatter.format(dt, settings, false)
+        assertEquals("Good night. It is 4:30 AM.", result)
     }
 
     @Test

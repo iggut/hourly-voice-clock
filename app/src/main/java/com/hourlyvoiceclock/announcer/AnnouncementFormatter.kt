@@ -57,11 +57,18 @@ object AnnouncementFormatter {
     }
 
     private fun getGreeting(hour: Int): String {
+        // Every hour of the day maps to a named greeting so the friendly
+        // style never collapses into a flat "Hello." for late-night
+        // users. The bands:
+        //   05:00-11:59  morning
+        //   12:00-16:59  afternoon
+        //   17:00-21:59  evening
+        //   22:00-04:59  night
         return when (hour) {
             in 5..11 -> "Good morning."
             in 12..16 -> "Good afternoon."
             in 17..21 -> "Good evening."
-            else -> "Hello."
+            else -> "Good night."
         }
     }
 

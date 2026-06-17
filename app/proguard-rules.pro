@@ -79,7 +79,29 @@
 # Sherpa-ONNX JNI — native code accesses these classes/fields by
 # name through JNI FindClass / GetFieldID. R8 obfuscation breaks
 # the native→Java binding and produces NoSuchFieldError crashes.
+#
+# R8 in full mode also strips Kotlin synthetic constructors that
+# the TtsKt.getOfflineTtsConfig factory invokes (e.g.
+# OfflineTtsVitsModelConfig.<init>(...,FFF,I,DefaultConstructorMarker))
+# because they look unused from the call graph. The fix is to
+# pin all member signatures the factory uses, plus a permissive
+# -keepclassmembers for every <init>.
 -keep class com.k2fsa.sherpa.onnx.** { *; }
+-keepclasseswithmembers class com.k2fsa.sherpa.onnx.** {
+    public <init>(...);
+    public synthetic <init>(...);
+}
+-keepclassmembers class com.k2fsa.sherpa.onnx.** {
+    public <init>(...);
+    public synthetic <init>(...);
+}
+-keep,includedescriptorclasses class com.k2fsa.sherpa.onnx.OfflineTts { *; }
+-keep,includedescriptorclasses class com.k2fsa.sherpa.onnx.OfflineTts$Companion { *; }
+-keep,includedescriptorclasses class com.k2fsa.sherpa.onnx.OfflineTtsConfig { *; }
+-keep,includedescriptorclasses class com.k2fsa.sherpa.onnx.OfflineTtsModelConfig { *; }
+-keep,includedescriptorclasses class com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig { *; }
+-keep,includedescriptorclasses class com.k2fsa.sherpa.onnx.GeneratedAudio { *; }
+-keep class com.k2fsa.sherpa.onnx.TtsKt { *; }
 
 # kotlinx-coroutines debug agent (only used in -coroutines-core debug
 # builds, not in release, but R8 may still warn about missing classes

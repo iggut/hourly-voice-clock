@@ -15,6 +15,8 @@ import com.hourlyvoiceclock.tts.AndroidTtsEngine
 import com.hourlyvoiceclock.tts.AndroidTtsPackageProbe
 import com.hourlyvoiceclock.tts.TtsEngine
 import com.hourlyvoiceclock.tts.TtsEngineSelector
+import com.hourlyvoiceclock.tts.local.LocalTtsEngine
+import com.hourlyvoiceclock.tts.local.LocalVoicesStore
 import kotlinx.coroutines.SupervisorJob
 
 /**
@@ -64,6 +66,16 @@ class AppDependencies(context: Context) {
 
     val chimePlayer: ChimePlayer by lazy {
         ChimePlayer(appContext)
+    }
+
+    /**
+     * Process-wide cache of downloaded on-device voices. Shared
+     * between the voice settings screen (which lists the available
+     * models) and the dedicated Local Voices screen (which downloads
+     * and deletes them).
+     */
+    val localVoicesStore: LocalVoicesStore by lazy {
+        LocalVoicesStore()
     }
 
     val timeAnnouncer: TimeAnnouncer by lazy {

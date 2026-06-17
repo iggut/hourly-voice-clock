@@ -42,8 +42,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.CircularProgressIndicator
@@ -77,6 +75,7 @@ import com.hourlyvoiceclock.data.UpdateStatus
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.TimeFormat
+import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
 import com.hourlyvoiceclock.ui.theme.GlassBgLight
 import com.hourlyvoiceclock.ui.theme.GlassBgDark
 import com.hourlyvoiceclock.ui.theme.GlassBorderLight
@@ -155,22 +154,11 @@ fun HomeScreen(
     ) {
         Scaffold(
             containerColor = Color.Transparent,
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            stringResource(R.string.app_name),
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 20.sp,
-                            letterSpacing = 0.5.sp
-                        )
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground
-                    )
-                )
-            }
+            // No topBar — the app title is intentionally not shown on
+            // the home screen, and the TopAppBar slot reserves vertical
+            // space for it. Render the main column flush with the
+            // top edge instead of leaving a 64dp gap where the title
+            // used to be.
         ) { padding ->
             Column(
                 modifier = Modifier
@@ -181,7 +169,7 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Modern Clock Card
                 Card(
@@ -441,7 +429,14 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .padding(top = 12.dp)
                 ) {
-                    val voiceSubtitle = settings.selectedVoiceName ?: "System Default voice"
+                    val voiceSubtitle = when {
+                        settings.selectedLocalModelId != null -> "Local: " +
+                            (VoiceModelRegistry.availableVoices
+                                .firstOrNull { it.id == settings.selectedLocalModelId }
+                                ?.displayName
+                                ?: settings.selectedLocalModelId)
+                        else -> settings.selectedVoiceName ?: "System Default voice"
+                    }
                     DashboardCard(
                         title = stringResource(R.string.voice_settings),
                         subtitle = voiceSubtitle,

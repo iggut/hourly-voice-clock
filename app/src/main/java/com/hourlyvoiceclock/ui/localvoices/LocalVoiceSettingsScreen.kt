@@ -243,8 +243,9 @@ private fun PreviewBanner() {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                "Preview build — download works, the \"Preview\" button works once a voice is " +
-                    "downloaded. Wiring this into the hourly announcement flow lands in 0.5.x.",
+                "Download a voice, then pick it from the Voices list back in the " +
+                    "Voice Settings screen to use it for the hourly announcement. " +
+                    "Local voices run entirely on this device and do not need internet.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

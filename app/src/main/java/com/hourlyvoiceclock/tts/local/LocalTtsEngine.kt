@@ -10,16 +10,21 @@ import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.tts.TtsEngine
 import com.hourlyvoiceclock.tts.TtsEngineInfo
 import com.hourlyvoiceclock.tts.VoiceInfo
+import com.k2fsa.sherpa.onnx.GeneratedAudio
+import com.k2fsa.sherpa.onnx.OfflineTts
+import com.k2fsa.sherpa.onnx.OfflineTtsConfig
+import com.k2fsa.sherpa.onnx.getOfflineTtsConfig
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.charset.StandardCharsets
 
 /**
- * Local TTS engine backed by Sherpa-ONNX's VITS offline TTS via the C API,
- * using Piper voice distributions downloaded into the app's filesDir.
+ * Local TTS engine backed by Sherpa-ONNX's VITS offline TTS using Piper voice
+ * distributions downloaded into the app's filesDir.
  *
- * The native Java JNI layer in the Sherpa-ONNX AAR crashes on some devices
- * (Android 16 / Samsung) due to a JNI field-ID mismatch in
- * OfflineTts.newFromAsset. We bypass it entirely by calling the stable C
- * API through a tiny custom JNI bridge (libnative-tts-bridge.so).
+ * Uses the bundled com.k2fsa.sherpa.onnx.OfflineTts API directly. The model
+ * directory must contain the .onnx, the .onnx.json (config + sample rate),
+ * and tokens.txt; the dataDir must point at the bundled espeak-ng-data.
  */
 class LocalTtsEngine(private val context: Context) : TtsEngine {
 
@@ -29,7 +34,8 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     private var isInitialized = false
     @Volatile private var isSynthesizing = false
     @Volatile private var cancelRequested = false
-    private var tts: NativeTtsBridge? = null
+    private var tts: OfflineTts? = null
+    private var sampleRate: Int = 22050
 
     override suspend fun initialize(enginePackage: String?): Boolean {
         val modelId = enginePackage ?: return false
@@ -53,10 +59,11 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         return try {
             shutdown()
             tts = buildTts(model)
+            sampleRate = tts?.sampleRate() ?: 22050
             currentModel = model
             isInitialized = true
             cancelRequested = false
-            Log.d(TAG, "Initialized with model: ${model.id}")
+            Log.d(TAG, "Initialized with model: ${model.id} (sample rate: $sampleRate)")
             true
         } catch (e: Throwable) {
             Log.e(TAG, "Failed to initialize ONNX TTS with model ${model.id}", e)
@@ -65,29 +72,167 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         }
     }
 
-    private fun buildTts(model: VoiceModel): NativeTtsBridge {
+    private fun buildTts(model: VoiceModel): OfflineTts {
         val modelDir = File(context.filesDir, "local_tts/models/${model.id}")
         val modelFile = File(modelDir, model.onnxFileName)
+        val jsonFile = File(modelDir, model.onnxJsonFileName)
         val tokensFile = File(modelDir, "tokens.txt")
 
         require(modelFile.exists()) { "Model file missing: ${modelFile.absolutePath}" }
+        require(jsonFile.exists()) { "Model JSON missing: ${jsonFile.absolutePath}" }
         require(tokensFile.exists()) { "tokens.txt missing: ${tokensFile.absolutePath}" }
+
+        downloader.generateTokensFile(jsonFile, tokensFile).getOrElse { error ->
+            throw IllegalStateException("Failed to regenerate tokens.txt for ${model.id}: ${error.message}", error)
+        }
 
         val espeakDataDir = File(context.filesDir, "local_tts/$ASSET_ESPEAK_DIR")
         if (!espeakDataDir.exists()) {
             copyAssetsToFiles(ASSET_ESPEAK_DIR, espeakDataDir)
         }
+        require(espeakDataDir.exists()) { "espeak-ng-data missing: ${espeakDataDir.absolutePath}" }
 
-        val bridge = NativeTtsBridge.create(
-            modelFile.absolutePath,
-            tokensFile.absolutePath,
-            espeakDataDir.absolutePath
+        ensurePiperOnnxMetadata(modelFile, jsonFile)
+
+        // Build the VITS config from the sanitized AAR's TtsKt.getOfflineTtsConfig
+        // factory. The factory constructs `model = "$modelDir/$modelName"`
+        // and passes that as the absolute path to ReadFile, so modelName
+        // MUST include the `.onnx` extension. dataDir is the espeak-ng-data
+        // dir; tokens.txt is auto-resolved as `$modelDir/tokens.txt` by
+        // the factory. The .onnx.json sibling is read directly by the
+        // native VITS model loader.
+        val config: OfflineTtsConfig = getOfflineTtsConfig(
+            modelDir = modelDir.absolutePath,
+            modelName = model.onnxFileName,        // includes ".onnx"
+            acousticModelName = "",      // Matcha (unused for VITS)
+            vocoder = "",                 // Matcha (unused for VITS)
+            voices = "",                  // Kokoro
+            lexicon = "",                 // no lexicon for Piper VITS
+            dataDir = espeakDataDir.absolutePath,
+            dictDir = "",                 // Coqui
+            ruleFsts = "",                // Coqui
+            ruleFars = "",                // Coqui
+            numThreads = 1,               // keep ORT single-threaded on mobile
+            isKitten = false,             // not a Kitten model
+            isSupertonic = false,         // not a Supertonic model
+            durationPredictor = "",       // Supertonic
+            textEncoder = "",             // Supertonic
+            vectorEstimator = "",         // Supertonic
+            supertonicVocoder = "",       // Supertonic
+            ttsJson = "",                 // Kitten
+            unicodeIndexer = "",          // Kitten
+            voiceStyle = "",              // voice-style
         )
-        if (bridge == null) {
-            throw IllegalStateException("Failed to create NativeTtsBridge (symbol resolution or native initialization failed)")
+
+        // Pass null for the AssetManager so the native side reads the
+        // model from the filesystem (SD card / filesDir) instead of
+        // trying to open it as an APK asset. See:
+        //   https://github.com/k2-fsa/sherpa-onnx/issues/2562
+        return OfflineTts(null, config)
+    }
+
+    private fun ensurePiperOnnxMetadata(modelFile: File, jsonFile: File) {
+        // Sherpa-ONNX v1.13.x reads VITS `sample_rate` from ONNX custom
+        // metadata, while Piper distributes it in the sibling .onnx.json.
+        // Add the standard ONNX ModelProto metadata_props entry in-place.
+        if (fileContainsAscii(modelFile, "sample_rate")) return
+
+        val json = jsonFile.readText()
+        val sampleRate = Regex(""""sample_rate"\s*:\s*(\d+)""")
+            .find(json)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?: "22050"
+        val numSpeakers = Regex(""""num_speakers"\s*:\s*(\d+)""")
+            .find(json)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?: "1"
+        val language = Regex(""""code"\s*:\s*"([^"]+)""")
+            .find(json)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?: "en"
+
+        val props = listOf(
+            "sample_rate" to sampleRate,
+            "n_speakers" to numSpeakers,
+            "language" to language,
+            "comment" to "piper",
+        ).filterNot { (key, _) -> fileContainsAscii(modelFile, key) }
+
+        if (props.isEmpty()) return
+
+        appendOnnxMetadataProps(modelFile, props)
+        Log.d(TAG, "Patched ${modelFile.name} ONNX metadata ${props.joinToString { "${it.first}=${it.second}" }}")
+    }
+
+    private fun fileContainsAscii(file: File, needle: String): Boolean {
+        val needleBytes = needle.toByteArray(StandardCharsets.UTF_8)
+        val buffer = ByteArray(64 * 1024)
+        var matched = 0
+        file.inputStream().use { input ->
+            while (true) {
+                val read = input.read(buffer)
+                if (read <= 0) return false
+                for (i in 0 until read) {
+                    matched = if (buffer[i] == needleBytes[matched]) {
+                        matched + 1
+                    } else if (buffer[i] == needleBytes[0]) {
+                        1
+                    } else {
+                        0
+                    }
+                    if (matched == needleBytes.size) return true
+                }
+            }
+        }
+    }
+
+    private fun appendOnnxMetadataProps(file: File, props: List<Pair<String, String>>) {
+        FileOutputStream(file, true).use { output ->
+            props.forEach { (key, value) ->
+                val entry = ByteArrayOutput()
+                entry.writeVarint((1 shl 3) or 2) // StringStringEntryProto.key
+                entry.writeLengthDelimited(key.toByteArray(StandardCharsets.UTF_8))
+                entry.writeVarint((2 shl 3) or 2) // StringStringEntryProto.value
+                entry.writeLengthDelimited(value.toByteArray(StandardCharsets.UTF_8))
+
+                output.writeVarint((14 shl 3) or 2) // ModelProto.metadata_props
+                output.writeVarint(entry.size)
+                output.write(entry.toByteArray())
+            }
+        }
+    }
+
+    private class ByteArrayOutput {
+        private val bytes = ArrayList<Byte>()
+        val size: Int get() = bytes.size
+
+        fun writeVarint(value: Int) {
+            var v = value
+            while (v >= 0x80) {
+                bytes.add(((v and 0x7F) or 0x80).toByte())
+                v = v ushr 7
+            }
+            bytes.add(v.toByte())
         }
 
-        return bridge
+        fun writeLengthDelimited(data: ByteArray) {
+            writeVarint(data.size)
+            data.forEach { bytes.add(it) }
+        }
+
+        fun toByteArray(): ByteArray = ByteArray(bytes.size) { i -> bytes[i] }
+    }
+
+    private fun FileOutputStream.writeVarint(value: Int) {
+        var v = value
+        while (v >= 0x80) {
+            write(((v and 0x7F) or 0x80))
+            v = v ushr 7
+        }
+        write(v)
     }
 
     private fun copyAssetsToFiles(assetPath: String, destDir: File) {
@@ -141,6 +286,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         return try {
             shutdown()
             tts = buildTts(model)
+            sampleRate = tts?.sampleRate() ?: 22050
             currentModel = model
             isInitialized = true
             cancelRequested = false
@@ -193,9 +339,11 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         Thread {
             var success = false
             try {
-                val samples = ttsInstance.generate(text, sid = 0, speed = 1.0f)
-                if (samples != null && !cancelRequested) {
-                    playSamples(samples, ttsInstance.sampleRate)
+                val audio: GeneratedAudio? = ttsInstance.generate(text, 0, 1.0f)
+                val samples = audio?.samples
+                if (samples != null && samples.isNotEmpty() && !cancelRequested) {
+                    val sr = audio.sampleRate.takeIf { it > 0 } ?: sampleRate
+                    playSamples(samples, sr)
                     success = true
                 }
                 Log.d(TAG, "Spoke with ${currentModel?.displayName}: $text")
@@ -224,9 +372,9 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             }
         }
         try {
-            tts?.destroy()
+            tts?.release()
         } catch (e: Throwable) {
-            Log.w(TAG, "Error destroying NativeTtsBridge", e)
+            Log.w(TAG, "Error releasing OfflineTts", e)
         }
         tts = null
         isInitialized = false

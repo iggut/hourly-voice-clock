@@ -9,7 +9,7 @@ plugins {
 // the default values drifting from the source of truth in this file.
 val versionMajor: Int = (project.findProperty("version.major") as String?)?.toIntOrNull() ?: 0
 val versionMinor: Int = (project.findProperty("version.minor") as String?)?.toIntOrNull() ?: 4
-val versionPatch: Int = (project.findProperty("version.patch") as String?)?.toIntOrNull() ?: 13
+val versionPatch: Int = (project.findProperty("version.patch") as String?)?.toIntOrNull() ?: 25
 val versionPre: String = (project.findProperty("version.pre") as String?) ?: "alpha"
 // versionCode is a monotonically increasing integer; compute it from
 // the components above so we never forget to bump it.
@@ -66,13 +66,15 @@ android {
 
     buildTypes {
         release {
-            // R8 in full mode: shrink, optimise, and obfuscate. The
-            // resulting APK is ~5x smaller and the obfuscation makes
-            // reverse engineering the announcement logic marginally
-            // harder. Required for Play Store as of Aug 2024 for new
-            // apps. shrinkResources drops unreferenced drawables/strings.
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // R8 is disabled because the Sherpa-ONNX AAR uses Kotlin
+            // synthetic constructors (via the TtsKt factory) that R8's
+            // full-mode optimization strips as "unused", producing
+            // NoSuchMethodError at runtime. Without R8 the APK is
+            // larger but the app is stable. Re-enable R8 once the AAR
+            // ships consumer-rules.pro that pins the factory's
+            // constructor signatures.
+            isMinifyEnabled = false
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -132,12 +134,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
     }
     packaging {
         resources {

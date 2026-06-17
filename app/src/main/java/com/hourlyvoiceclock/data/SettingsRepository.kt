@@ -35,6 +35,7 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
             selectedVoiceName = prefs[KEY_SELECTED_VOICE_NAME]?.takeIf { it.isNotBlank() },
             selectedLocale = prefs[KEY_SELECTED_LOCALE]?.takeIf { it.isNotBlank() },
             selectedVoicePresetId = prefs[KEY_SELECTED_VOICE_PRESET_ID]?.takeIf { it.isNotBlank() },
+            selectedLocalModelId = prefs[KEY_SELECTED_LOCAL_MODEL_ID]?.takeIf { it.isNotBlank() },
             pitch = prefs[KEY_PITCH] ?: 1.0f,
             speechRate = prefs[KEY_SPEECH_RATE] ?: 1.0f,
             timeFormat = safeEnumValueOf(prefs[KEY_TIME_FORMAT], TimeFormat.HOUR_12),
@@ -64,6 +65,7 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
         if (settings.selectedVoiceName != null) this[KEY_SELECTED_VOICE_NAME] = settings.selectedVoiceName else remove(KEY_SELECTED_VOICE_NAME)
         if (settings.selectedLocale != null) this[KEY_SELECTED_LOCALE] = settings.selectedLocale else remove(KEY_SELECTED_LOCALE)
         if (settings.selectedVoicePresetId != null) this[KEY_SELECTED_VOICE_PRESET_ID] = settings.selectedVoicePresetId else remove(KEY_SELECTED_VOICE_PRESET_ID)
+        if (settings.selectedLocalModelId != null) this[KEY_SELECTED_LOCAL_MODEL_ID] = settings.selectedLocalModelId else remove(KEY_SELECTED_LOCAL_MODEL_ID)
         this[KEY_PITCH] = settings.pitch
         this[KEY_SPEECH_RATE] = settings.speechRate
         this[KEY_TIME_FORMAT] = settings.timeFormat.name
@@ -111,6 +113,20 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
                 it.remove(KEY_SELECTED_VOICE_PRESET_ID)
             } else {
                 it[KEY_SELECTED_VOICE_PRESET_ID] = presetId
+            }
+        }
+    }
+
+    /**
+     * Persist the user's choice of a downloaded on-device voice. A
+     * `null` value means "use the system TTS path" (the default).
+     */
+    suspend fun setSelectedLocalModelId(modelId: String?) {
+        context.dataStore.edit {
+            if (modelId.isNullOrBlank()) {
+                it.remove(KEY_SELECTED_LOCAL_MODEL_ID)
+            } else {
+                it[KEY_SELECTED_LOCAL_MODEL_ID] = modelId
             }
         }
     }
@@ -259,6 +275,7 @@ class SettingsRepository(private val context: Context) : HourlyScheduleSettingsS
         private val KEY_SELECTED_VOICE_NAME = stringPreferencesKey("selected_voice_name")
         private val KEY_SELECTED_LOCALE = stringPreferencesKey("selected_locale")
         private val KEY_SELECTED_VOICE_PRESET_ID = stringPreferencesKey("selected_voice_preset_id")
+        private val KEY_SELECTED_LOCAL_MODEL_ID = stringPreferencesKey("selected_local_model_id")
         private val KEY_PITCH = floatPreferencesKey("pitch")
         private val KEY_SPEECH_RATE = floatPreferencesKey("speech_rate")
         private val KEY_TIME_FORMAT = stringPreferencesKey("time_format")

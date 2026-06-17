@@ -2,11 +2,14 @@ package com.hourlyvoiceclock.announcer
 
 import android.content.Context
 import android.media.AudioManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import com.hourlyvoiceclock.data.AppSettings
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.tts.TtsEngine
+import com.hourlyvoiceclock.tts.local.LocalTtsEngine
 import java.time.LocalDateTime
 
 class TimeAnnouncer(
@@ -16,8 +19,24 @@ class TimeAnnouncer(
     private val notifier: AnnouncementNotifier,
     private val hapticPulse: HapticPulse = HapticPulse(context),
     private val ttsConfig: TtsConfigApplier = TtsConfigApplier(ttsEngine),
-    private val audioFocusController: AudioFocusController = AudioFocusController(context)
+    private val audioFocusController: AudioFocusController = AudioFocusController(context),
+    private val ttsEngineRouter: TtsEngineRouter = TtsEngineRouter(
+        primaryEngine = ttsEngine,
+        localEngineFactory = { LocalTtsEngine(context) }
+    )
 ) {
+
+    /**
+     * How long to wait after the chime finishes and audio focus is
+     * granted before asking the TTS engine to start speaking. Without
+     * this delay, the audio HAL has not yet finished rerouting to the
+     * speech stream when the first frames are dispatched — the engine
+     * reports onStart immediately, but the first syllable of the
+     * utterance is consumed while the output device is still coming
+     * up, producing a clipped announcement. A short settle delay gives
+     * the routing layer time to land on the requested stream.
+     */
+    private val preSpeakSettleMs: Long = 120L
 
     fun announce(
         settings: AppSettings,
@@ -79,17 +98,29 @@ class TimeAnnouncer(
         usage: Int,
         audioStream: Int
     ) {
-        if (!ttsEngine.isAvailable()) {
+        // Route to the user-selected engine: downloaded on-device voice
+        // (LocalTtsEngine) if one is selected and loadable, otherwise
+        // the system TTS path.
+        val engine = ttsEngineRouter.resolveFor(settings)
+
+        if (!engine.isAvailable()) {
             Log.w(TAG, "TTS not available - attempting init")
         }
 
-        ttsConfig.apply(
-            voiceName = settings.selectedVoiceName,
-            savedLocale = settings.selectedLocale,
-            pitch = settings.pitch,
-            speechRate = settings.speechRate,
-            audioChannel = settings.audioChannel
-        )
+        if (engine === ttsEngine) {
+            // System TTS path: apply the saved voice/locale/pitch/rate.
+            ttsConfig.apply(
+                voiceName = settings.selectedVoiceName,
+                savedLocale = settings.selectedLocale,
+                pitch = settings.pitch,
+                speechRate = settings.speechRate,
+                audioChannel = settings.audioChannel
+            )
+        } else {
+            // Local engine path: pitch/rate are baked into the model, so
+            // only the audio channel needs to be applied.
+            engine.setAudioChannel(settings.audioChannel)
+        }
 
         val text = AnnouncementFormatter.format(
             dateTime = dateTime,
@@ -104,7 +135,14 @@ class TimeAnnouncer(
         // by the timer.
         audioFocusController.acquire(usage, audioStream)
 
-        ttsEngine.speakAsync(text) { /* completion handled by engine */ }
+        // Defer the actual TTS dispatch by a short settle window so the
+        // audio HAL has time to finish rerouting to the requested
+        // stream before the first samples hit it. Without this, the
+        // engine's onStart fires before the output is stable and the
+        // opening syllable of the announcement is lost (clipped).
+        Handler(Looper.getMainLooper()).postDelayed({
+            engine.speakAsync(text) { /* completion handled by engine */ }
+        }, preSpeakSettleMs)
 
         if (settings.notificationLogging) {
             notifier.post(text)
