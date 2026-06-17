@@ -9,7 +9,7 @@ plugins {
 // the default values drifting from the source of truth in this file.
 val versionMajor: Int = (project.findProperty("version.major") as String?)?.toIntOrNull() ?: 0
 val versionMinor: Int = (project.findProperty("version.minor") as String?)?.toIntOrNull() ?: 4
-val versionPatch: Int = (project.findProperty("version.patch") as String?)?.toIntOrNull() ?: 25
+val versionPatch: Int = (project.findProperty("version.patch") as String?)?.toIntOrNull() ?: 26
 val versionPre: String = (project.findProperty("version.pre") as String?) ?: "alpha"
 // versionCode is a monotonically increasing integer; compute it from
 // the components above so we never forget to bump it.

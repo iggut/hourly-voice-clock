@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.26-alpha] - 2026-06-16
+
+### Added
+- **Curated community voice pack in Local Voices.** 17 additional Piper ONNX voices from the user's `~/Downloads/piper_community_voice_pack/manifest.json` are now offered alongside the existing rhasspy/piper-voices baseline. Mix of community and official sources:
+  - **Assistant / AI**: JARVIS high, JARVIS medium mk1 (both MIT-licensed, en-GB).
+  - **Sci-fi / game AI**: HAL 9000 (campwill, Apache-2.0), HAL 9000 denoised, GLaDOS high, Commander Data style, Captain Picard style, K9, BMO, BT-7274, Overwatch dispatch style, Subnautica PDA style, Kronk style, Rocket Raccoon style.
+  - **Official Piper baselines (MIT)**: Ryan high, LJSpeech high, LibriTTS high.
+  Each entry's description includes the source repository and a one-line rights note. Descriptions for fictional-character voices call out personal-testing-only usage so the user can make an informed choice.
+
 ## [0.4.25-alpha] - 2026-06-16
 
 ### Fixed

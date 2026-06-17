@@ -112,6 +112,252 @@ object VoiceModelRegistry {
             onnxJsonFileName = "en_US-kusal-medium.onnx.json",
             sampleRate = 22050,
             category = VoiceCategory.CHARACTER
+        ),
+
+        // ----------------------------------------------------------------
+        // Curated community voice pack
+        //
+        // Sourced from the user's local pack at
+        //   ~/Downloads/piper_community_voice_pack/manifest.json
+        //
+        // Each entry below mirrors one row of that manifest. The slugs
+        // match the manifest's `slug` field verbatim so the on-disk
+        // model directories line up with the registry id and so future
+        // regenerations of the manifest stay in sync.
+        //
+        // Licensing note: many of these voices imitate recognisable
+        // fictional characters or performers, and several repos do not
+        // clearly establish source-media rights. They are listed for
+        // private/local testing. The description on each entry stays
+        // neutral and points at the original source repo so the user
+        // can make a usage decision of their own.
+        //
+        // Sizes are best-effort estimates (the manifest does not ship
+        // content-lengths). They are used only for the "X MB" label in
+        // the Local Voices screen; the downloader uses the live HTTP
+        // Content-Length for progress, not this field.
+        // ----------------------------------------------------------------
+
+        VoiceModel(
+            id = "jarvis_high",
+            displayName = "JARVIS high",
+            description = "Polished Home Assistant-style British AI assistant voice (community). Source: huggingface.co/jgkawell/jarvis. MIT-licensed repository; for personal use unless rights are verified.",
+            language = "en-GB",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://huggingface.co/jgkawell/jarvis/resolve/main/en/en_GB/jarvis/high/jarvis-high.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/jgkawell/jarvis/resolve/main/en/en_GB/jarvis/high/jarvis-high.onnx.json",
+            onnxFileName = "jarvis-high.onnx",
+            onnxJsonFileName = "jarvis-high.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "jarvis_medium_mk1",
+            displayName = "JARVIS medium mk1",
+            description = "Lighter medium British AI assistant voice (community). Source: huggingface.co/jgkawell/jarvis. MIT-licensed repository.",
+            language = "en-GB",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://huggingface.co/jgkawell/jarvis/resolve/main/en/en_GB/jarvismk1/medium/en_GB-jarvis-medium.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/jgkawell/jarvis/resolve/main/en/en_GB/jarvismk1/medium/en_GB-jarvis-medium.onnx.json",
+            onnxFileName = "en_GB-jarvis-medium.onnx",
+            onnxJsonFileName = "en_GB-jarvis-medium.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "hal_9000_campwill",
+            displayName = "HAL 9000 (campwill)",
+            description = "Calm AI / sci-fi assistant voice (community). Source: huggingface.co/campwill/HAL-9000-Piper-TTS. Apache-2.0 repository. Imitates a recognisable fictional character; use for private testing unless you have rights.",
+            language = "en-US",
+            sizeBytes = 30_000_000,
+            onnxDownloadUrl = "https://huggingface.co/campwill/HAL-9000-Piper-TTS/resolve/main/hal.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/campwill/HAL-9000-Piper-TTS/resolve/main/hal.onnx.json",
+            onnxFileName = "hal.onnx",
+            onnxJsonFileName = "hal.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "glados_high",
+            displayName = "GLaDOS high",
+            description = "Robot / game-AI style voice (community). Source: huggingface.co/csukuangfj/vits-piper-en_US-glados-high. Repository license unclear; imitates a recognisable character. Personal-testing only unless rights are verified.",
+            language = "en-US",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://huggingface.co/csukuangfj/vits-piper-en_US-glados-high/resolve/main/en_US-glados-high.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/csukuangfj/vits-piper-en_US-glados-high/resolve/main/en_US-glados-high.onnx.json",
+            onnxFileName = "en_US-glados-high.onnx",
+            onnxJsonFileName = "en_US-glados-high.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "hal_9000_denoised_dividebysandwich",
+            displayName = "HAL 9000 denoised",
+            description = "Alternative sci-fi assistant voice with denoising applied (community). Source: github.com/dividebysandwich/piper-voice-models. Repository does not clearly establish source-media rights; imitates a recognisable character. Personal-testing only.",
+            language = "en-US",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://raw.githubusercontent.com/dividebysandwich/piper-voice-models/main/HAL9000-denoised/en_US-hal_6409-medium.onnx",
+            onnxJsonDownloadUrl = "https://raw.githubusercontent.com/dividebysandwich/piper-voice-models/main/HAL9000-denoised/en_US-hal_6409-medium.onnx.json",
+            onnxFileName = "en_US-hal_6409-medium.onnx",
+            onnxJsonFileName = "en_US-hal_6409-medium.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "data_dividebysandwich",
+            displayName = "Commander Data style",
+            description = "Android / sci-fi style voice (community). Source: github.com/dividebysandwich/piper-voice-models. Repository does not clearly establish source-media rights; imitates a recognisable character. Personal-testing only.",
+            language = "en-US",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://raw.githubusercontent.com/dividebysandwich/piper-voice-models/main/Data/en_US-data_7024-medium.onnx",
+            onnxJsonDownloadUrl = "https://raw.githubusercontent.com/dividebysandwich/piper-voice-models/main/Data/en_US-data_7024-medium.onnx.json",
+            onnxFileName = "en_US-data_7024-medium.onnx",
+            onnxJsonFileName = "en_US-data_7024-medium.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "picard_dividebysandwich",
+            displayName = "Captain Picard style",
+            description = "Captain / narration style voice (community). Source: github.com/dividebysandwich/piper-voice-models. Repository does not clearly establish source-media rights; likely identifiable-character/performer likeness. Personal-testing only.",
+            language = "en-US",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://raw.githubusercontent.com/dividebysandwich/piper-voice-models/main/Picard/en_US-picard_7399-medium.onnx",
+            onnxJsonDownloadUrl = "https://raw.githubusercontent.com/dividebysandwich/piper-voice-models/main/Picard/en_US-picard_7399-medium.onnx.json",
+            onnxFileName = "en_US-picard_7399-medium.onnx",
+            onnxJsonFileName = "en_US-picard_7399-medium.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "k9",
+            displayName = "K9",
+            description = "Compact robot style voice (community). Source: github.com/hopkira/k9_piper_voice. Repository has a LICENSE file; verify terms before redistribution.",
+            language = "en-US",
+            sizeBytes = 20_000_000,
+            onnxDownloadUrl = "https://raw.githubusercontent.com/hopkira/k9_piper_voice/main/k9_model.onnx",
+            onnxJsonDownloadUrl = "https://raw.githubusercontent.com/hopkira/k9_piper_voice/main/k9_model.onnx.json",
+            onnxFileName = "k9_model.onnx",
+            onnxJsonFileName = "k9_model.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "bmo",
+            displayName = "BMO",
+            description = "Small cute robot style voice (community). Source: github.com/1liminal1/xiaozhi-esphome. Character-likeness rights unclear; personal-testing only.",
+            language = "en-US",
+            sizeBytes = 30_000_000,
+            onnxDownloadUrl = "https://raw.githubusercontent.com/1liminal1/xiaozhi-esphome/main/piper-voices/en_US-bmo_voice.onnx",
+            onnxJsonDownloadUrl = "https://raw.githubusercontent.com/1liminal1/xiaozhi-esphome/main/piper-voices/en_US-bmo_voice.onnx.json",
+            onnxFileName = "en_US-bmo_voice.onnx",
+            onnxJsonFileName = "en_US-bmo_voice.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "bt7274",
+            displayName = "BT-7274",
+            description = "Mech / tactical AI style voice (community). Source: github.com/DJMalachite/PiperVoiceModels. Game-character rights unclear; personal-testing only.",
+            language = "en-US",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://raw.githubusercontent.com/DJMalachite/PiperVoiceModels/main/Titanfall2/BT7274/BT7274.onnx",
+            onnxJsonDownloadUrl = "https://raw.githubusercontent.com/DJMalachite/PiperVoiceModels/main/Titanfall2/BT7274/BT7274.onnx.json",
+            onnxFileName = "BT7274.onnx",
+            onnxJsonFileName = "BT7274.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "overwatch_dispatch",
+            displayName = "Overwatch dispatch style",
+            description = "Dispatch / announcer style voice (community). Source: github.com/robit-man/combine_overwatch_onnx. Repository claims synthetic data/fair use; verify before public use.",
+            language = "en-US",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://raw.githubusercontent.com/robit-man/combine_overwatch_onnx/main/overwatch.onnx",
+            onnxJsonDownloadUrl = "https://raw.githubusercontent.com/robit-man/combine_overwatch_onnx/main/overwatch.onnx.json",
+            onnxFileName = "overwatch.onnx",
+            onnxJsonFileName = "overwatch.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "subnautica_pda",
+            displayName = "Subnautica PDA style",
+            description = "PDA / system-alert style voice (community). Source: huggingface.co/Aquaaa123/piper-tts-pda-subnautica. Game-character rights unclear.",
+            language = "en-US",
+            sizeBytes = 30_000_000,
+            onnxDownloadUrl = "https://huggingface.co/Aquaaa123/piper-tts-pda-subnautica/resolve/main/pda.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/Aquaaa123/piper-tts-pda-subnautica/resolve/main/pda.onnx.json",
+            onnxFileName = "pda.onnx",
+            onnxJsonFileName = "pda.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "kronk",
+            displayName = "Kronk style",
+            description = "Cartoon / comedic style voice (community). Source: huggingface.co/russdill/kronk. Repository license unclear; character-likeness rights unclear.",
+            language = "en-US",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://huggingface.co/russdill/kronk/resolve/main/en/en_US/kronk/medium/kronk-medium.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/russdill/kronk/resolve/main/en/en_US/kronk/medium/kronk-medium.onnx.json",
+            onnxFileName = "kronk-medium.onnx",
+            onnxJsonFileName = "kronk-medium.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "rocket_racoon",
+            displayName = "Rocket Raccoon style",
+            description = "Raspy character voice (community). Source: huggingface.co/AkumaVenom/RocketRacoon-Piper-US-Medium. Repository license unclear; strong character/performer-likeness concerns. Personal-testing only.",
+            language = "en-US",
+            sizeBytes = 63_000_000,
+            onnxDownloadUrl = "https://huggingface.co/AkumaVenom/RocketRacoon-Piper-US-Medium/resolve/main/rocket_racoon.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/AkumaVenom/RocketRacoon-Piper-US-Medium/resolve/main/rocket_racoon.onnx.json",
+            onnxFileName = "rocket_racoon.onnx",
+            onnxJsonFileName = "rocket_racoon.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.CHARACTER
+        ),
+        VoiceModel(
+            id = "official_en_us_ryan_high",
+            displayName = "Official Piper Ryan high",
+            description = "Clean American English male baseline (official rhasspy/piper-voices). MIT-licensed; safe to use. Useful as a quality reference and for time announcements.",
+            language = "en-US",
+            sizeBytes = 100_000_000,
+            onnxDownloadUrl = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx.json",
+            onnxFileName = "en_US-ryan-high.onnx",
+            onnxJsonFileName = "en_US-ryan-high.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.STANDARD
+        ),
+        VoiceModel(
+            id = "official_en_us_ljspeech_high",
+            displayName = "Official Piper LJSpeech high",
+            description = "Clean American English female baseline (official rhasspy/piper-voices). MIT-licensed; safe to use. Classic LJSpeech-trained voice.",
+            language = "en-US",
+            sizeBytes = 100_000_000,
+            onnxDownloadUrl = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ljspeech/high/en_US-ljspeech-high.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ljspeech/high/en_US-ljspeech-high.onnx.json",
+            onnxFileName = "en_US-ljspeech-high.onnx",
+            onnxJsonFileName = "en_US-ljspeech-high.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.STANDARD
+        ),
+        VoiceModel(
+            id = "official_en_us_libritts_high",
+            displayName = "Official Piper LibriTTS high",
+            description = "Multi-speaker American English baseline (official rhasspy/piper-voices). MIT-licensed; safe to use. High quality reference voice.",
+            language = "en-US",
+            sizeBytes = 100_000_000,
+            onnxDownloadUrl = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/libritts/high/en_US-libritts-high.onnx",
+            onnxJsonDownloadUrl = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/libritts/high/en_US-libritts-high.onnx.json",
+            onnxFileName = "en_US-libritts-high.onnx",
+            onnxJsonFileName = "en_US-libritts-high.onnx.json",
+            sampleRate = 22050,
+            category = VoiceCategory.STANDARD
         )
     )
 
