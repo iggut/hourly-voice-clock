@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.27-alpha] - 2026-06-17
+
+### Fixed
+- **Crash when previewing or playing downloaded local voices.** Piper `.onnx.json` files specify language codes with underscores (e.g. `en_US`). Sherpa-ONNX passes this raw string to eSpeak-ng's `espeak_SetVoiceByName`, which expects hyphens (`en-US`). The mismatch caused an uncaught C++ `std::runtime_error` that aborted the process.
+  - New downloads now normalize `_` → `-` when patching ONNX metadata.
+  - Existing downloaded models are auto-migrated on first use: any `en_US` in the ONNX file is rewritten to `en-US` in-place.
+  - Also added default eSpeak voice files (`en-us`, `en`, `en-GB`, `en-gb`) to the bundled espeak-ng-data to ensure the voice lookup succeeds even on fresh installs.
+
 ## [0.4.26-alpha] - 2026-06-16
 
 ### Added

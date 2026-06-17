@@ -87,8 +87,11 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         }
 
         val espeakDataDir = File(context.filesDir, "local_tts/$ASSET_ESPEAK_DIR")
-        if (!espeakDataDir.exists()) {
+        val espeakVersionMarker = File(espeakDataDir, ".version-2")
+        if (!espeakVersionMarker.exists()) {
+            espeakDataDir.deleteRecursively()
             copyAssetsToFiles(ASSET_ESPEAK_DIR, espeakDataDir)
+            espeakVersionMarker.createNewFile()
         }
         require(espeakDataDir.exists()) { "espeak-ng-data missing: ${espeakDataDir.absolutePath}" }
 
@@ -132,6 +135,37 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     }
 
     private fun ensurePiperOnnxMetadata(modelFile: File, jsonFile: File) {
+        // Migration: older patches wrote `language=en_US` (underscore).
+        // eSpeak-ng expects hyphens (en-US). Do an in-place byte swap
+        // since both strings are the same length.
+        if (fileContainsAscii(modelFile, "en_US")) {
+            val bytes = modelFile.readBytes()
+            val old = "en_US".toByteArray(StandardCharsets.UTF_8)
+            val new = "en-US".toByteArray(StandardCharsets.UTF_8)
+            var modified = false
+            var i = 0
+            while (i <= bytes.size - old.size) {
+                var match = true
+                for (j in old.indices) {
+                    if (bytes[i + j] != old[j]) {
+                        match = false
+                        break
+                    }
+                }
+                if (match) {
+                    for (j in old.indices) bytes[i + j] = new[j]
+                    modified = true
+                    i += old.size
+                } else {
+                    i++
+                }
+            }
+            if (modified) {
+                modelFile.writeBytes(bytes)
+                Log.d(TAG, "Migrated ONNX metadata language en_US -> en-US in ${modelFile.name}")
+            }
+        }
+
         // Sherpa-ONNX v1.13.x reads VITS `sample_rate` from ONNX custom
         // metadata, while Piper distributes it in the sibling .onnx.json.
         // Add the standard ONNX ModelProto metadata_props entry in-place.
@@ -148,10 +182,11 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             ?.groupValues
             ?.getOrNull(1)
             ?: "1"
-        val language = Regex(""""code"\s*:\s*"([^"]+)""")
+        val language = Regex(""""code"\s*:\s*"([^"]+)"""")
             .find(json)
             ?.groupValues
             ?.getOrNull(1)
+            ?.replace('_', '-')
             ?: "en"
 
         val props = listOf(
