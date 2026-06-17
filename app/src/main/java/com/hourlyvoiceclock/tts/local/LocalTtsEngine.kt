@@ -14,6 +14,7 @@ import com.k2fsa.sherpa.onnx.GeneratedAudio
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.getOfflineTtsConfig
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
@@ -97,81 +98,66 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
         ensurePiperOnnxMetadata(modelFile, jsonFile)
 
-        // Build the VITS config from the sanitized AAR's TtsKt.getOfflineTtsConfig
-        // factory. The factory constructs `model = "$modelDir/$modelName"`
-        // and passes that as the absolute path to ReadFile, so modelName
-        // MUST include the `.onnx` extension. dataDir is the espeak-ng-data
-        // dir; tokens.txt is auto-resolved as `$modelDir/tokens.txt` by
-        // the factory. The .onnx.json sibling is read directly by the
-        // native VITS model loader.
         val config: OfflineTtsConfig = getOfflineTtsConfig(
             modelDir = modelDir.absolutePath,
-            modelName = model.onnxFileName,        // includes ".onnx"
-            acousticModelName = "",      // Matcha (unused for VITS)
-            vocoder = "",                 // Matcha (unused for VITS)
-            voices = "",                  // Kokoro
-            lexicon = "",                 // no lexicon for Piper VITS
+            modelName = model.onnxFileName,
+            acousticModelName = "",
+            vocoder = "",
+            voices = "",
+            lexicon = "",
             dataDir = espeakDataDir.absolutePath,
-            dictDir = "",                 // Coqui
-            ruleFsts = "",                // Coqui
-            ruleFars = "",                // Coqui
-            numThreads = 1,               // keep ORT single-threaded on mobile
-            isKitten = false,             // not a Kitten model
-            isSupertonic = false,         // not a Supertonic model
-            durationPredictor = "",       // Supertonic
-            textEncoder = "",             // Supertonic
-            vectorEstimator = "",         // Supertonic
-            supertonicVocoder = "",       // Supertonic
-            ttsJson = "",                 // Kitten
-            unicodeIndexer = "",          // Kitten
-            voiceStyle = "",              // voice-style
+            dictDir = "",
+            ruleFsts = "",
+            ruleFars = "",
+            numThreads = 1,
+            isKitten = false,
+            isSupertonic = false,
+            durationPredictor = "",
+            textEncoder = "",
+            vectorEstimator = "",
+            supertonicVocoder = "",
+            ttsJson = "",
+            unicodeIndexer = "",
+            voiceStyle = "",
         )
 
-        // Pass null for the AssetManager so the native side reads the
-        // model from the filesystem (SD card / filesDir) instead of
-        // trying to open it as an APK asset. See:
-        //   https://github.com/k2-fsa/sherpa-onnx/issues/2562
+        // Pass null for the AssetManager so the native side reads the model from
+        // the filesystem instead of trying to open it as an APK asset.
         return OfflineTts(null, config)
     }
 
     private fun ensurePiperOnnxMetadata(modelFile: File, jsonFile: File) {
-        // Sherpa-ONNX v1.13.x reads VITS metadata (sample_rate, n_speakers,
-        // voice, comment, etc.) from ONNX custom metadata. Piper ships its
-        // config in the sibling .onnx.json. Patch missing keys in-place:
-        //   sample_rate  <- json.audio.sample_rate
-        //   n_speakers   <- json.num_speakers  (default 1)
-        //   voice        <- json.espeak.voice  (e.g. "en-us")
-        //   comment      <- "piper"  (so meta_data_.is_piper = true)
+        // Sherpa-ONNX's Piper/VITS loader requires all of these metadata keys.
+        // The logcat from the failing build showed the native loader accepted
+        // voice/sample_rate/n_speakers/comment, then aborted immediately after:
+        //   'language' does not exist in the metadata
+        // So language is not optional for this AAR path.
         //
-        // Do NOT try to strip or rewrite existing metadata entries here.
-        // Earlier code attempted to parse and rebuild the ONNX protobuf by hand
-        // to remove legacy keys. That parser only handled one-byte field tags;
-        // real ONNX ModelProto files contain multi-byte tags, so the rewrite
-        // could corrupt downloaded models and make the native loader abort the
-        // app process. Appending missing metadata_props entries is safe because
-        // protobuf permits repeated fields and the native loader reads by key.
-        val json = jsonFile.readText()
-        val sampleRate = Regex(""""sample_rate"\s*:\s*(\d+)""")
-            .find(json)
-            ?.groupValues
-            ?.getOrNull(1)
+        // Do NOT strip or rewrite existing metadata entries. Appending missing
+        // metadata_props entries is safe; hand-rebuilding the ONNX protobuf is not.
+        val root = JSONObject(jsonFile.readText())
+        val sampleRate = root.optJSONObject("audio")
+            ?.optInt("sample_rate", 22050)
+            ?.takeIf { it > 0 }
+            ?.toString()
             ?: "22050"
-        val numSpeakers = Regex(""""num_speakers"\s*:\s*(\d+)""")
-            .find(json)
-            ?.groupValues
-            ?.getOrNull(1)
-            ?: "1"
-        val espeakVoice = Regex(""""voice"\s*:\s*"([^"]+)""")
-            .find(json)
-            ?.groupValues
-            ?.getOrNull(1)
+        val numSpeakers = root.optInt("num_speakers", 1).takeIf { it > 0 }?.toString() ?: "1"
+        val espeakVoice = root.optJSONObject("espeak")
+            ?.optString("voice")
+            ?.takeIf { it.isNotBlank() }
             ?.lowercase()
-            ?: "en-us"
+            ?: defaultEspeakVoice(root)
+        val language = root.optJSONObject("language")
+            ?.optString("code")
+            ?.takeIf { it.isNotBlank() }
+            ?.replace('_', '-')
+            ?: defaultLanguageForVoice(espeakVoice)
 
         val props = listOf(
             "sample_rate" to sampleRate,
             "n_speakers" to numSpeakers,
             "voice" to espeakVoice,
+            "language" to language,
             "comment" to "piper",
         ).filterNot { (key, _) -> fileContainsAscii(modelFile, key) }
 
@@ -179,6 +165,26 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
         appendOnnxMetadataProps(modelFile, props)
         Log.d(TAG, "Patched ${modelFile.name} ONNX metadata ${props.joinToString { "${it.first}=${it.second}" }}")
+    }
+
+    private fun defaultEspeakVoice(root: JSONObject): String {
+        val code = root.optJSONObject("language")
+            ?.optString("code")
+            ?.lowercase()
+            .orEmpty()
+        return when {
+            code.contains("gb") || code.contains("uk") -> "en-gb"
+            else -> "en"
+        }
+    }
+
+    private fun defaultLanguageForVoice(espeakVoice: String): String {
+        return when (espeakVoice.lowercase()) {
+            "en-gb", "en-gb-scotland", "en-gb-x-gbclan", "en-gb-x-gbcwmd", "en-gb-x-rp" -> "en-GB"
+            "en-us", "en-us-nyc" -> "en-US"
+            "en" -> "en-US"
+            else -> espeakVoice.replace('_', '-')
+        }
     }
 
     private fun fileContainsAscii(file: File, needle: String): Boolean {
