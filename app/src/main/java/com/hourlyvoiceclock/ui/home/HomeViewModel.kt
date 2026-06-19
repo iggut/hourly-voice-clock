@@ -59,18 +59,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val canSpeakNow: StateFlow<Boolean> = _canSpeakNow.asStateFlow()
 
     private var startupAutoCheckDone = false
-    private var cachedTimeMinute: LocalDateTime? = null
+    private var cachedMinute: Int = -1
+    private var cachedHour: Int = -1
     private var cachedHoursMinutes: String = ""
     private var cachedAmPm: String = ""
-    private var cachedDate: java.time.LocalDate? = null
-    private var cachedNextAnnouncementTime: LocalDateTime? = null
+    private var cachedDayOfYear: Int = -1
+    private var cachedYear: Int = -1
+    private var cachedNextAnnouncementHour: Int = -1
 
     init {
         viewModelScope.launch {
             while (isActive) {
-                updateTime()
+                val now = LocalDateTime.now()
+                updateTime(now)
                 if (_hourlyEnabled.value) {
-                    updateNextAnnouncement(true)
+                    updateNextAnnouncement(true, now)
                 }
                 delay(1000)
             }
@@ -98,13 +101,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun updateTime() {
-        val now = LocalDateTime.now()
-        val currentMinute = now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES)
+    private fun updateTime(now: LocalDateTime = LocalDateTime.now()) {
 
         // Optimize: Only format hours/minutes and am/pm when the minute changes
-        if (currentMinute != cachedTimeMinute) {
-            cachedTimeMinute = currentMinute
+        if (now.minute != cachedMinute || now.hour != cachedHour) {
+            cachedMinute = now.minute
+            cachedHour = now.hour
             cachedHoursMinutes = now.format(HOURS_MINUTES_FORMATTER)
             cachedAmPm = now.format(AM_PM_FORMATTER)
         }
@@ -119,23 +121,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         // Optimize: Only format date when the day changes
-        val today = now.toLocalDate()
-        if (cachedDate != today) {
-            cachedDate = today
+        if (now.dayOfYear != cachedDayOfYear || now.year != cachedYear) {
+            cachedDayOfYear = now.dayOfYear
+            cachedYear = now.year
             _currentDate.value = now.format(DATE_FORMATTER)
         }
     }
 
-    private fun updateNextAnnouncement(enabled: Boolean) {
+    private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime = LocalDateTime.now()) {
         if (!enabled) {
             _nextAnnouncement.value = ""
-            cachedNextAnnouncementTime = null
+            cachedNextAnnouncementHour = -1
             return
         }
-        val next = AnnouncementScheduler.getNextTopOfHour()
-        // Optimize: Only format next announcement when the target hour changes
-        if (cachedNextAnnouncementTime != next) {
-            cachedNextAnnouncementTime = next
+        // Optimize: Only format next announcement when the hour changes
+        if (cachedNextAnnouncementHour != now.hour) {
+            cachedNextAnnouncementHour = now.hour
+            val next = AnnouncementScheduler.getNextTopOfHour()
             _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
         }
     }
