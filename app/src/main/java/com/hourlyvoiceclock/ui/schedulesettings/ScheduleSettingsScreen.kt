@@ -486,9 +486,10 @@ fun ScheduleSettingsScreen(
                                 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
                                 val showFullText = isLandscape || maxWidth >= 600.dp
 
+                                val layoutModifier = Modifier.fillMaxWidth()
                                 if (showFullText) {
                                     FlowRow(
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
@@ -516,7 +517,7 @@ fun ScheduleSettingsScreen(
                                     }
                                 } else {
                                     Row(
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -526,18 +527,18 @@ fun ScheduleSettingsScreen(
                                                 java.time.format.TextStyle.NARROW,
                                                 java.util.Locale.getDefault()
                                             )
+
+                                            val bgColor = if (isDisabled) MaterialTheme.colorScheme.error.copy(alpha = 0.2f) else Color.Transparent
+                                            val borderColor = if (isDisabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                            val textColor = if (isDisabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                                             Box(
                                                 modifier = Modifier
                                                     .size(40.dp)
                                                     .clip(CircleShape)
-                                                    .background(
-                                                        if (isDisabled) MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
-                                                        else Color.Transparent
-                                                    )
+                                                    .background(bgColor)
                                                     .border(
                                                         width = 1.dp,
-                                                        color = if (isDisabled) MaterialTheme.colorScheme.error
-                                                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                                        color = borderColor,
                                                         shape = CircleShape
                                                     )
                                                     .clickable { viewModel.toggleQuietDay(day, !isDisabled) },
@@ -547,8 +548,7 @@ fun ScheduleSettingsScreen(
                                                     text = narrowName,
                                                     fontSize = 14.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = if (isDisabled) MaterialTheme.colorScheme.error
-                                                    else MaterialTheme.colorScheme.onSurface
+                                                    color = textColor
                                                 )
                                             }
                                         }
