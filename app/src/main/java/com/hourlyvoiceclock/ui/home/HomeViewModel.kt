@@ -59,18 +59,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val canSpeakNow: StateFlow<Boolean> = _canSpeakNow.asStateFlow()
 
     private var startupAutoCheckDone = false
-    private var cachedTimeMinute: LocalDateTime? = null
+    private var cachedMinuteHash: Int? = null
     private var cachedHoursMinutes: String = ""
     private var cachedAmPm: String = ""
-    private var cachedDate: java.time.LocalDate? = null
-    private var cachedNextAnnouncementTime: LocalDateTime? = null
+    private var cachedDayHash: Int? = null
+    private var cachedNextAnnouncementHash: Int? = null
 
     init {
         viewModelScope.launch {
             while (isActive) {
-                updateTime()
+                val now = LocalDateTime.now()
+                updateTime(now)
                 if (_hourlyEnabled.value) {
-                    updateNextAnnouncement(true)
+                    updateNextAnnouncement(true, now)
                 }
                 delay(1000)
             }
@@ -98,13 +99,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun updateTime() {
-        val now = LocalDateTime.now()
-        val currentMinute = now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES)
+    private fun updateTime(now: LocalDateTime) {
+        // Create an integer hash representing the minute: e.g. Day 100 * 24 * 60 + hour * 60 + minute
+        // This prevents the clock from not updating if the app is suspended for exactly 1 hour.
+        val currentMinuteHash = now.dayOfYear * 1440 + now.hour * 60 + now.minute
 
         // Optimize: Only format hours/minutes and am/pm when the minute changes
-        if (currentMinute != cachedTimeMinute) {
-            cachedTimeMinute = currentMinute
+        if (currentMinuteHash != cachedMinuteHash) {
+            cachedMinuteHash = currentMinuteHash
             cachedHoursMinutes = now.format(HOURS_MINUTES_FORMATTER)
             cachedAmPm = now.format(AM_PM_FORMATTER)
         }
@@ -119,23 +121,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         // Optimize: Only format date when the day changes
-        val today = now.toLocalDate()
-        if (cachedDate != today) {
-            cachedDate = today
+        val currentDayHash = now.year * 400 + now.dayOfYear
+        if (cachedDayHash != currentDayHash) {
+            cachedDayHash = currentDayHash
             _currentDate.value = now.format(DATE_FORMATTER)
         }
     }
 
-    private fun updateNextAnnouncement(enabled: Boolean) {
+    private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime) {
         if (!enabled) {
             _nextAnnouncement.value = ""
-            cachedNextAnnouncementTime = null
+            cachedNextAnnouncementHash = null
             return
         }
-        val next = AnnouncementScheduler.getNextTopOfHour()
+
+        val currentHourHash = now.dayOfYear * 24 + now.hour
         // Optimize: Only format next announcement when the target hour changes
-        if (cachedNextAnnouncementTime != next) {
-            cachedNextAnnouncementTime = next
+        if (cachedNextAnnouncementHash != currentHourHash) {
+            cachedNextAnnouncementHash = currentHourHash
+            val next = AnnouncementScheduler.getNextTopOfHour(now)
             _nextAnnouncement.value = next.format(NEXT_ANNOUNCEMENT_FORMATTER)
         }
     }
