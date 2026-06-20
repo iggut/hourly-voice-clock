@@ -4,9 +4,11 @@ import android.content.Context
 import com.hourlyvoiceclock.data.ChimeSound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
@@ -33,5 +35,21 @@ class ChimePlayerTest {
         val sounds = ChimeSound.values().filter { it != ChimeSound.NONE }
         val ids = sounds.map { player.resourceIdFor(it) }
         assertEquals("Duplicate resource mapping", sounds.size, ids.toSet().size)
+    }
+
+    @Test
+    fun `play calls onComplete when MediaPlayer creation fails with exception`() {
+        val mockContext = mock(Context::class.java)
+        // Force MediaPlayer.create() to throw an exception by providing a mock Context
+        // whose resources throw. MediaPlayer uses context.resources.openRawResourceFd() internally.
+        `when`(mockContext.resources).thenThrow(RuntimeException("Simulated context exception"))
+
+        val failingPlayer = ChimePlayer(mockContext)
+        var completed = false
+        failingPlayer.play(ChimeSound.CLASSIC_CHIME) {
+            completed = true
+        }
+
+        assertTrue("onComplete should be called when playback fails", completed)
     }
 }
