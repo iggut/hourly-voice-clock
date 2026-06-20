@@ -34,3 +34,6 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+## 2026-06-20 - Consolidate redundant conditional loop branches
+**Learning:** Having a condition that determines which UI container to render (`if (condition) FlowRow { loop... } else Row { loop... }`) causes redundant iteration code and lambda creation scopes to be written, and requires duplicating the loop itself.
+**Action:** Consolidate the conditional check into the container's attributes (e.g. `horizontalArrangement = if (condition) Arrangement.spacedBy(8.dp) else Arrangement.SpaceBetween`) and use a single unified loop block inside, checking the condition again for individual children instead. This reduces container lambda duplication and makes layout changes cleaner.

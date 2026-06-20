@@ -487,14 +487,14 @@ fun ScheduleSettingsScreen(
                                 val showFullText = isLandscape || maxWidth >= 600.dp
 
                                 val layoutModifier = Modifier.fillMaxWidth()
-                                if (showFullText) {
-                                    FlowRow(
-                                        modifier = layoutModifier,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        for (day in DayOfWeek.entries) {
-                                            val isDisabled = day in quietDaysDisabled
+                                FlowRow(
+                                    modifier = layoutModifier,
+                                    horizontalArrangement = if (showFullText) Arrangement.spacedBy(8.dp) else Arrangement.SpaceBetween,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    for (day in DayOfWeek.entries) {
+                                        val isDisabled = day in quietDaysDisabled
+                                        if (showFullText) {
                                             FilterChip(
                                                 selected = isDisabled,
                                                 onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
@@ -513,16 +513,7 @@ fun ScheduleSettingsScreen(
                                                     selectedLabelColor = MaterialTheme.colorScheme.error
                                                 )
                                             )
-                                        }
-                                    }
-                                } else {
-                                    Row(
-                                        modifier = layoutModifier,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        for (day in DayOfWeek.entries) {
-                                            val isDisabled = day in quietDaysDisabled
+                                        } else {
                                             val narrowName = day.getDisplayName(
                                                 java.time.format.TextStyle.NARROW,
                                                 java.util.Locale.getDefault()
