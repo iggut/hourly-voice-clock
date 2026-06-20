@@ -14,6 +14,11 @@ import com.k2fsa.sherpa.onnx.GeneratedAudio
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.getOfflineTtsConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
@@ -35,6 +40,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     private var isInitialized = false
     @Volatile private var isSynthesizing = false
     @Volatile private var cancelRequested = false
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + Job())
     private var tts: OfflineTts? = null
     private var sampleRate: Int = 22050
 
@@ -356,7 +362,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             cancelRequested = false
         }
 
-        Thread {
+        coroutineScope.launch {
             var success = false
             try {
                 val audio: GeneratedAudio? = ttsInstance.generate(text, 0, 1.0f)
@@ -376,7 +382,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
                 }
                 onComplete(success)
             }
-        }.start()
+        }
     }
 
     override fun stop() {
@@ -396,6 +402,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         } catch (e: Throwable) {
             Log.w(TAG, "Error releasing OfflineTts", e)
         }
+        coroutineScope.cancel()
         tts = null
         isInitialized = false
         currentModel = null
@@ -424,7 +431,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
     fun getModelDownloader(): OnnxModelDownloader = downloader
 
-    private fun playSamples(samples: FloatArray, sampleRate: Int) {
+    private suspend fun playSamples(samples: FloatArray, sampleRate: Int) {
         val spec = AudioChannelMapping.specOf(currentAudioChannel)
 
         val audioFormat = AudioFormat.Builder()
@@ -461,7 +468,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             track.play()
             track.write(pcmData, 0, pcmData.size)
             val playbackDurationMs = (samples.size.toLong() * 1000) / sampleRate
-            Thread.sleep(playbackDurationMs + 50)
+            kotlinx.coroutines.delay(playbackDurationMs + 50)
         } finally {
             try {
                 track.stop()
