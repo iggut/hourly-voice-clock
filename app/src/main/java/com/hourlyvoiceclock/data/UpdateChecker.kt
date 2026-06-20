@@ -60,13 +60,36 @@ object UpdateChecker {
 
                                     // Extract apk download url if available, fallback to html url
                                     var downloadUrl = htmlUrl
-                                    json.optJSONArray("assets")?.let { assets ->
-                                        for (i in 0 until assets.length()) {
-                                            val asset = assets.getJSONObject(i)
-                                            val name = asset.optString("name", "")
-                                            if (name.endsWith(".apk")) {
-                                                downloadUrl = asset.optString("browser_download_url", htmlUrl)
-                                                break
+
+                                    // Fast path: avoid parsing every object in the JSON array to save memory/CPU
+                                    // GitHub API usually returns browser_download_url right after name
+                                    val assetsArrayStr = json.optString("assets", "")
+                                    if (assetsArrayStr.isNotEmpty()) {
+                                        val apkIndex = assetsArrayStr.indexOf(".apk\"")
+                                        if (apkIndex != -1) {
+                                            val urlKeyIndex = assetsArrayStr.indexOf("\"browser_download_url\":\"", apkIndex)
+                                            if (urlKeyIndex != -1) {
+                                                // 24 is the length of "browser_download_url":"
+                                                val start = urlKeyIndex + 24
+                                                val end = assetsArrayStr.indexOf("\"", start)
+                                                if (end != -1) {
+                                                    downloadUrl = assetsArrayStr.substring(start, end)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Fallback to strict JSON parsing if fast path failed
+                                    if (downloadUrl == htmlUrl) {
+                                        json.optJSONArray("assets")?.let { assets ->
+                                            val len = assets.length()
+                                            for (i in 0 until len) {
+                                                val asset = assets.optJSONObject(i) ?: continue
+                                                val name = asset.optString("name", "")
+                                                if (name.endsWith(".apk")) {
+                                                    downloadUrl = asset.optString("browser_download_url", htmlUrl)
+                                                    break
+                                                }
                                             }
                                         }
                                     }

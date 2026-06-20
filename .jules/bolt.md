@@ -18,6 +18,10 @@
 ## 2024-08-01 - View Model Date/Time Reallocation Optimization
 **Learning:** In high-frequency loops, repeatedly instantiating `LocalDateTime.now()` multiple times per tick, and subsequently calling object allocating methods like `.truncatedTo()` and `.plusHours()`, puts unnecessary pressure on garbage collection.
 **Action:** Prevent redundant allocations in loops by instantiating `LocalDateTime.now()` only once per tick, sharing the reference, and performing integer comparisons against cached primitive variables (e.g. `now.hour`, `now.minute`) rather than creating and comparing temporary Date objects for unchanged values.
+## 2024-06-21 - [Fast JSON Array Traversal]
+**Learning:** Using JSON Array index-based traversal repeatedly (e.g. `optJSONObject(i)`) can be slower than primitive string index checks (`indexOf`) or avoiding `.length()` calls when searching for a specific substring within the raw JSON string or extracting the array length once.
+**Action:** When extracting a specific value out of a potentially large JSON array (like an assets list), use `indexOf` on the stringified array first to find the target substring, then extract around it, and fallback to strict JSON parsing only if necessary.
+
 ## 2024-08-01 - Blocking I/O in Async Context Fix (Thread.sleep to Coroutines)
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
