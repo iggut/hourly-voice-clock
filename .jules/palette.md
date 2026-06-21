@@ -28,3 +28,7 @@
 ## 2024-06-11 - Screen reader fallback descriptions
 **Learning:** Found an IconButton that used an optional description string in its contentDescription without a fallback, which could result in screen readers reading out an incomplete sentence if the data was missing.
 **Action:** Always ensure dynamic string templates used for `contentDescription` implement fallback logic (e.g. `.ifBlank { fallback }`) to guarantee complete and meaningful announcements.
+
+## 2024-06-21 - Destructive action confirmation
+**Learning:** Found that deleting local voice models happened instantly without confirmation upon tapping the delete icon, which can lead to accidental data loss. This highlights an accessibility and interaction pattern where destructive actions are missing safety nets.
+**Action:** Always verify that destructive actions, especially in settings lists (like deleting downloaded local voices), trigger a confirmation `AlertDialog` before executing to prevent accidental deletions.

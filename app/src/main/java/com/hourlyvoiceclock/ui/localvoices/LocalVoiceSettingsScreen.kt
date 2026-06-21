@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -67,6 +69,8 @@ import com.hourlyvoiceclock.ui.theme.LightBgStart
 import com.hourlyvoiceclock.ui.theme.LightBgEnd
 import com.hourlyvoiceclock.ui.theme.DarkBgStart
 import com.hourlyvoiceclock.ui.theme.DarkBgEnd
+import com.hourlyvoiceclock.ui.theme.dialogContainerColor
+import com.hourlyvoiceclock.ui.theme.dialogContentColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -268,6 +272,40 @@ private fun VoiceModelCard(
     onClearError: () -> Unit,
     isDark: Boolean
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            containerColor = dialogContainerColor(),
+            titleContentColor = dialogContentColor(),
+            textContentColor = dialogContentColor(),
+            title = {
+                Text(
+                    text = "Delete Voice Model?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text("Are you sure you want to delete ${model.displayName}? You can always download it again later.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete()
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -308,7 +346,7 @@ private fun VoiceModelCard(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
-                        IconButton(onClick = onDelete) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(
                                 Icons.Default.Delete,
                                 contentDescription = "Delete",
