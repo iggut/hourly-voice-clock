@@ -308,11 +308,40 @@ private fun VoiceModelCard(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
-                        IconButton(onClick = onDelete) {
+
+                        var showDeleteDialog by remember { mutableStateOf(false) }
+
+                        IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(
                                 Icons.Default.Delete,
                                 contentDescription = "Delete",
                                 tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+
+                        if (showDeleteDialog) {
+                            androidx.compose.material3.AlertDialog(
+                                onDismissRequest = { showDeleteDialog = false },
+                                containerColor = com.hourlyvoiceclock.ui.theme.dialogContainerColor(),
+                                titleContentColor = com.hourlyvoiceclock.ui.theme.dialogContentColor(),
+                                textContentColor = com.hourlyvoiceclock.ui.theme.dialogContentColor(),
+                                title = { Text("Delete Voice Model", fontWeight = FontWeight.Bold) },
+                                text = { Text("Are you sure you want to delete ${model.displayName}? You will need to download it again to use it.") },
+                                confirmButton = {
+                                    androidx.compose.material3.TextButton(
+                                        onClick = {
+                                            showDeleteDialog = false
+                                            onDelete()
+                                        }
+                                    ) {
+                                        Text("Delete", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                                    }
+                                },
+                                dismissButton = {
+                                    androidx.compose.material3.TextButton(onClick = { showDeleteDialog = false }) {
+                                        Text("Cancel")
+                                    }
+                                }
                             )
                         }
                     }

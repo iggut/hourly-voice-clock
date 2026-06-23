@@ -28,3 +28,7 @@
 ## 2024-06-11 - Screen reader fallback descriptions
 **Learning:** Found an IconButton that used an optional description string in its contentDescription without a fallback, which could result in screen readers reading out an incomplete sentence if the data was missing.
 **Action:** Always ensure dynamic string templates used for `contentDescription` implement fallback logic (e.g. `.ifBlank { fallback }`) to guarantee complete and meaningful announcements.
+
+## 2024-06-12 - Confirmation dialogs for destructive actions
+**Learning:** Deleting large downloaded voice models without confirmation causes accidental data loss and forces users to re-download 100MB+ files. This is a critical UX/accessibility failure for destructive actions.
+**Action:** Always trigger a confirmation `AlertDialog` before executing destructive actions (e.g., deleting downloaded local voice models) to prevent accidental data loss.
