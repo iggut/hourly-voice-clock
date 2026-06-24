@@ -487,7 +487,15 @@ fun ScheduleSettingsScreen(
                                 val showFullText = isLandscape || maxWidth >= 600.dp
 
                                 val layoutModifier = Modifier.fillMaxWidth()
+                                val locale = java.util.Locale.getDefault()
+                                val errorColor = MaterialTheme.colorScheme.error
+                                val errorBgColor = errorColor.copy(alpha = 0.2f)
+
                                 if (showFullText) {
+                                    val chipColors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = errorBgColor,
+                                        selectedLabelColor = errorColor
+                                    )
                                     FlowRow(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -502,20 +510,21 @@ fun ScheduleSettingsScreen(
                                                     Text(
                                                         day.getDisplayName(
                                                             java.time.format.TextStyle.FULL,
-                                                            java.util.Locale.getDefault()
+                                                            locale
                                                         ),
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                 },
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
-                                                    selectedLabelColor = MaterialTheme.colorScheme.error
-                                                )
+                                                colors = chipColors
                                             )
                                         }
                                     }
                                 } else {
+                                    val transparentColor = Color.Transparent
+                                    val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
                                     Row(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -525,12 +534,12 @@ fun ScheduleSettingsScreen(
                                             val isDisabled = day in quietDaysDisabled
                                             val narrowName = day.getDisplayName(
                                                 java.time.format.TextStyle.NARROW,
-                                                java.util.Locale.getDefault()
+                                                locale
                                             )
 
-                                            val bgColor = if (isDisabled) MaterialTheme.colorScheme.error.copy(alpha = 0.2f) else Color.Transparent
-                                            val borderColor = if (isDisabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                            val textColor = if (isDisabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                                            val bgColor = if (isDisabled) errorBgColor else transparentColor
+                                            val borderColor = if (isDisabled) errorColor else outlineColor
+                                            val textColor = if (isDisabled) errorColor else onSurfaceColor
                                             Box(
                                                 modifier = Modifier
                                                     .size(40.dp)
