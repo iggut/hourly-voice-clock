@@ -161,6 +161,13 @@ fun VoiceSettingsScreen(
                         fontWeight = FontWeight.ExtraBold
                     )
                     
+                    val primaryContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                    val primaryColor = MaterialTheme.colorScheme.primary
+                    val onPrimaryContainerColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    val onBackgroundColor = MaterialTheme.colorScheme.onBackground
+                    val unselectedBg = if (isDark) GlassBgDark else GlassBgLight
+                    val unselectedBorder = if (isDark) GlassBorderDark else GlassBorderLight
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -169,21 +176,9 @@ fun VoiceSettingsScreen(
                     ) {
                         engines.forEach { engine ->
                             val isSelected = selectedEnginePackage == engine.packageName
-                            val engineBg = if (isSelected) {
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
-                            } else {
-                                if (isDark) GlassBgDark else GlassBgLight
-                            }
-                            val borderTint = if (isSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                if (isDark) GlassBorderDark else GlassBorderLight
-                            }
-                            val textTint = if (isSelected) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onBackground
-                            }
+                            val engineBg = if (isSelected) primaryContainerColor else unselectedBg
+                            val borderTint = if (isSelected) primaryColor else unselectedBorder
+                            val textTint = if (isSelected) onPrimaryContainerColor else onBackgroundColor
 
                             Card(
                                 modifier = Modifier
@@ -487,23 +482,29 @@ fun VoiceSettingsScreen(
 
                 // System voices grouped by locale
                 if (showNormalVoices) {
-                normalVoicesByLocale.forEach { (localeName, voices) ->
+                    val localeShape = RoundedCornerShape(24.dp)
+                    val localeColors = CardDefaults.cardColors(
+                        containerColor = if (isDark) GlassBgDark else GlassBgLight
+                    )
+                    val localeBorder = BorderStroke(
+                        width = 1.dp,
+                        color = if (isDark) GlassBorderDark else GlassBorderLight
+                    )
+                    val localeTitleStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+                    val localeTitleColor = MaterialTheme.colorScheme.primary
+
+                    normalVoicesByLocale.forEach { (localeName, voices) ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isDark) GlassBgDark else GlassBgLight
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (isDark) GlassBorderDark else GlassBorderLight
-                        )
+                        shape = localeShape,
+                        colors = localeColors,
+                        border = localeBorder
                     ) {
                         Column(modifier = Modifier.padding(vertical = 10.dp)) {
                             Text(
                                 text = localeName,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                color = MaterialTheme.colorScheme.primary,
+                                style = localeTitleStyle,
+                                color = localeTitleColor,
                                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
                             )
                             voices.forEach { voice ->

@@ -34,3 +34,7 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+
+## 2024-06-25 - Redundant Object Allocations in Jetpack Compose High-Frequency Loops
+**Learning:** In Jetpack Compose, executing `MaterialTheme.colorScheme` state lookups, object instantiations like `RoundedCornerShape()` or `BorderStroke()`, and memory allocations like `.copy()` inside high-frequency UI generation loops (such as `forEach` over collections) forces redundant allocations and tracking overhead on every recomposition for every iterated item. This can create measurable garbage collection pressure and CPU overhead, especially as the size of the collection grows.
+**Action:** When iterating over elements in Compose to render UI, identify and extract loop-invariant allocations and state reads, placing them directly above the loop as local variables so they are instantiated exactly once per composition block instead of `N` times.
