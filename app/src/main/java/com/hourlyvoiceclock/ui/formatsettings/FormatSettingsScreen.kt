@@ -178,8 +178,10 @@ fun FormatSettingsScreen(
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
+                        // ⚡ Bolt: Pre-allocate shape outside loop to prevent redundant object creation
+                        val optionShape = RoundedCornerShape(8.dp)
                         PhraseStyle.values().forEach { style ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setPhraseStyle(style) }) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).clickable { viewModel.setPhraseStyle(style) }) {
                                 RadioButton(
                                     selected = phraseStyle == style,
                                     onClick = null
@@ -285,8 +287,10 @@ fun FormatSettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(10.dp))
+                        // ⚡ Bolt: Pre-allocate shape outside loop
+                        val optionShape = RoundedCornerShape(8.dp)
                         AudioChannel.values().forEach { channel ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setAudioChannel(channel) }) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).clickable { viewModel.setAudioChannel(channel) }) {
                                 RadioButton(
                                     selected = audioChannel == channel,
                                     onClick = null

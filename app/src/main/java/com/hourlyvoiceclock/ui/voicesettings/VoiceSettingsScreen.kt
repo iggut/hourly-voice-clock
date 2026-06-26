@@ -167,23 +167,19 @@ fun VoiceSettingsScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        // ⚡ Bolt: Hoist shared styles outside the high-frequency iteration loop to prevent redundant object allocations
+                        val selectedEngineBg = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                        val unselectedEngineBg = if (isDark) GlassBgDark else GlassBgLight
+                        val selectedBorderTint = MaterialTheme.colorScheme.primary
+                        val unselectedBorderTint = if (isDark) GlassBorderDark else GlassBorderLight
+                        val selectedTextTint = MaterialTheme.colorScheme.onPrimaryContainer
+                        val unselectedTextTint = MaterialTheme.colorScheme.onBackground
+
                         engines.forEach { engine ->
                             val isSelected = selectedEnginePackage == engine.packageName
-                            val engineBg = if (isSelected) {
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
-                            } else {
-                                if (isDark) GlassBgDark else GlassBgLight
-                            }
-                            val borderTint = if (isSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                if (isDark) GlassBorderDark else GlassBorderLight
-                            }
-                            val textTint = if (isSelected) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onBackground
-                            }
+                            val engineBg = if (isSelected) selectedEngineBg else unselectedEngineBg
+                            val borderTint = if (isSelected) selectedBorderTint else unselectedBorderTint
+                            val textTint = if (isSelected) selectedTextTint else unselectedTextTint
 
                             Card(
                                 modifier = Modifier
@@ -360,6 +356,8 @@ fun VoiceSettingsScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        // ⚡ Bolt: Pre-allocate shape to prevent instantiating it per filter item
+                        val filterChipShape = RoundedCornerShape(12.dp)
                         VoiceListFilter.entries.forEach { filter ->
                             FilterChip(
                                 selected = selectedFilter == filter,
@@ -375,7 +373,7 @@ fun VoiceSettingsScreen(
                                         fontWeight = FontWeight.Bold
                                     )
                                 },
-                                shape = RoundedCornerShape(12.dp)
+                                shape = filterChipShape
                             )
                         }
                     }
@@ -487,23 +485,30 @@ fun VoiceSettingsScreen(
 
                 // System voices grouped by locale
                 if (showNormalVoices) {
+                // ⚡ Bolt: Extract loop-invariant styles out of locale loop entirely
+                val normalVoiceCardShape = RoundedCornerShape(24.dp)
+                val normalVoiceCardColors = CardDefaults.cardColors(
+                    containerColor = if (isDark) GlassBgDark else GlassBgLight
+                )
+                val normalVoiceCardBorder = BorderStroke(
+                    width = 1.dp,
+                    color = if (isDark) GlassBorderDark else GlassBorderLight
+                )
+                val localeTitleStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+                val localeTitleColor = MaterialTheme.colorScheme.primary
+
                 normalVoicesByLocale.forEach { (localeName, voices) ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isDark) GlassBgDark else GlassBgLight
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (isDark) GlassBorderDark else GlassBorderLight
-                        )
+                        shape = normalVoiceCardShape,
+                        colors = normalVoiceCardColors,
+                        border = normalVoiceCardBorder
                     ) {
                         Column(modifier = Modifier.padding(vertical = 10.dp)) {
                             Text(
                                 text = localeName,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                color = MaterialTheme.colorScheme.primary,
+                                style = localeTitleStyle,
+                                color = localeTitleColor,
                                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
                             )
                             voices.forEach { voice ->
