@@ -653,6 +653,7 @@ fun SpecialPresetItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onSelectPreset)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -712,6 +713,7 @@ fun VoiceItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
             .clickable { onSelectVoice(voice.name, voice.localeTag) }
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -825,6 +827,7 @@ fun LocalVoiceItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onSelect)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -905,6 +908,7 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClear)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
