@@ -6,6 +6,8 @@ import com.hourlyvoiceclock.announcer.AnnouncementNotifier
 import com.hourlyvoiceclock.announcer.ChimePlayer
 import com.hourlyvoiceclock.announcer.TimeAnnouncer
 import com.hourlyvoiceclock.data.DefaultUpdateManager
+import com.hourlyvoiceclock.data.SettingsDataStore
+import com.hourlyvoiceclock.data.SettingsMapper
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.data.UpdateManager
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
@@ -30,8 +32,16 @@ class AppDependencies(context: Context) {
 
     private val appContext = context.applicationContext
 
+    private val settingsDataStore: SettingsDataStore by lazy {
+        SettingsDataStore(appContext)
+    }
+
+    private val settingsMapper: SettingsMapper by lazy {
+        SettingsMapper()
+    }
+
     val settingsRepository: SettingsRepository by lazy {
-        SettingsRepository(appContext)
+        SettingsRepository(settingsDataStore, settingsMapper)
     }
 
     val ttsEngine: TtsEngine by lazy {
