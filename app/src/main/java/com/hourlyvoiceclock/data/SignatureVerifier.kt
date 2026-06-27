@@ -6,46 +6,71 @@ import android.util.Log
 import java.security.MessageDigest
 
 /**
- * Utility for verifying APK signatures and detecting certificate mismatches.
- * This helps diagnose INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES errors.
+ * Port for verifying APK signatures and detecting certificate mismatches.
  */
-object SignatureVerifier {
-    private const val TAG = "SignatureVerifier"
+interface SignatureVerifier {
 
-    /**
-     * Result of signature verification
-     */
     sealed class VerifyResult {
         data class SignatureMismatch(
             val localFingerprint: String,
             val apkFingerprint: String,
             val message: String
         ) : VerifyResult()
-        
+
         data class Error(val message: String) : VerifyResult()
         object SignaturesMatch : VerifyResult()
-        object Verified : VerifyResult()
     }
 
-    /**
-     * Get the signature fingerprint of the currently installed app.
-     * Returns null if the app is not installed.
-     */
-    fun getInstalledAppSignatureFingerprint(context: Context): String? {
+    fun verifyUpdateCompatibility(localApkPath: String): VerifyResult
+}
+
+/**
+ * Production implementation using [PackageManager].
+ */
+class AndroidSignatureVerifier(context: Context) : SignatureVerifier {
+
+    private val appContext = context.applicationContext
+
+    override fun verifyUpdateCompatibility(localApkPath: String): SignatureVerifier.VerifyResult {
+        val localFingerprint = getInstalledAppSignatureFingerprint()
+        val apkFingerprint = getApkSignatureFingerprint(localApkPath)
+
+        if (localFingerprint == null) {
+            return SignatureVerifier.VerifyResult.Error("Could not read local app signature")
+        }
+
+        if (apkFingerprint == null) {
+            return SignatureVerifier.VerifyResult.Error("Could not read APK signature - file may be corrupted or not a valid APK")
+        }
+
+        return if (localFingerprint == apkFingerprint) {
+            SignatureVerifier.VerifyResult.SignaturesMatch
+        } else {
+            SignatureVerifier.VerifyResult.SignatureMismatch(
+                localFingerprint = localFingerprint,
+                apkFingerprint = apkFingerprint,
+                message = "Signature mismatch: Local app and APK were signed with different keys. " +
+                        "This typically happens when installing a development build and trying to update " +
+                        "with a release build, or vice versa. Solution: Uninstall the current app " +
+                        "before installing the new version."
+            )
+        }
+    }
+
+    private fun getInstalledAppSignatureFingerprint(): String? {
         return try {
-            val packageName = context.packageName
-            val packageInfo = context.packageManager.getPackageInfo(
+            val packageName = appContext.packageName
+            val packageInfo = appContext.packageManager.getPackageInfo(
                 packageName,
                 PackageManager.GET_SIGNATURES
             )
-            
+
             val signatures = packageInfo.signatures
             if (signatures.isNullOrEmpty()) {
                 Log.e(TAG, "No signatures found for installed app")
                 return null
             }
 
-            // Get the first signature's SHA-256 fingerprint
             val signature = signatures[0]
             val cert = signature.toByteArray()
             val md = MessageDigest.getInstance("SHA-256")
@@ -57,20 +82,16 @@ object SignatureVerifier {
         }
     }
 
-    /**
-     * Get the signature fingerprint of an APK file using PackageManager.
-     * Returns null if the APK cannot be parsed.
-     */
-    fun getApkSignatureFingerprint(context: Context, apkPath: String): String? {
+    private fun getApkSignatureFingerprint(apkPath: String): String? {
         return try {
             val packageInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                context.packageManager.getPackageArchiveInfo(
+                appContext.packageManager.getPackageArchiveInfo(
                     apkPath,
                     PackageManager.GET_SIGNING_CERTIFICATES
                 )
             } else {
                 @Suppress("DEPRECATION")
-                context.packageManager.getPackageArchiveInfo(
+                appContext.packageManager.getPackageArchiveInfo(
                     apkPath,
                     PackageManager.GET_SIGNATURES
                 )
@@ -104,36 +125,6 @@ object SignatureVerifier {
         }
     }
 
-    /**
-     * Verify if the APK can be installed over the currently installed app.
-     * Returns detailed result about signature compatibility.
-     */
-    fun verifyUpdateCompatibility(context: Context, apkPath: String): VerifyResult {
-        val localFingerprint = getInstalledAppSignatureFingerprint(context)
-        val apkFingerprint = getApkSignatureFingerprint(context, apkPath)
-
-        if (localFingerprint == null) {
-            return VerifyResult.Error("Could not read local app signature")
-        }
-
-        if (apkFingerprint == null) {
-            return VerifyResult.Error("Could not read APK signature - file may be corrupted or not a valid APK")
-        }
-
-        return if (localFingerprint == apkFingerprint) {
-            VerifyResult.SignaturesMatch
-        } else {
-            VerifyResult.SignatureMismatch(
-                localFingerprint = localFingerprint,
-                apkFingerprint = apkFingerprint,
-                message = "Signature mismatch: Local app and APK were signed with different keys. " +
-                        "This typically happens when installing a development build and trying to update " +
-                        "with a release build, or vice versa. Solution: Uninstall the current app " +
-                        "before installing the new version."
-            )
-        }
-    }
-
     private fun bytesToHex(bytes: ByteArray): String {
         val hexChars = "0123456789ABCDEF"
         val result = StringBuilder(bytes.size * 2)
@@ -143,5 +134,9 @@ object SignatureVerifier {
             result.append(hexChars[i and 0x0f])
         }
         return result.toString()
+    }
+
+    companion object {
+        private const val TAG = "SignatureVerifier"
     }
 }

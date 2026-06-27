@@ -1,7 +1,7 @@
 package com.hourlyvoiceclock.data
 
-import android.content.Context
 import kotlinx.coroutines.flow.StateFlow
+import java.io.File
 
 /**
  * Manages the app-update lifecycle: check GitHub releases, download APK,
@@ -14,9 +14,9 @@ interface UpdateManager {
     val status: StateFlow<UpdateStatus>
 
     fun checkForUpdate(currentVersion: String, isManual: Boolean = false)
-    fun downloadAndInstall(downloadUrl: String, cacheDir: java.io.File)
+    fun downloadAndInstall(downloadUrl: String, cacheDir: File)
     fun cancelDownload()
-    fun installApk(context: Context, localPath: String)
+    fun installApk(localPath: String)
     fun cleanupAfterInstall(localPath: String?)
     fun dismissUpdateDialog()
 }

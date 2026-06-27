@@ -1,28 +1,30 @@
 package com.hourlyvoiceclock.data
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 
 /**
- * Handles the full update lifecycle: check GitHub releases, download the APK,
- * verify signatures, launch the installer.
+ * Orchestrates the app-update lifecycle: check GitHub releases, download APK,
+ * verify signatures, and trigger the installer.
  *
- * Owns its own [UpdateDownloader] instance for download progress tracking.
+ * All Android-specific side effects (Toast, install Intent) are delegated to
+ * [UpdateUiDelegate]; network I/O is delegated to [UpdateChecker] and
+ * [UpdateDownloader]; signature checks go through [SignatureVerifier]. This
+ * keeps the manager focused on state transitions and makes it testable with
+ * fakes.
  */
 class DefaultUpdateManager(
     private val scope: CoroutineScope,
-    private val appContext: Context
+    private val updateChecker: UpdateChecker,
+    private val downloader: UpdateDownloader,
+    private val signatureVerifier: SignatureVerifier,
+    private val uiDelegate: UpdateUiDelegate
 ) : UpdateManager {
-
-    private val downloader = UpdateDownloader()
 
     private val _status = MutableStateFlow<UpdateStatus>(UpdateStatus.Idle)
     override val status: StateFlow<UpdateStatus> = _status.asStateFlow()
@@ -31,7 +33,7 @@ class DefaultUpdateManager(
         scope.launch {
             _status.value = UpdateStatus.Checking
 
-            UpdateChecker.checkForUpdate(currentVersion)
+            updateChecker.checkForUpdate(currentVersion)
                 .onSuccess { info ->
                     _status.value = when {
                         info.isUpdateAvailable -> UpdateStatus.UpdateAvailable(
@@ -46,17 +48,13 @@ class DefaultUpdateManager(
                 .onFailure { error ->
                     _status.value = UpdateStatus.Error(error.localizedMessage ?: "Unknown error")
                     if (isManual) {
-                        Toast.makeText(
-                            appContext,
-                            "Update check failed: ${error.localizedMessage}",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        uiDelegate.showUpdateCheckError(error.localizedMessage)
                     }
                 }
         }
     }
 
-    override fun downloadAndInstall(downloadUrl: String, cacheDir: java.io.File) {
+    override fun downloadAndInstall(downloadUrl: String, cacheDir: File) {
         scope.launch {
             _status.value = UpdateStatus.Downloading(0, 0, 0)
 
@@ -93,11 +91,11 @@ class DefaultUpdateManager(
         }
     }
 
-    override fun installApk(context: Context, localPath: String) {
+    override fun installApk(localPath: String) {
         scope.launch {
             _status.value = UpdateStatus.Installing(0)
             try {
-                val result = SignatureVerifier.verifyUpdateCompatibility(context, localPath)
+                val result = signatureVerifier.verifyUpdateCompatibility(localPath)
                 when (result) {
                     is SignatureVerifier.VerifyResult.SignatureMismatch -> {
                         _status.value = UpdateStatus.InstallFailed(
@@ -114,7 +112,7 @@ class DefaultUpdateManager(
                     else -> { /* proceed */ }
                 }
 
-                launchInstallIntent(context, localPath)
+                uiDelegate.launchInstallIntent(localPath)
                 _status.value = UpdateStatus.InstallComplete
             } catch (e: Exception) {
                 val msg = e.localizedMessage ?: "Installation failed"
@@ -150,28 +148,5 @@ class DefaultUpdateManager(
             else -> {}
         }
         _status.value = UpdateStatus.Idle
-    }
-
-    private fun launchInstallIntent(context: Context, apkPath: String) {
-        val file = java.io.File(apkPath)
-        if (!file.exists()) throw Exception("APK file not found")
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-
-        try {
-            val uri = androidx.core.content.FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
-            )
-            intent.setDataAndType(uri, "application/vnd.android.package-archive")
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } catch (_: Exception) {
-            intent.setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive")
-        }
-
-        context.startActivity(intent)
     }
 }

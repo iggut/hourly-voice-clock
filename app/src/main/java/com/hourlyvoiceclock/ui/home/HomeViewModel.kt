@@ -172,7 +172,7 @@ class HomeViewModel(
     fun cancelDownload() = updateManager.cancelDownload()
 
     fun installApk(localPath: String) {
-        updateManager.installApk(getApplication(), localPath)
+        updateManager.installApk(localPath)
     }
 
     fun cleanupAfterInstall(localPath: String?) {

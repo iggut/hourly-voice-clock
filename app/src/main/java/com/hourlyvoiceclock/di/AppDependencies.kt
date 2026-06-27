@@ -15,11 +15,19 @@ import com.hourlyvoiceclock.announcer.TtsConfigApplier
 import com.hourlyvoiceclock.announcer.TtsEngineRouter
 import com.hourlyvoiceclock.announcer.UserFeedback
 import com.hourlyvoiceclock.announcer.VolumeChecker
+import com.hourlyvoiceclock.data.AndroidSignatureVerifier
+import com.hourlyvoiceclock.data.AndroidUpdateUiDelegate
 import com.hourlyvoiceclock.data.DefaultUpdateManager
+import com.hourlyvoiceclock.data.GitHubUpdateChecker
+import com.hourlyvoiceclock.data.OkHttpUpdateDownloader
 import com.hourlyvoiceclock.data.SettingsDataStore
 import com.hourlyvoiceclock.data.SettingsMapper
 import com.hourlyvoiceclock.data.SettingsRepository
+import com.hourlyvoiceclock.data.SignatureVerifier
+import com.hourlyvoiceclock.data.UpdateChecker
+import com.hourlyvoiceclock.data.UpdateDownloader
 import com.hourlyvoiceclock.data.UpdateManager
+import com.hourlyvoiceclock.data.UpdateUiDelegate
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
 import com.hourlyvoiceclock.scheduler.HourlySchedulePolicy
@@ -132,10 +140,29 @@ class AppDependencies(context: Context) {
         )
     }
 
+    private val updateChecker: UpdateChecker by lazy {
+        GitHubUpdateChecker()
+    }
+
+    private val updateDownloader: UpdateDownloader by lazy {
+        OkHttpUpdateDownloader()
+    }
+
+    private val signatureVerifier: SignatureVerifier by lazy {
+        AndroidSignatureVerifier(appContext)
+    }
+
+    private val updateUiDelegate: UpdateUiDelegate by lazy {
+        AndroidUpdateUiDelegate(appContext)
+    }
+
     val updateManager: UpdateManager by lazy {
         DefaultUpdateManager(
             scope = kotlinx.coroutines.CoroutineScope(SupervisorJob()),
-            appContext = appContext
+            updateChecker = updateChecker,
+            downloader = updateDownloader,
+            signatureVerifier = signatureVerifier,
+            uiDelegate = updateUiDelegate
         )
     }
 }

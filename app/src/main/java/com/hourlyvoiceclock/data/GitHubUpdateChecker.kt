@@ -1,0 +1,189 @@
+package com.hourlyvoiceclock.data
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import org.json.JSONObject
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+/**
+ * Production implementation of [UpdateChecker] that queries the GitHub
+ * releases API for the latest APK.
+ */
+class GitHubUpdateChecker : UpdateChecker {
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(8, TimeUnit.SECONDS)
+        .build()
+
+    override suspend fun checkForUpdate(currentVersion: String): Result<UpdateChecker.UpdateInfo> = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder()
+                .url(LATEST_RELEASE_URL)
+                .header("Accept", "application/vnd.github.v3+json")
+                .header("User-Agent", "HourlyVoiceClock-Updater")
+                .build()
+
+            suspendCancellableCoroutine { continuation ->
+                val call = client.newCall(request)
+                continuation.invokeOnCancellation { call.cancel() }
+
+                call.enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        continuation.resume(Result.failure(e))
+                    }
+
+                    override fun onResponse(call: Call, response: Response) {
+                        response.use {
+                            val responseCode = it.code
+                            if (responseCode == 200) {
+                                try {
+                                    val responseBody = it.body?.string() ?: ""
+                                    val json = JSONObject(responseBody)
+                                    val latestVersion = json.optString("tag_name", "").trim()
+                                    val htmlUrl = json.optString("html_url", "").trim()
+                                    val body = json.optString("body", "").trim()
+
+                                    // Extract apk download url if available, fallback to html url
+                                    var downloadUrl = htmlUrl
+
+                                    // Fast path: avoid parsing every object in the JSON array to save memory/CPU
+                                    // GitHub API usually returns browser_download_url right after name
+                                    val assetsArrayStr = json.optString("assets", "")
+                                    if (assetsArrayStr.isNotEmpty()) {
+                                        val apkIndex = assetsArrayStr.indexOf(".apk\"")
+                                        if (apkIndex != -1) {
+                                            val urlKeyIndex = assetsArrayStr.indexOf("\"browser_download_url\":\"", apkIndex)
+                                            if (urlKeyIndex != -1) {
+                                                // 24 is the length of "browser_download_url":"
+                                                val start = urlKeyIndex + 24
+                                                val end = assetsArrayStr.indexOf("\"", start)
+                                                if (end != -1) {
+                                                    downloadUrl = assetsArrayStr.substring(start, end)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Fallback to strict JSON parsing if fast path failed
+                                    if (downloadUrl == htmlUrl) {
+                                        json.optJSONArray("assets")?.let { assets ->
+                                            val len = assets.length()
+                                            for (i in 0 until len) {
+                                                val asset = assets.optJSONObject(i) ?: continue
+                                                val name = asset.optString("name", "")
+                                                if (name.endsWith(".apk")) {
+                                                    downloadUrl = asset.optString("browser_download_url", htmlUrl)
+                                                    break
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    val cleanCurrent = cleanVersion(currentVersion)
+                                    val cleanLatest = cleanVersion(latestVersion)
+                                    val updateAvailable = isNewerVersion(cleanCurrent, cleanLatest)
+
+                                    continuation.resume(Result.success(
+                                        UpdateChecker.UpdateInfo(
+                                            isUpdateAvailable = updateAvailable,
+                                            latestVersion = latestVersion,
+                                            downloadUrl = downloadUrl,
+                                            releaseNotes = body
+                                        )
+                                    ))
+                                } catch (e: Exception) {
+                                    continuation.resume(Result.failure(e))
+                                }
+                            } else if (responseCode == 404) {
+                                continuation.resume(Result.success(
+                                    UpdateChecker.UpdateInfo(
+                                        isUpdateAvailable = false,
+                                        latestVersion = "",
+                                        downloadUrl = ""
+                                    )
+                                ))
+                            } else {
+                                continuation.resume(Result.failure(Exception("HTTP error $responseCode")))
+                            }
+                        }
+                    }
+                })
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    companion object {
+        private const val LATEST_RELEASE_URL = "https://api.github.com/repos/iggut/hourly-voice-clock/releases/latest"
+
+        fun cleanVersion(version: String): String {
+            return version.trim().lowercase().removePrefix("v")
+        }
+
+        fun isNewerVersion(current: String, latest: String): Boolean {
+            if (current.isBlank() || latest.isBlank()) return false
+            if (current == latest) return false
+
+            var currIdx = 0
+            var lateIdx = 0
+            val currLen = current.length
+            val lateLen = latest.length
+
+            while (currIdx < currLen && lateIdx < lateLen) {
+                var currNum = 0
+                var lateNum = 0
+
+                var currParsingDigits = true
+                while (currIdx < currLen) {
+                    val c = current[currIdx++]
+                    if (c == '.') break
+                    if (currParsingDigits) {
+                        if (c.isDigit()) {
+                            currNum = currNum * 10 + (c - '0')
+                        } else {
+                            currParsingDigits = false
+                        }
+                    }
+                }
+
+                var lateParsingDigits = true
+                while (lateIdx < lateLen) {
+                    val c = latest[lateIdx++]
+                    if (c == '.') break
+                    if (lateParsingDigits) {
+                        if (c.isDigit()) {
+                            lateNum = lateNum * 10 + (c - '0')
+                        } else {
+                            lateParsingDigits = false
+                        }
+                    }
+                }
+
+                if (lateNum > currNum) return true
+                if (currNum > lateNum) return false
+            }
+
+            var currentPartsCount = 1
+            for (i in 0 until currLen) {
+                if (current[i] == '.') currentPartsCount++
+            }
+            var latestPartsCount = 1
+            for (i in 0 until lateLen) {
+                if (latest[i] == '.') latestPartsCount++
+            }
+
+            return latestPartsCount > currentPartsCount
+        }
+    }
+}
