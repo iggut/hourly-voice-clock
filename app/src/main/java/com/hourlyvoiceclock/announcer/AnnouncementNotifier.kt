@@ -21,13 +21,13 @@ import androidx.core.content.ContextCompat
  * Behaviour: if the runtime permission has not been granted on Android 13+
  * the call is a silent no-op. The notifier never throws.
  */
-class AnnouncementNotifier(
+open class AnnouncementNotifier(
     private val context: Context,
     private val channelId: String,
     private val notificationId: Int = DEFAULT_NOTIFICATION_ID
 ) {
 
-    fun post(text: String) {
+    open fun post(text: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val granted = ContextCompat.checkSelfPermission(
                 context,

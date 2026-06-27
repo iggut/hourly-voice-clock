@@ -3,8 +3,18 @@ package com.hourlyvoiceclock.di
 import android.content.Context
 import com.hourlyvoiceclock.HourlyVoiceClockApp
 import com.hourlyvoiceclock.announcer.AnnouncementNotifier
+import com.hourlyvoiceclock.announcer.AndroidVolumeChecker
+import com.hourlyvoiceclock.announcer.AudioFocusController
 import com.hourlyvoiceclock.announcer.ChimePlayer
+import com.hourlyvoiceclock.announcer.DelayScheduler
+import com.hourlyvoiceclock.announcer.HandlerDelayScheduler
+import com.hourlyvoiceclock.announcer.HapticPulse
 import com.hourlyvoiceclock.announcer.TimeAnnouncer
+import com.hourlyvoiceclock.announcer.ToastUserFeedback
+import com.hourlyvoiceclock.announcer.TtsConfigApplier
+import com.hourlyvoiceclock.announcer.TtsEngineRouter
+import com.hourlyvoiceclock.announcer.UserFeedback
+import com.hourlyvoiceclock.announcer.VolumeChecker
 import com.hourlyvoiceclock.data.DefaultUpdateManager
 import com.hourlyvoiceclock.data.SettingsDataStore
 import com.hourlyvoiceclock.data.SettingsMapper
@@ -88,12 +98,37 @@ class AppDependencies(context: Context) {
         LocalVoicesStore()
     }
 
+    private val ttsEngineRouter: TtsEngineRouter by lazy {
+        TtsEngineRouter(
+            primaryEngine = ttsEngine,
+            localEngineFactory = { LocalTtsEngine(appContext) }
+        )
+    }
+
+    private val volumeChecker: VolumeChecker by lazy {
+        AndroidVolumeChecker(appContext)
+    }
+
+    private val userFeedback: UserFeedback by lazy {
+        ToastUserFeedback(appContext)
+    }
+
+    private val delayScheduler: DelayScheduler by lazy {
+        HandlerDelayScheduler()
+    }
+
     val timeAnnouncer: TimeAnnouncer by lazy {
         TimeAnnouncer(
-            context = appContext,
             ttsEngine = ttsEngine,
             chimePlayer = chimePlayer,
-            notifier = notifier
+            notifier = notifier,
+            hapticPulse = HapticPulse(appContext),
+            ttsConfig = TtsConfigApplier(ttsEngine),
+            audioFocusController = AudioFocusController(appContext),
+            ttsEngineRouter = ttsEngineRouter,
+            volumeChecker = volumeChecker,
+            userFeedback = userFeedback,
+            delayScheduler = delayScheduler
         )
     }
 

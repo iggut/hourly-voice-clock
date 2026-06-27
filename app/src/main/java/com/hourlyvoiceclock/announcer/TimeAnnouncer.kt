@@ -1,84 +1,78 @@
 package com.hourlyvoiceclock.announcer
 
-import android.content.Context
-import android.media.AudioManager
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
-import android.widget.Toast
 import com.hourlyvoiceclock.data.AppSettings
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.tts.TtsEngine
-import com.hourlyvoiceclock.tts.local.LocalTtsEngine
-import java.time.LocalDateTime
 
+/**
+ * Orchestrates an hourly announcement: policy checks, chime, haptic,
+ * audio focus, TTS dispatch, and optional status notification.
+ *
+ * All Android framework dependencies are injected as ports so the
+ * sequencing logic can be unit-tested with fakes.
+ */
 class TimeAnnouncer(
-    private val context: Context,
     private val ttsEngine: TtsEngine,
     private val chimePlayer: ChimePlayer,
     private val notifier: AnnouncementNotifier,
-    private val hapticPulse: HapticPulse = HapticPulse(context),
-    private val ttsConfig: TtsConfigApplier = TtsConfigApplier(ttsEngine),
-    private val audioFocusController: AudioFocusController = AudioFocusController(context),
-    private val ttsEngineRouter: TtsEngineRouter = TtsEngineRouter(
-        primaryEngine = ttsEngine,
-        localEngineFactory = { LocalTtsEngine(context) }
-    )
+    private val hapticPulse: HapticPulse,
+    private val ttsConfig: TtsConfigApplier,
+    private val audioFocusController: AudioFocusController,
+    private val ttsEngineRouter: TtsEngineRouter,
+    private val volumeChecker: VolumeChecker,
+    private val userFeedback: UserFeedback,
+    private val delayScheduler: DelayScheduler,
+    private val preSpeakSettleMs: Long = DEFAULT_PRE_SPEAK_SETTLE_MS
 ) {
-
-    /**
-     * How long to wait after the chime finishes and audio focus is
-     * granted before asking the TTS engine to start speaking. Without
-     * this delay, the audio HAL has not yet finished rerouting to the
-     * speech stream when the first frames are dispatched — the engine
-     * reports onStart immediately, but the first syllable of the
-     * utterance is consumed while the output device is still coming
-     * up, producing a clipped announcement. A short settle delay gives
-     * the routing layer time to land on the requested stream.
-     */
-    private val preSpeakSettleMs: Long = 120L
 
     fun announce(
         settings: AppSettings,
         force: Boolean = false,
         includeDate: Boolean = false,
-        dateTime: LocalDateTime = LocalDateTime.now(),
+        dateTime: java.time.LocalDateTime? = null,
         onComplete: (Boolean) -> Unit = {}
     ) {
+        val effectiveDateTime = dateTime
+            ?: java.time.LocalDateTime.now()
+        announceAt(
+            settings = settings,
+            force = force,
+            includeDate = includeDate,
+            dateTime = effectiveDateTime,
+            onComplete = onComplete
+        )
+    }
 
-        if (!force) {
-            val inQuiet = QuietHoursPolicy.isQuietTime(
-                dateTime.toLocalTime(),
-                settings.quietHoursEnabled,
-                settings.quietHoursStart,
-                settings.quietHoursEnd,
-                settings.quietDaysDisabled,
-                dateTime.dayOfWeek,
-                settings.quietDaysQuietStart,
-                settings.quietDaysQuietEnd
-            )
-            if (inQuiet) {
-                Log.d(TAG, "Blocked by quiet hours")
-                onComplete(false)
-                return
-            }
+    /**
+     * Test-accessible entry point that accepts a deterministic [dateTime]
+     * so the [DelayScheduler] and completion callbacks can be advanced
+     * without real wall-clock time.
+     */
+    internal fun announceAt(
+        settings: AppSettings,
+        force: Boolean = false,
+        includeDate: Boolean = false,
+        dateTime: java.time.LocalDateTime,
+        onComplete: (Boolean) -> Unit
+    ) {
+        if (AnnouncementPolicy.isBlockedByQuietHours(settings, dateTime, force)) {
+            Log.d(TAG, "Blocked by quiet hours")
+            onComplete(false)
+            return
         }
 
         val channelSpec = AudioChannelMapping.specOf(settings.audioChannel)
         val audioStream = channelSpec.stream
         val usage = channelSpec.usage
 
-        // Check volume on the selected stream
-        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-        val streamVolume = audioManager?.getStreamVolume(audioStream) ?: 0
-        val streamMax = audioManager?.getStreamMaxVolume(audioStream) ?: 1
-        if (streamVolume == 0) {
-            Toast.makeText(context, "${channelSpec.shortLabel} volume is muted. Turn up volume to hear announcements.", Toast.LENGTH_LONG).show()
-            Log.w(TAG, "Stream volume is 0 for $audioStream - cannot hear TTS")
+        if (volumeChecker.isMuted(audioStream)) {
+            userFeedback.showMutedStreamMessage(channelSpec.shortLabel)
+            Log.w(TAG, "Stream $audioStream volume is 0 - cannot hear TTS")
             onComplete(false)
             return
         }
-        Log.d(TAG, "Stream $audioStream volume: $streamVolume / $streamMax")
+        Log.d(TAG, "Stream $audioStream volume: ${volumeChecker.currentVolume(audioStream)} / ${volumeChecker.maxVolume(audioStream)}")
 
         if (settings.vibrateBefore) {
             hapticPulse.pulse()
@@ -86,25 +80,21 @@ class TimeAnnouncer(
 
         if (settings.chimeSound != ChimeSound.NONE) {
             chimePlayer.play(settings.chimeSound) {
-                speakText(settings, dateTime, includeDate, audioManager, usage, audioStream, onComplete)
+                speakText(settings, dateTime, includeDate, usage, audioStream, onComplete)
             }
         } else {
-            speakText(settings, dateTime, includeDate, audioManager, usage, audioStream, onComplete)
+            speakText(settings, dateTime, includeDate, usage, audioStream, onComplete)
         }
     }
 
     private fun speakText(
         settings: AppSettings,
-        dateTime: LocalDateTime,
+        dateTime: java.time.LocalDateTime,
         includeDate: Boolean,
-        audioManager: AudioManager?,
         usage: Int,
         audioStream: Int,
         onComplete: (Boolean) -> Unit
     ) {
-        // Route to the user-selected engine: downloaded on-device voice
-        // (LocalTtsEngine) if one is selected and loadable, otherwise
-        // the system TTS path.
         val engine = ttsEngineRouter.resolveFor(settings)
 
         if (!engine.isAvailable()) {
@@ -112,7 +102,6 @@ class TimeAnnouncer(
         }
 
         if (engine === ttsEngine) {
-            // System TTS path: apply the saved voice/locale/pitch/rate.
             ttsConfig.apply(
                 voiceName = settings.selectedVoiceName,
                 savedLocale = settings.selectedLocale,
@@ -121,8 +110,6 @@ class TimeAnnouncer(
                 audioChannel = settings.audioChannel
             )
         } else {
-            // Local engine path: pitch/rate are baked into the model, so
-            // only the audio channel needs to be applied.
             engine.setAudioChannel(settings.audioChannel)
         }
 
@@ -141,12 +128,10 @@ class TimeAnnouncer(
 
         // Defer the actual TTS dispatch by a short settle window so the
         // audio HAL has time to finish rerouting to the requested
-        // stream before the first samples hit it. Without this, the
-        // engine's onStart fires before the output is stable and the
-        // opening syllable of the announcement is lost (clipped).
-        Handler(Looper.getMainLooper()).postDelayed({
+        // stream before the first samples hit it.
+        delayScheduler.schedule(preSpeakSettleMs) {
             engine.speakAsync(text) { success -> onComplete(success) }
-        }, preSpeakSettleMs)
+        }
 
         if (settings.notificationLogging) {
             notifier.post(text)
@@ -155,5 +140,6 @@ class TimeAnnouncer(
 
     companion object {
         private const val TAG = "TimeAnnouncer"
+        const val DEFAULT_PRE_SPEAK_SETTLE_MS = 120L
     }
 }

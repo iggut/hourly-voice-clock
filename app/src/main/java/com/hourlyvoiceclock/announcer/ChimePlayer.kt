@@ -18,14 +18,14 @@ import com.hourlyvoiceclock.data.ChimeSound
  * @param context any [Context] (the application context is fine — no long-lived
  *   references are kept).
  */
-class ChimePlayer(private val context: Context) {
+open class ChimePlayer(private val context: Context) {
 
     /**
      * Play the given [sound]. [onComplete] is invoked on the main thread once
      * playback finishes, fails to start, or is skipped because the sound is
      * [ChimeSound.NONE] or the resource is missing. Never throws.
      */
-    fun play(sound: ChimeSound, onComplete: () -> Unit) {
+    open fun play(sound: ChimeSound, onComplete: () -> Unit) {
         val resourceId = resourceIdFor(sound)
         if (resourceId == 0) {
             if (sound != ChimeSound.NONE) {

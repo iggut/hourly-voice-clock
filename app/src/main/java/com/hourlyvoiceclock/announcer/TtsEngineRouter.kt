@@ -3,7 +3,6 @@ package com.hourlyvoiceclock.announcer
 import android.util.Log
 import com.hourlyvoiceclock.data.AppSettings
 import com.hourlyvoiceclock.tts.TtsEngine
-import com.hourlyvoiceclock.tts.local.LocalTtsEngine
 import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
 
 /**
@@ -26,11 +25,11 @@ import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
  */
 class TtsEngineRouter(
     private val primaryEngine: TtsEngine,
-    private val localEngineFactory: () -> LocalTtsEngine
+    private val localEngineFactory: () -> TtsEngine
 ) {
 
     @Volatile
-    private var localEngineInstance: LocalTtsEngine? = null
+    private var localEngineInstance: TtsEngine? = null
 
     /**
      * Returns the engine that should speak this announcement, and
@@ -71,7 +70,7 @@ class TtsEngineRouter(
      * Used by the voice-settings screen to read its current state
      * without forcing construction.
      */
-    fun localEngineOrNull(): LocalTtsEngine? = localEngineInstance
+    fun localEngineOrNull(): TtsEngine? = localEngineInstance
 
     companion object {
         private const val TAG = "TtsEngineRouter"

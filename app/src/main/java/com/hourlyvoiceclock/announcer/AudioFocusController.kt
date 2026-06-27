@@ -27,7 +27,7 @@ import android.os.Looper
  * @param releaseDelayMs how long to hold focus before releasing if the
  *   caller does not release early. The legacy behaviour was 5 seconds.
  */
-class AudioFocusController(
+open class AudioFocusController(
     private val context: Context,
     private val releaseDelayMs: Long = DEFAULT_RELEASE_DELAY_MS
 ) {
@@ -38,7 +38,7 @@ class AudioFocusController(
      * [releaseDelayMs], or earlier if [Held.release] is called. Returns
      * `null` only if the device has no [AudioManager] service.
      */
-    fun acquire(usage: Int, audioStream: Int): Held? {
+    open fun acquire(usage: Int, audioStream: Int): Held? {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
             ?: return null
         val focusRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

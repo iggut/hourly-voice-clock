@@ -11,9 +11,9 @@ import android.os.Vibrator
  * Owns the [Vibrator] service lookup and the pre-Oreo vs Oreo+ branching.
  * No-ops cleanly when the device has no vibrator service.
  */
-class HapticPulse(private val context: Context) {
+open class HapticPulse(private val context: Context) {
 
-    fun pulse(milliseconds: Long = DEFAULT_PULSE_MS) {
+    open fun pulse(milliseconds: Long = DEFAULT_PULSE_MS) {
         val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE))
