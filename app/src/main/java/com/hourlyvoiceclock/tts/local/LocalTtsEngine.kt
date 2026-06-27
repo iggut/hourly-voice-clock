@@ -1,60 +1,61 @@
 package com.hourlyvoiceclock.tts.local
 
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioTrack
 import android.util.Log
-import com.hourlyvoiceclock.announcer.AudioChannelMapping
 import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.tts.TtsEngine
 import com.hourlyvoiceclock.tts.TtsEngineInfo
 import com.hourlyvoiceclock.tts.VoiceInfo
-import com.k2fsa.sherpa.onnx.GeneratedAudio
-import com.k2fsa.sherpa.onnx.OfflineTts
-import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.getOfflineTtsConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.charset.StandardCharsets
 
 /**
  * Local TTS engine backed by Sherpa-ONNX's VITS offline TTS using Piper voice
  * distributions downloaded into the app's filesDir.
  *
- * Uses the bundled com.k2fsa.sherpa.onnx.OfflineTts API directly. The model
- * directory must contain the .onnx, the .onnx.json (config + sample rate),
- * and tokens.txt; the dataDir must point at the bundled espeak-ng-data.
+ * This class is now an orchestrator over three focused modules:
+ * - [LocalTtsModelLoader] prepares model files and espeak-ng-data.
+ * - [LocalTtsSynthesizer] wraps the native [com.k2fsa.sherpa.onnx.OfflineTts].
+ * - [LocalTtsAudioPlayer] streams generated PCM samples.
  */
-class LocalTtsEngine(private val context: Context) : TtsEngine {
+class LocalTtsEngine(
+    private val modelLoader: LocalTtsModelLoader,
+    private val synthesizerFactory: (com.k2fsa.sherpa.onnx.OfflineTtsConfig) -> LocalTtsSynthesizer,
+    private val audioPlayer: LocalTtsAudioPlayer,
+    private val downloader: OnnxModelDownloader,
+    private val modelLookup: (String) -> VoiceModel? = { VoiceModelRegistry.getVoiceById(it) },
+    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO + Job())
+) : TtsEngine {
 
-    private val downloader = OnnxModelDownloader(context)
     private var currentModel: VoiceModel? = null
     private var currentAudioChannel: AudioChannel = AudioChannel.MEDIA
     private var isInitialized = false
     @Volatile private var isSynthesizing = false
     @Volatile private var cancelRequested = false
-    private val coroutineScope = CoroutineScope(Dispatchers.IO + Job())
-    private var tts: OfflineTts? = null
+    private var synthesizer: LocalTtsSynthesizer? = null
     private var sampleRate: Int = 22050
+
+    /**
+     * Convenience constructor that wires the production implementations.
+     */
+    constructor(context: Context) : this(
+        modelLoader = LocalTtsModelLoader(context, OnnxModelDownloader(context)),
+        synthesizerFactory = { config -> OfflineTtsSynthesizer(com.k2fsa.sherpa.onnx.OfflineTts(null, config)) },
+        audioPlayer = AudioTrackPlayer(),
+        downloader = OnnxModelDownloader(context),
+        coroutineScope = CoroutineScope(Dispatchers.IO + Job())
+    )
 
     override suspend fun initialize(enginePackage: String?): Boolean {
         val modelId = enginePackage ?: return false
-        val model = VoiceModelRegistry.getVoiceById(modelId) ?: return false
-
-        if (!downloader.isModelDownloaded(model)) {
-            Log.w(TAG, "Model ${model.id} not downloaded yet")
-            return false
-        }
+        val model = modelLookup(modelId) ?: return false
 
         synchronized(this) {
-            if (isInitialized && currentModel?.id == model.id && tts != null) {
+            if (isInitialized && currentModel?.id == model.id && synthesizer != null) {
                 return true
             }
             if (isSynthesizing) {
@@ -65,8 +66,8 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
         return try {
             shutdown()
-            tts = buildTts(model)
-            sampleRate = tts?.sampleRate() ?: 22050
+            synthesizer = buildSynthesizer(model)
+            sampleRate = synthesizer?.sampleRate ?: 22050
             currentModel = model
             isInitialized = true
             cancelRequested = false
@@ -79,39 +80,19 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         }
     }
 
-    private fun buildTts(model: VoiceModel): OfflineTts {
-        val modelDir = File(context.filesDir, "local_tts/models/${model.id}")
-        val modelFile = File(modelDir, model.onnxFileName)
-        val jsonFile = File(modelDir, model.onnxJsonFileName)
-        val tokensFile = File(modelDir, "tokens.txt")
-
-        require(modelFile.exists()) { "Model file missing: ${modelFile.absolutePath}" }
-        require(jsonFile.exists()) { "Model JSON missing: ${jsonFile.absolutePath}" }
-        require(tokensFile.exists()) { "tokens.txt missing: ${tokensFile.absolutePath}" }
-
-        downloader.generateTokensFile(jsonFile, tokensFile).getOrElse { error ->
-            throw IllegalStateException("Failed to regenerate tokens.txt for ${model.id}: ${error.message}", error)
+    private fun buildSynthesizer(model: VoiceModel): LocalTtsSynthesizer {
+        val prepared = modelLoader.prepareModel(model).getOrElse { error ->
+            throw IllegalStateException("Failed to prepare model ${model.id}: ${error.message}", error)
         }
 
-        val espeakDataDir = File(context.filesDir, "local_tts/$ASSET_ESPEAK_DIR")
-        val espeakVersionMarker = File(espeakDataDir, ".version-2")
-        if (!espeakVersionMarker.exists()) {
-            espeakDataDir.deleteRecursively()
-            copyAssetsToFiles(ASSET_ESPEAK_DIR, espeakDataDir)
-            espeakVersionMarker.createNewFile()
-        }
-        require(espeakDataDir.exists()) { "espeak-ng-data missing: ${espeakDataDir.absolutePath}" }
-
-        ensurePiperOnnxMetadata(modelFile, jsonFile)
-
-        val config: OfflineTtsConfig = getOfflineTtsConfig(
-            modelDir = modelDir.absolutePath,
-            modelName = model.onnxFileName,
+        val config = getOfflineTtsConfig(
+            modelDir = prepared.modelDir.absolutePath,
+            modelName = prepared.modelFileName,
             acousticModelName = "",
             vocoder = "",
             voices = "",
             lexicon = "",
-            dataDir = espeakDataDir.absolutePath,
+            dataDir = prepared.espeakDataDir.absolutePath,
             dictDir = "",
             ruleFsts = "",
             ruleFars = "",
@@ -129,158 +110,10 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
         // Pass null for the AssetManager so the native side reads the model from
         // the filesystem instead of trying to open it as an APK asset.
-        return OfflineTts(null, config)
+        return synthesizerFactory(config)
     }
 
-    private fun ensurePiperOnnxMetadata(modelFile: File, jsonFile: File) {
-        // Sherpa-ONNX's Piper/VITS loader requires all of these metadata keys.
-        // The logcat from the failing build showed the native loader accepted
-        // voice/sample_rate/n_speakers/comment, then aborted immediately after:
-        //   'language' does not exist in the metadata
-        // So language is not optional for this AAR path.
-        //
-        // Do NOT strip or rewrite existing metadata entries. Appending missing
-        // metadata_props entries is safe; hand-rebuilding the ONNX protobuf is not.
-        val root = JSONObject(jsonFile.readText())
-        val sampleRate = root.optJSONObject("audio")
-            ?.optInt("sample_rate", 22050)
-            ?.takeIf { it > 0 }
-            ?.toString()
-            ?: "22050"
-        val numSpeakers = root.optInt("num_speakers", 1).takeIf { it > 0 }?.toString() ?: "1"
-        val espeakVoice = root.optJSONObject("espeak")
-            ?.optString("voice")
-            ?.takeIf { it.isNotBlank() }
-            ?.lowercase()
-            ?: defaultEspeakVoice(root)
-        val language = root.optJSONObject("language")
-            ?.optString("code")
-            ?.takeIf { it.isNotBlank() }
-            ?.replace('_', '-')
-            ?: defaultLanguageForVoice(espeakVoice)
-
-        val props = listOf(
-            "sample_rate" to sampleRate,
-            "n_speakers" to numSpeakers,
-            "voice" to espeakVoice,
-            "language" to language,
-            "comment" to "piper",
-        ).filterNot { (key, _) -> fileContainsAscii(modelFile, key) }
-
-        if (props.isEmpty()) return
-
-        appendOnnxMetadataProps(modelFile, props)
-        Log.d(TAG, "Patched ${modelFile.name} ONNX metadata ${props.joinToString { "${it.first}=${it.second}" }}")
-    }
-
-    private fun defaultEspeakVoice(root: JSONObject): String {
-        val code = root.optJSONObject("language")
-            ?.optString("code")
-            ?.lowercase()
-            .orEmpty()
-        return when {
-            code.contains("gb") || code.contains("uk") -> "en-gb"
-            else -> "en"
-        }
-    }
-
-    private fun defaultLanguageForVoice(espeakVoice: String): String {
-        return when (espeakVoice.lowercase()) {
-            "en-gb", "en-gb-scotland", "en-gb-x-gbclan", "en-gb-x-gbcwmd", "en-gb-x-rp" -> "en-GB"
-            "en-us", "en-us-nyc" -> "en-US"
-            "en" -> "en-US"
-            else -> espeakVoice.replace('_', '-')
-        }
-    }
-
-    private fun fileContainsAscii(file: File, needle: String): Boolean {
-        val needleBytes = needle.toByteArray(StandardCharsets.UTF_8)
-        val buffer = ByteArray(64 * 1024)
-        var matched = 0
-        file.inputStream().use { input ->
-            while (true) {
-                val read = input.read(buffer)
-                if (read <= 0) return false
-                for (i in 0 until read) {
-                    matched = if (buffer[i] == needleBytes[matched]) {
-                        matched + 1
-                    } else if (buffer[i] == needleBytes[0]) {
-                        1
-                    } else {
-                        0
-                    }
-                    if (matched == needleBytes.size) return true
-                }
-            }
-        }
-    }
-
-    private fun appendOnnxMetadataProps(file: File, props: List<Pair<String, String>>) {
-        FileOutputStream(file, true).use { output ->
-            props.forEach { (key, value) ->
-                val entry = ByteArrayOutput()
-                entry.writeVarint((1 shl 3) or 2) // StringStringEntryProto.key
-                entry.writeLengthDelimited(key.toByteArray(StandardCharsets.UTF_8))
-                entry.writeVarint((2 shl 3) or 2) // StringStringEntryProto.value
-                entry.writeLengthDelimited(value.toByteArray(StandardCharsets.UTF_8))
-
-                output.writeVarint((14 shl 3) or 2) // ModelProto.metadata_props
-                output.writeVarint(entry.size)
-                output.write(entry.toByteArray())
-            }
-        }
-    }
-
-    private class ByteArrayOutput {
-        private val bytes = ArrayList<Byte>()
-        val size: Int get() = bytes.size
-
-        fun writeVarint(value: Int) {
-            var v = value
-            while (v >= 0x80) {
-                bytes.add(((v and 0x7F) or 0x80).toByte())
-                v = v ushr 7
-            }
-            bytes.add(v.toByte())
-        }
-
-        fun writeLengthDelimited(data: ByteArray) {
-            writeVarint(data.size)
-            data.forEach { bytes.add(it) }
-        }
-
-        fun toByteArray(): ByteArray = ByteArray(bytes.size) { i -> bytes[i] }
-    }
-
-    private fun FileOutputStream.writeVarint(value: Int) {
-        var v = value
-        while (v >= 0x80) {
-            write(((v and 0x7F) or 0x80))
-            v = v ushr 7
-        }
-        write(v)
-    }
-
-    private fun copyAssetsToFiles(assetPath: String, destDir: File) {
-        destDir.mkdirs()
-        val assetList = context.assets.list(assetPath) ?: return
-        for (name in assetList) {
-            val assetChild = "$assetPath/$name"
-            val destChild = File(destDir, name)
-            val children = context.assets.list(assetChild)
-            if (children.isNullOrEmpty()) {
-                context.assets.open(assetChild).use { input ->
-                    destChild.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-            } else {
-                copyAssetsToFiles(assetChild, destChild)
-            }
-        }
-    }
-
-    override fun isAvailable(): Boolean = isInitialized && tts != null && currentModel != null
+    override fun isAvailable(): Boolean = isInitialized && synthesizer != null && currentModel != null
 
     override fun getVoices(): List<VoiceInfo> {
         return downloader.getDownloadedModels().map { model ->
@@ -299,20 +132,20 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     }
 
     override fun setVoice(voiceName: String, localeTag: String): Boolean {
-        val model = VoiceModelRegistry.getVoiceById(voiceName) ?: return false
+        val model = modelLookup(voiceName) ?: return false
         if (!downloader.isModelDownloaded(model)) return false
         synchronized(this) {
             if (isSynthesizing) {
                 Log.w(TAG, "Refusing to switch voices while synthesis is active")
                 return false
             }
-            if (currentModel?.id == model.id && tts != null) return true
+            if (currentModel?.id == model.id && synthesizer != null) return true
         }
 
         return try {
             shutdown()
-            tts = buildTts(model)
-            sampleRate = tts?.sampleRate() ?: 22050
+            synthesizer = buildSynthesizer(model)
+            sampleRate = synthesizer?.sampleRate ?: 22050
             currentModel = model
             isInitialized = true
             cancelRequested = false
@@ -347,8 +180,8 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
     }
 
     override fun speakAsync(text: String, onComplete: (Boolean) -> Unit) {
-        val ttsInstance = tts
-        if (ttsInstance == null) {
+        val synth = synthesizer
+        if (synth == null) {
             onComplete(false)
             return
         }
@@ -365,11 +198,11 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
         coroutineScope.launch {
             var success = false
             try {
-                val audio: GeneratedAudio? = ttsInstance.generate(text, 0, 1.0f)
+                val audio = synth.generate(text, 1.0f)
                 val samples = audio?.samples
                 if (samples != null && samples.isNotEmpty() && !cancelRequested) {
                     val sr = audio.sampleRate.takeIf { it > 0 } ?: sampleRate
-                    playSamples(samples, sr)
+                    audioPlayer.play(samples, sr, currentAudioChannel)
                     success = true
                 }
                 Log.d(TAG, "Spoke with ${currentModel?.displayName}: $text")
@@ -398,12 +231,12 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             }
         }
         try {
-            tts?.release()
+            synthesizer?.release()
         } catch (e: Throwable) {
-            Log.w(TAG, "Error releasing OfflineTts", e)
+            Log.w(TAG, "Error releasing synthesizer", e)
         }
-        coroutineScope.cancel()
-        tts = null
+        coroutineScope.coroutineContext.cancelChildren()
+        synthesizer = null
         isInitialized = false
         currentModel = null
     }
@@ -431,56 +264,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
 
     fun getModelDownloader(): OnnxModelDownloader = downloader
 
-    private suspend fun playSamples(samples: FloatArray, sampleRate: Int) {
-        val spec = AudioChannelMapping.specOf(currentAudioChannel)
-
-        val audioFormat = AudioFormat.Builder()
-            .setSampleRate(sampleRate)
-            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-            .build()
-
-        val minBuffer = AudioTrack.getMinBufferSize(
-            sampleRate,
-            AudioFormat.CHANNEL_OUT_MONO,
-            AudioFormat.ENCODING_PCM_16BIT
-        )
-        val bufferSize = maxOf(minBuffer, samples.size * 2)
-
-        val track = AudioTrack.Builder()
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(spec.usage)
-                    .setContentType(spec.contentType)
-                    .build()
-            )
-            .setAudioFormat(audioFormat)
-            .setBufferSizeInBytes(bufferSize)
-            .setTransferMode(AudioTrack.MODE_STREAM)
-            .build()
-
-        val pcmData = ShortArray(samples.size) { i ->
-            val clamped = samples[i].coerceIn(-1f, 1f)
-            (clamped * Short.MAX_VALUE).toInt().toShort()
-        }
-
-        try {
-            track.play()
-            track.write(pcmData, 0, pcmData.size)
-            val playbackDurationMs = (samples.size.toLong() * 1000) / sampleRate
-            kotlinx.coroutines.delay(playbackDurationMs + 50)
-        } finally {
-            try {
-                track.stop()
-            } catch (_: IllegalStateException) {
-                // already stopped
-            }
-            track.release()
-        }
-    }
-
     companion object {
         private const val TAG = "LocalTtsEngine"
-        const val ASSET_ESPEAK_DIR = "espeak-ng-data"
     }
 }

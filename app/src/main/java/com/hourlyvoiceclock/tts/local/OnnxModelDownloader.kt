@@ -44,7 +44,7 @@ import kotlin.math.max
  * [DownloadException] so the caller can render a human-readable error
  * in the UI without parsing log lines.
  */
-class OnnxModelDownloader(private val context: Context) {
+open class OnnxModelDownloader(private val context: Context) {
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -299,7 +299,7 @@ class OnnxModelDownloader(private val context: Context) {
         isModelDownloaded(model)
     }
 
-    fun isModelDownloaded(model: VoiceModel): Boolean {
+    open fun isModelDownloaded(model: VoiceModel): Boolean {
         val modelDir = File(modelsDir, model.id)
         val onnx = File(modelDir, model.onnxFileName)
         val json = File(modelDir, model.onnxJsonFileName)
@@ -325,7 +325,7 @@ class OnnxModelDownloader(private val context: Context) {
         return modelDir.deleteRecursively()
     }
 
-    fun getDownloadedModels(): List<VoiceModel> {
+    open fun getDownloadedModels(): List<VoiceModel> {
         return VoiceModelRegistry.availableVoices.filter { isModelDownloaded(it) }
     }
 
