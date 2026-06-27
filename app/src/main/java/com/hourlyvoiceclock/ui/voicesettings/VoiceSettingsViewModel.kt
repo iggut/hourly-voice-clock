@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.tts.TtsEngineInfo
 import com.hourlyvoiceclock.tts.VoiceInfo
-import com.hourlyvoiceclock.tts.local.LocalTtsEngine
 import com.hourlyvoiceclock.tts.local.VoiceModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -127,7 +126,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
      * without having to re-scan the disk.
      */
     val downloadedLocalModels: StateFlow<List<VoiceModel>> =
-        deps.localVoicesStore.downloadedModels
+        deps.localVoiceRepository.downloadedModels
 
     /**
      * Currently-selected downloaded on-device voice id, or `null` if
@@ -136,13 +135,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     val selectedLocalModelId: StateFlow<String?> = deps.settingsRepository.settings
         .map { it.selectedLocalModelId }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
-
-    /**
-     * Lightweight probe so the voice settings screen can read which
-     * local models exist on disk without forcing the (heavy) full
-     * Sherpa-ONNX native init.
-     */
-    private val localTtsProbe = LocalTtsEngine(getApplication<Application>())
 
     init {
         viewModelScope.launch {
@@ -170,16 +162,12 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     /**
      * Re-scan the on-device voice directory and publish the result
-     * to the app-wide [com.hourlyvoiceclock.tts.local.LocalVoicesStore]
-     * so every observer (the voice-settings screen, the local-voices
-     * screen) sees the same list.
+     * through [com.hourlyvoiceclock.tts.local.LocalVoiceRepository] so
+     * every observer sees the same list.
      */
     fun refreshDownloadedLocalModels() {
         viewModelScope.launch {
-            val models = withContext(Dispatchers.IO) {
-                localTtsProbe.getInstalledModels()
-            }
-            deps.localVoicesStore.setDownloadedModels(models)
+            deps.localVoiceRepository.refreshDownloadedModels()
         }
     }
 
@@ -215,24 +203,13 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
-     * Preview a downloaded on-device voice by routing through the
-     * [LocalTtsEngine] probe. This is a fire-and-forget preview used
-     * by the voice list rows next to each downloaded model.
+     * Preview a downloaded on-device voice through the repository.
+     * This is a fire-and-forget preview used by the voice list rows
+     * next to each downloaded model.
      */
     fun previewLocalModel(model: VoiceModel, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
-            val initialized = withContext(Dispatchers.IO) {
-                localTtsProbe.initialize(model.id)
-            }
-            if (!initialized) {
-                onError("Preview failed: model files are not loadable. Try deleting and re-downloading.")
-                return@launch
-            }
-            withContext(Dispatchers.IO) {
-                localTtsProbe.speakAsync("Hello from Hourly Voice Clock") { ok ->
-                    if (!ok) onError("Preview failed: TTS engine could not synthesize audio")
-                }
-            }
+            deps.localVoiceRepository.preview(model, onError)
         }
     }
 

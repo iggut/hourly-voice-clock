@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.tts.local.DownloadException
-import com.hourlyvoiceclock.tts.local.LocalTtsEngine
+import com.hourlyvoiceclock.tts.local.LocalVoiceRepository
 import com.hourlyvoiceclock.tts.local.VoiceModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,14 +17,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
+class LocalVoiceSettingsViewModel(
+    application: Application,
+    private val repository: LocalVoiceRepository
+) : AndroidViewModel(application) {
 
-    private val deps = (application as DependenciesProvider).dependencies
-    private val localEngine = LocalTtsEngine(application)
-    private val downloader = localEngine.getModelDownloader()
-
-    private val _downloadedModels = MutableStateFlow<List<VoiceModel>>(emptyList())
-    val downloadedModels: StateFlow<List<VoiceModel>> = _downloadedModels.asStateFlow()
+    val downloadedModels: StateFlow<List<VoiceModel>> = repository.downloadedModels
 
     private val _downloadingModel = MutableStateFlow<VoiceModel?>(null)
     val downloadingModel: StateFlow<VoiceModel?> = _downloadingModel.asStateFlow()
@@ -49,12 +47,7 @@ class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(a
 
     fun refreshDownloadedModels() {
         viewModelScope.launch {
-            val models = withContext(Dispatchers.IO) { downloader.getDownloadedModels() }
-            _downloadedModels.value = models
-            // Publish to the app-wide store so the main voice settings
-            // screen sees the same list (it cannot share this VM
-            // because the two screens have different ViewModelStoreOwners).
-            deps.localVoicesStore.setDownloadedModels(models)
+            repository.refreshDownloadedModels()
         }
     }
 
@@ -68,7 +61,7 @@ class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(a
 
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
-                downloader.downloadModel(model) { progress ->
+                repository.downloadModel(model) { progress ->
                     _downloadProgress.value = progress
                 }
             }
@@ -99,55 +92,30 @@ class LocalVoiceSettingsViewModel(application: Application) : AndroidViewModel(a
 
     fun deleteModel(model: VoiceModel) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { downloader.deleteModel(model) }
+            withContext(Dispatchers.IO) { repository.deleteModel(model) }
             refreshDownloadedModels()
         }
     }
 
     fun previewVoice(model: VoiceModel) {
         if (_isSpeaking.value) {
-            localEngine.stop()
+            repository.stopPreview()
             _isSpeaking.value = false
             return
         }
 
         viewModelScope.launch {
-            try {
-                val initialized = withContext(Dispatchers.IO) { localEngine.initialize(model.id) }
-                if (!initialized) {
-                    Log.w(TAG, "Preview failed: engine.initialize returned false for ${model.id}")
-                    _errorsByModelId.value = _errorsByModelId.value +
-                        (model.id to "Preview failed: model files are not loadable. Try deleting and re-downloading.")
-                    return@launch
-                }
-                _isSpeaking.value = true
-                localEngine.speakAsync("Hello from Hourly Voice Clock") { success ->
-                    _isSpeaking.value = false
-                    Log.d(TAG, "Preview finished: success=$success")
-                    if (!success) {
-                        _errorsByModelId.value = _errorsByModelId.value +
-                            (model.id to "Preview failed: TTS engine could not synthesize audio")
-                    }
-                }
-            } catch (t: Throwable) {
+            _isSpeaking.value = true
+            repository.preview(model) { message ->
                 _isSpeaking.value = false
-                Log.e(TAG, "Preview crashed for ${model.id}", t)
-                _errorsByModelId.value = _errorsByModelId.value +
-                    (model.id to (t.message ?: t.javaClass.simpleName))
+                _errorsByModelId.value = _errorsByModelId.value + (model.id to message)
             }
         }
     }
 
     fun stopSpeaking() {
-        localEngine.stop()
+        repository.stopPreview()
         _isSpeaking.value = false
-    }
-
-    fun getLocalEngine(): LocalTtsEngine = localEngine
-
-    override fun onCleared() {
-        super.onCleared()
-        localEngine.shutdown()
     }
 
     private fun humanize(t: Throwable): String = when (t) {
@@ -166,7 +134,8 @@ class LocalVoiceSettingsViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LocalVoiceSettingsViewModel::class.java)) {
-            return LocalVoiceSettingsViewModel(application) as T
+            val repo = (application as DependenciesProvider).dependencies.localVoiceRepository
+            return LocalVoiceSettingsViewModel(application, repo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
