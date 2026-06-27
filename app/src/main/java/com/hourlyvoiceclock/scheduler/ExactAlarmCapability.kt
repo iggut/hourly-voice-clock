@@ -6,63 +6,55 @@ import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 
-object AlarmPermissionChecker {
+/**
+ * Single decision point for exact-alarm scheduling capability.
+ *
+ * The adapter hides all Android-version branching, intent construction,
+ * and device-specific guidance behind one method. Callers no longer need
+ * to import [Build.VERSION] or combine raw permission facts themselves.
+ */
+interface ExactAlarmCapability {
+    fun current(): ExactAlarmState
+}
 
-    fun canScheduleExactAlarms(context: Context): Boolean {
+sealed interface ExactAlarmState {
+    data object Granted : ExactAlarmState
+
+    data class Denied(
+        val canRequest: Boolean,
+        val settingsIntent: Intent,
+        val guidance: DeviceGuidance
+    ) : ExactAlarmState
+}
+
+data class DeviceGuidance(
+    val manufacturerLabel: String,
+    val permissionPath: String,
+    val extraNote: String?
+)
+
+class AndroidExactAlarmCapability(private val context: Context) : ExactAlarmCapability {
+
+    override fun current(): ExactAlarmState {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            alarmManager.canScheduleExactAlarms()
+            if (alarmManager.canScheduleExactAlarms()) {
+                ExactAlarmState.Granted
+            } else {
+                ExactAlarmState.Denied(
+                    canRequest = true,
+                    settingsIntent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data = android.net.Uri.parse("package:${context.packageName}")
+                    },
+                    guidance = getDeviceGuidance()
+                )
+            }
         } else {
-            true
+            ExactAlarmState.Granted
         }
     }
 
-    fun isExactAlarmSupported(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-    }
-
-    /**
-     * Whether the user needs to grant the exact alarm permission via system settings.
-     * Only relevant on Android 12+ (API 31+).
-     */
-    fun requiresUserGrant(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    }
-
-    /**
-     * Whether the ACTION_REQUEST_SCHEDULE_EXACT_ALARM intent is available
-     * for deep-linking. Available on API 31+.
-     */
-    fun exactAlarmSettingIntentAvailable(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    }
-
-    /**
-     * Build an Intent to open the exact alarm permission settings.
-     * On API 31+, deep-links to the specific alarm permission page with package URI.
-     * Falls back to generic application settings on older versions.
-     */
-    fun buildExactAlarmSettingsIntent(context: Context): Intent {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-                data = android.net.Uri.parse("package:${context.packageName}")
-            }
-        } else {
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = android.net.Uri.parse("package:${context.packageName}")
-            }
-        }
-    }
-
-    // ── Device-specific guidance ────────────────────────────────────────────
-
-    data class DeviceGuidance(
-        val manufacturerLabel: String,
-        val permissionPath: String,
-        val extraNote: String?
-    )
-
-    fun getDeviceGuidance(): DeviceGuidance {
+    private fun getDeviceGuidance(): DeviceGuidance {
         val manufacturer = Build.MANUFACTURER.lowercase()
         return when {
             manufacturer.contains("samsung") -> DeviceGuidance(

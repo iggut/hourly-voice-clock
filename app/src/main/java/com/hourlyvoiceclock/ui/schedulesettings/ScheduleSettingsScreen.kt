@@ -81,7 +81,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.time.DayOfWeek
 import com.hourlyvoiceclock.R
-import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
+import com.hourlyvoiceclock.scheduler.ExactAlarmState
 import com.hourlyvoiceclock.ui.theme.GlassBgLight
 import com.hourlyvoiceclock.ui.theme.GlassBgDark
 import com.hourlyvoiceclock.ui.theme.GlassBorderLight
@@ -111,8 +111,9 @@ fun ScheduleSettingsScreen(
     val allowManual by viewModel.allowManualDuringQuiet.collectAsState()
     val quietDaysDisabled by viewModel.quietDaysDisabled.collectAsState()
     val exactAlarms by viewModel.exactAlarmsEnabled.collectAsState()
-    val canScheduleExact by viewModel.canScheduleExact.collectAsState()
-    val needsExactPermission by viewModel.needsExactPermission.collectAsState()
+    val exactAlarmState by viewModel.exactAlarmState.collectAsState()
+    val canScheduleExact = exactAlarmState is ExactAlarmState.Granted
+    val needsExactPermission = exactAlarms && exactAlarmState is ExactAlarmState.Denied
     val notificationLogging by viewModel.notificationLogging.collectAsState()
     val hasNotificationPermission by viewModel.hasNotificationPermission.collectAsState()
     val context = LocalContext.current
@@ -137,7 +138,7 @@ fun ScheduleSettingsScreen(
 
     // Permission explanation dialog with device-specific guidance
     var showExactAlarmDialog by remember { mutableStateOf(false) }
-    val deviceGuidance = remember { AlarmPermissionChecker.getDeviceGuidance() }
+    val deviceGuidance = viewModel.deviceGuidance()
 
     if (showExactAlarmDialog) {
         AlertDialog(
@@ -150,27 +151,27 @@ fun ScheduleSettingsScreen(
                 Column {
                     Text(stringResource(R.string.exact_alarm_permission_explanation))
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        buildString {
-                            appendLine("${deviceGuidance.manufacturerLabel} device:")
-                            appendLine(deviceGuidance.permissionPath)
-                            deviceGuidance.extraNote?.let {
-                                appendLine()
-                                append(it)
-                            }
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (deviceGuidance != null) {
+                        Text(
+                            buildString {
+                                appendLine("${deviceGuidance.manufacturerLabel} device:")
+                                appendLine(deviceGuidance.permissionPath)
+                                deviceGuidance.extraNote?.let {
+                                    appendLine()
+                                    append(it)
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showExactAlarmDialog = false
-                        context.startActivity(
-                            AlarmPermissionChecker.buildExactAlarmSettingsIntent(context)
-                        )
+                        viewModel.openExactAlarmSettings()
                     }
                 ) {
                     Text(stringResource(R.string.grant_permission), fontWeight = FontWeight.Bold)
@@ -259,7 +260,7 @@ fun ScheduleSettingsScreen(
                                 .clickable {
                                     val enabled = !exactAlarms
                                     viewModel.setExactAlarmsEnabled(enabled)
-                                    if (enabled && !canScheduleExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    if (enabled && !canScheduleExact) {
                                         showExactAlarmDialog = true
                                     }
                                 }
@@ -315,6 +316,7 @@ fun ScheduleSettingsScreen(
                         }
 
                         if (needsExactPermission) {
+                            val guidance = deviceGuidance ?: return@Column
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
                                 stringResource(R.string.exact_alarm_permission_explanation),
@@ -324,8 +326,8 @@ fun ScheduleSettingsScreen(
                             // Device-specific helper text
                             Text(
                                 buildString {
-                                    appendLine("${deviceGuidance.manufacturerLabel} device: ${deviceGuidance.permissionPath}")
-                                    deviceGuidance.extraNote?.let {
+                                    appendLine("${guidance.manufacturerLabel} device: ${guidance.permissionPath}")
+                                    guidance.extraNote?.let {
                                         appendLine()
                                         append(it)
                                     }
@@ -336,11 +338,7 @@ fun ScheduleSettingsScreen(
                             )
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
-                                onClick = {
-                                    context.startActivity(
-                                        AlarmPermissionChecker.buildExactAlarmSettingsIntent(context)
-                                    )
-                                },
+                                onClick = { viewModel.openExactAlarmSettings() },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {

@@ -8,7 +8,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.di.DependenciesProvider
-import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
+import com.hourlyvoiceclock.scheduler.DeviceGuidance
+import com.hourlyvoiceclock.scheduler.ExactAlarmState
 import com.hourlyvoiceclock.scheduler.ScheduleReason
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -61,13 +62,14 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         .map { it.notificationLogging }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    // Whether the system currently allows exact alarms (re-checked on resume)
-    private val _canScheduleExact = MutableStateFlow(false)
-    val canScheduleExact: StateFlow<Boolean> = _canScheduleExact.asStateFlow()
+    private val _exactAlarmState = MutableStateFlow(deps.exactAlarmCapability.current())
+    val exactAlarmState: StateFlow<ExactAlarmState> = _exactAlarmState.asStateFlow()
 
-    // True when user has enabled exact alarms but permission is not granted
-    private val _needsExactPermission = MutableStateFlow(false)
-    val needsExactPermission: StateFlow<Boolean> = _needsExactPermission.asStateFlow()
+    val canScheduleExact: Boolean
+        get() = _exactAlarmState.value is ExactAlarmState.Granted
+
+    val needsExactPermission: Boolean
+        get() = exactAlarmsEnabled.value && _exactAlarmState.value is ExactAlarmState.Denied
 
     private val _hasNotificationPermission = MutableStateFlow(true)
     val hasNotificationPermission: StateFlow<Boolean> = _hasNotificationPermission.asStateFlow()
@@ -92,22 +94,33 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
     }
 
     fun checkExactAlarmPermission() {
-        val can = AlarmPermissionChecker.canScheduleExactAlarms(getApplication())
-        val wasDenied = _needsExactPermission.value
-        _canScheduleExact.value = can
+        val previousState = _exactAlarmState.value
+        val currentState = deps.exactAlarmCapability.current()
+        _exactAlarmState.value = currentState
 
-        // If exact alarms are requested but permission not granted, show the permission card
-        _needsExactPermission.value = exactAlarmsEnabled.value && !can &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        val wasDenied = previousState is ExactAlarmState.Denied
+        val isGranted = currentState is ExactAlarmState.Granted
 
         // If permission was previously denied and is now granted, reschedule
-        if (wasDenied && can && exactAlarmsEnabled.value) {
+        if (wasDenied && isGranted && exactAlarmsEnabled.value) {
             viewModelScope.launch {
                 val settings = deps.settingsRepository.settings.first()
                 if (settings.hourlyAnnouncementsEnabled) {
                     deps.hourlySchedulePolicy.applyCurrentPolicy(ScheduleReason.EXACT_PERMISSION_CHANGED)
                 }
             }
+        }
+    }
+
+    fun deviceGuidance(): DeviceGuidance? {
+        val state = _exactAlarmState.value
+        return if (state is ExactAlarmState.Denied) state.guidance else null
+    }
+
+    fun openExactAlarmSettings() {
+        val state = _exactAlarmState.value
+        if (state is ExactAlarmState.Denied) {
+            getApplication<Application>().startActivity(state.settingsIntent)
         }
     }
 
@@ -186,9 +199,8 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
 
     fun setExactAlarmsEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            val result = deps.hourlySchedulePolicy.setExactRequested(enabled)
-            _canScheduleExact.value = result.canScheduleExactAlarms
-            _needsExactPermission.value = result.needsExactPermission
+            deps.hourlySchedulePolicy.setExactRequested(enabled)
+            _exactAlarmState.value = deps.exactAlarmCapability.current()
         }
     }
 

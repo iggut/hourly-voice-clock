@@ -23,7 +23,7 @@ data class ScheduleSyncResult(
 class HourlySchedulePolicy(
     private val settingsStore: HourlyScheduleSettingsStore,
     private val scheduler: HourlyAlarmScheduler,
-    private val canScheduleExactAlarms: () -> Boolean
+    private val exactAlarmCapability: ExactAlarmCapability
 ) {
 
     suspend fun setEnabled(enabled: Boolean): ScheduleSyncResult {
@@ -35,7 +35,7 @@ class HourlySchedulePolicy(
         settingsStore.update { it.copy(exactAlarmsEnabled = enabled) }
 
         val settings = settingsStore.settings.first()
-        val canExact = canScheduleExactAlarms()
+        val canExact = exactAlarmCapability.current() is ExactAlarmState.Granted
 
         if (!settings.hourlyAnnouncementsEnabled) {
             return ScheduleSyncResult(
@@ -58,7 +58,7 @@ class HourlySchedulePolicy(
 
     suspend fun applyCurrentPolicy(reason: ScheduleReason): ScheduleSyncResult {
         val settings = settingsStore.settings.first()
-        val canExact = canScheduleExactAlarms()
+        val canExact = exactAlarmCapability.current() is ExactAlarmState.Granted
         return syncCurrentPolicy(settings, canExact, cancelFirst = reason.cancelFirst)
     }
 
@@ -66,7 +66,7 @@ class HourlySchedulePolicy(
         val settings = settingsStore.settings.first()
         if (!settings.hourlyAnnouncementsEnabled) return null
 
-        val canExact = canScheduleExactAlarms()
+        val canExact = exactAlarmCapability.current() is ExactAlarmState.Granted
         return syncCurrentPolicy(settings, canExact, cancelFirst = false)
     }
 

@@ -13,13 +13,23 @@ import org.junit.Test
 
 class HourlySchedulePolicyTest {
 
+    private fun fakeCapability(granted: Boolean): ExactAlarmCapability =
+        object : ExactAlarmCapability {
+            override fun current(): ExactAlarmState =
+                if (granted) ExactAlarmState.Granted else ExactAlarmState.Denied(
+                    canRequest = true,
+                    settingsIntent = android.content.Intent(),
+                    guidance = DeviceGuidance("Test", "Test", null)
+                )
+        }
+
     @Test
     fun `enable hourly announcements schedules using the current exact setting`() = runBlocking {
         val store = FakeHourlyScheduleSettingsStore(
             AppSettings(hourlyAnnouncementsEnabled = false, exactAlarmsEnabled = true)
         )
         val scheduler = FakeHourlyAlarmScheduler()
-        val policy = HourlySchedulePolicy(store, scheduler) { true }
+        val policy = HourlySchedulePolicy(store, scheduler, fakeCapability(granted = true))
 
         val result = policy.setEnabled(true)
 
@@ -34,7 +44,7 @@ class HourlySchedulePolicyTest {
             AppSettings(hourlyAnnouncementsEnabled = true, exactAlarmsEnabled = false)
         )
         val scheduler = FakeHourlyAlarmScheduler()
-        val policy = HourlySchedulePolicy(store, scheduler) { false }
+        val policy = HourlySchedulePolicy(store, scheduler, fakeCapability(granted = false))
 
         val result = policy.setExactRequested(true)
 
@@ -50,7 +60,7 @@ class HourlySchedulePolicyTest {
             AppSettings(hourlyAnnouncementsEnabled = true, exactAlarmsEnabled = true)
         )
         val scheduler = FakeHourlyAlarmScheduler()
-        val policy = HourlySchedulePolicy(store, scheduler) { true }
+        val policy = HourlySchedulePolicy(store, scheduler, fakeCapability(granted = true))
 
         val result = policy.applyCurrentPolicy(ScheduleReason.BOOT)
 
@@ -64,7 +74,7 @@ class HourlySchedulePolicyTest {
             AppSettings(hourlyAnnouncementsEnabled = true, exactAlarmsEnabled = false)
         )
         val scheduler = FakeHourlyAlarmScheduler()
-        val policy = HourlySchedulePolicy(store, scheduler) { true }
+        val policy = HourlySchedulePolicy(store, scheduler, fakeCapability(granted = true))
 
         val result = policy.applyCurrentPolicy(ScheduleReason.TIME_CHANGED)
 
@@ -77,7 +87,7 @@ class HourlySchedulePolicyTest {
         val settings = AppSettings(hourlyAnnouncementsEnabled = true, exactAlarmsEnabled = false)
         val store = FakeHourlyScheduleSettingsStore(settings)
         val scheduler = FakeHourlyAlarmScheduler()
-        val policy = HourlySchedulePolicy(store, scheduler) { true }
+        val policy = HourlySchedulePolicy(store, scheduler, fakeCapability(granted = true))
 
         val result = policy.onAlarmTriggered()
 
@@ -91,7 +101,7 @@ class HourlySchedulePolicyTest {
             AppSettings(hourlyAnnouncementsEnabled = false, exactAlarmsEnabled = true)
         )
         val scheduler = FakeHourlyAlarmScheduler()
-        val policy = HourlySchedulePolicy(store, scheduler) { true }
+        val policy = HourlySchedulePolicy(store, scheduler, fakeCapability(granted = true))
 
         val result = policy.onAlarmTriggered()
 

@@ -29,7 +29,7 @@ class AnnouncementScheduler(private val context: Context) : HourlyAlarmScheduler
         )
 
         try {
-            if (exact && AlarmPermissionChecker.canScheduleExactAlarms(context)) {
+            if (exact) {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     triggerAtMillis,

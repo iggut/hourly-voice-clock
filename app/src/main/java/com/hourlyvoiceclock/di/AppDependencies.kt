@@ -27,8 +27,9 @@ import com.hourlyvoiceclock.data.UpdateChecker
 import com.hourlyvoiceclock.data.UpdateDownloader
 import com.hourlyvoiceclock.data.UpdateManager
 import com.hourlyvoiceclock.data.UpdateUiDelegate
+import com.hourlyvoiceclock.scheduler.AndroidExactAlarmCapability
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
-import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
+import com.hourlyvoiceclock.scheduler.ExactAlarmCapability
 import com.hourlyvoiceclock.scheduler.HourlySchedulePolicy
 import com.hourlyvoiceclock.tts.AndroidTtsEngine
 import com.hourlyvoiceclock.tts.AndroidTtsPackageProbe
@@ -76,11 +77,15 @@ class AppDependencies(context: Context) {
         AnnouncementScheduler(appContext)
     }
 
+    val exactAlarmCapability: ExactAlarmCapability by lazy {
+        AndroidExactAlarmCapability(appContext)
+    }
+
     val hourlySchedulePolicy: HourlySchedulePolicy by lazy {
         HourlySchedulePolicy(
             settingsStore = settingsRepository,
             scheduler = announcementScheduler,
-            canScheduleExactAlarms = { AlarmPermissionChecker.canScheduleExactAlarms(appContext) }
+            exactAlarmCapability = exactAlarmCapability
         )
     }
 
