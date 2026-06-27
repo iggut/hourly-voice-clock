@@ -26,7 +26,7 @@ class TtsEngineSelectorTest {
     @After
     fun tearDown() = runBlocking {
         // Reset the persisted saved engine so other tests start clean.
-        SettingsRepository(context).setSelectedTtsEnginePackage(null)
+        SettingsRepository(context).update { it.copy(selectedTtsEnginePackage = null) }
     }
 
     @Test
@@ -41,7 +41,7 @@ class TtsEngineSelectorTest {
     @Test
     fun `returns saved package when probe says it is installed`() = runBlocking {
         val repo = SettingsRepository(context)
-        repo.setSelectedTtsEnginePackage("com.example.tts")
+        repo.update { it.copy(selectedTtsEnginePackage = "com.example.tts") }
 
         val selector = TtsEngineSelector(
             settings = repo,
@@ -53,7 +53,7 @@ class TtsEngineSelectorTest {
     @Test
     fun `clears saved package and returns null when probe says it is not installed`() = runBlocking {
         val repo = SettingsRepository(context)
-        repo.setSelectedTtsEnginePackage("com.uninstalled.tts")
+        repo.update { it.copy(selectedTtsEnginePackage = "com.uninstalled.tts") }
 
         val selector = TtsEngineSelector(
             settings = repo,
@@ -69,7 +69,7 @@ class TtsEngineSelectorTest {
     @Test
     fun `blank saved package is treated as no saved package`() = runBlocking {
         val repo = SettingsRepository(context)
-        repo.setSelectedTtsEnginePackage("")
+        repo.update { it.copy(selectedTtsEnginePackage = "") }
 
         val selector = TtsEngineSelector(
             settings = repo,

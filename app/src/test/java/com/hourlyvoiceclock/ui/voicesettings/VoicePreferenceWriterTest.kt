@@ -32,10 +32,15 @@ class VoicePreferenceWriterTest {
     @After
     fun tearDown() = runBlocking {
         // Reset every field we may have written, so other tests start clean.
-        repo.setSelectedVoice(null, null)
-        repo.setSelectedVoicePreset(null)
-        repo.setPitch(1.0f)
-        repo.setSpeechRate(1.0f)
+        repo.update {
+            it.copy(
+                selectedVoiceName = null,
+                selectedLocale = null,
+                selectedVoicePresetId = null,
+                pitch = 1.0f,
+                speechRate = 1.0f
+            )
+        }
     }
 
     @Test

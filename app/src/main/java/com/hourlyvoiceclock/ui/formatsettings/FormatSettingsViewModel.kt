@@ -8,117 +8,115 @@ import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.TimeFormat
 import com.hourlyvoiceclock.di.DependenciesProvider
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class FormatSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val deps = (application as DependenciesProvider).dependencies
 
-    private val _timeFormat = MutableStateFlow(TimeFormat.HOUR_12)
-    val timeFormat: StateFlow<TimeFormat> = _timeFormat.asStateFlow()
+    val timeFormat: StateFlow<TimeFormat> = deps.settingsRepository.settings
+        .map { it.timeFormat }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TimeFormat.HOUR_12)
 
-    private val _phraseStyle = MutableStateFlow(PhraseStyle.SIMPLE)
-    val phraseStyle: StateFlow<PhraseStyle> = _phraseStyle.asStateFlow()
+    val phraseStyle: StateFlow<PhraseStyle> = deps.settingsRepository.settings
+        .map { it.phraseStyle }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PhraseStyle.SIMPLE)
 
+    val chimeSound: StateFlow<ChimeSound> = deps.settingsRepository.settings
+        .map { it.chimeSound }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChimeSound.NONE)
+
+    val vibrateBefore: StateFlow<Boolean> = deps.settingsRepository.settings
+        .map { it.vibrateBefore }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val announceDate: StateFlow<Boolean> = deps.settingsRepository.settings
+        .map { it.announceDateOnDemand }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val audioChannel: StateFlow<AudioChannel> = deps.settingsRepository.settings
+        .map { it.audioChannel }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AudioChannel.MEDIA)
+
+    // Text fields keep a local source of truth so keystrokes are reflected
+    // immediately; the debounced write persists to the repository.
     private val _customPrefix = MutableStateFlow("It is now ")
     val customPrefix: StateFlow<String> = _customPrefix.asStateFlow()
 
     private val _customSuffix = MutableStateFlow("")
     val customSuffix: StateFlow<String> = _customSuffix.asStateFlow()
 
-    private val _chimeSound = MutableStateFlow(ChimeSound.NONE)
-    val chimeSound: StateFlow<ChimeSound> = _chimeSound.asStateFlow()
-
-    private val _vibrateBefore = MutableStateFlow(false)
-    val vibrateBefore: StateFlow<Boolean> = _vibrateBefore.asStateFlow()
-
-    private val _announceDate = MutableStateFlow(false)
-    val announceDate: StateFlow<Boolean> = _announceDate.asStateFlow()
-
-    private val _audioChannel = MutableStateFlow(AudioChannel.MEDIA)
-    val audioChannel: StateFlow<AudioChannel> = _audioChannel.asStateFlow()
+    private var prefixSaveJob: Job? = null
+    private var suffixSaveJob: Job? = null
 
     init {
         viewModelScope.launch {
-            val settings = deps.settingsRepository.settings.first()
-            _timeFormat.value = settings.timeFormat
-            _phraseStyle.value = settings.phraseStyle
-            _customPrefix.value = settings.customPrefix
-            _customSuffix.value = settings.customSuffix
-            _chimeSound.value = settings.chimeSound
-            _vibrateBefore.value = settings.vibrateBefore
-            _announceDate.value = settings.announceDateOnDemand
-            _audioChannel.value = settings.audioChannel
+            deps.settingsRepository.settings.collect { settings ->
+                _customPrefix.value = settings.customPrefix
+                _customSuffix.value = settings.customSuffix
+            }
         }
     }
 
     fun setTimeFormat(format: TimeFormat) {
         viewModelScope.launch {
-            deps.settingsRepository.setTimeFormat(format)
-            _timeFormat.value = format
+            deps.settingsRepository.update { it.copy(timeFormat = format) }
         }
     }
 
     fun setPhraseStyle(style: PhraseStyle) {
         viewModelScope.launch {
-            deps.settingsRepository.setPhraseStyle(style)
-            _phraseStyle.value = style
+            deps.settingsRepository.update { it.copy(phraseStyle = style) }
         }
     }
-
-    private var prefixSaveJob: Job? = null
 
     fun setCustomPrefix(prefix: String) {
         _customPrefix.value = prefix
         prefixSaveJob?.cancel()
         prefixSaveJob = viewModelScope.launch {
             delay(500)
-            deps.settingsRepository.setCustomPrefix(prefix)
+            deps.settingsRepository.update { it.copy(customPrefix = prefix) }
         }
     }
-
-    private var suffixSaveJob: Job? = null
 
     fun setCustomSuffix(suffix: String) {
         _customSuffix.value = suffix
         suffixSaveJob?.cancel()
         suffixSaveJob = viewModelScope.launch {
             delay(500)
-            deps.settingsRepository.setCustomSuffix(suffix)
+            deps.settingsRepository.update { it.copy(customSuffix = suffix) }
         }
     }
 
     fun setChimeSound(sound: ChimeSound) {
         viewModelScope.launch {
-            deps.settingsRepository.setChimeSound(sound)
-            _chimeSound.value = sound
+            deps.settingsRepository.update { it.copy(chimeSound = sound) }
         }
     }
 
     fun setVibrateBefore(enabled: Boolean) {
         viewModelScope.launch {
-            deps.settingsRepository.setVibrateBefore(enabled)
-            _vibrateBefore.value = enabled
+            deps.settingsRepository.update { it.copy(vibrateBefore = enabled) }
         }
     }
 
     fun setAnnounceDate(enabled: Boolean) {
         viewModelScope.launch {
-            deps.settingsRepository.setAnnounceDateOnDemand(enabled)
-            _announceDate.value = enabled
+            deps.settingsRepository.update { it.copy(announceDateOnDemand = enabled) }
         }
     }
 
     fun setAudioChannel(channel: AudioChannel) {
         viewModelScope.launch {
-            deps.settingsRepository.setAudioChannel(channel)
-            _audioChannel.value = channel
+            deps.settingsRepository.update { it.copy(audioChannel = channel) }
         }
     }
 }

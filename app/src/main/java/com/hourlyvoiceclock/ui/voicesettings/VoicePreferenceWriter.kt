@@ -26,17 +26,23 @@ class VoicePreferenceWriter(
 
     suspend fun setVoice(voiceName: String, localeTag: String) {
         engine.setVoice(voiceName, localeTag)
-        repo.setSelectedVoice(voiceName, localeTag)
+        repo.update {
+            it.copy(
+                selectedVoiceName = voiceName,
+                selectedLocale = localeTag,
+                selectedVoicePresetId = null
+            )
+        }
     }
 
     suspend fun setPitch(value: Float) {
         engine.setPitch(value)
-        repo.setPitch(value)
+        repo.update { it.copy(pitch = value) }
     }
 
     suspend fun setSpeechRate(value: Float) {
         engine.setSpeechRate(value)
-        repo.setSpeechRate(value)
+        repo.update { it.copy(speechRate = value) }
     }
 
     /**

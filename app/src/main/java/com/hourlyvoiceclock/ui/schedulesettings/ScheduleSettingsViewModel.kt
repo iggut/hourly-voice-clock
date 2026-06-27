@@ -1,9 +1,9 @@
 package com.hourlyvoiceclock.ui.schedulesettings
 
-import android.app.Application
-import android.os.Build
 import android.Manifest
+import android.app.Application
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,9 +11,12 @@ import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.scheduler.AlarmPermissionChecker
 import com.hourlyvoiceclock.scheduler.ScheduleReason
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalTime
@@ -22,29 +25,41 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
 
     private val deps = (application as DependenciesProvider).dependencies
 
-    private val _quietHoursEnabled = MutableStateFlow(false)
-    val quietHoursEnabled: StateFlow<Boolean> = _quietHoursEnabled.asStateFlow()
+    val quietHoursEnabled: StateFlow<Boolean> = deps.settingsRepository.settings
+        .map { it.quietHoursEnabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    private val _quietStart = MutableStateFlow(LocalTime.of(22, 0))
-    val quietStart: StateFlow<LocalTime> = _quietStart.asStateFlow()
+    val quietStart: StateFlow<LocalTime> = deps.settingsRepository.settings
+        .map { it.quietHoursStart }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LocalTime.of(22, 0))
 
-    private val _quietEnd = MutableStateFlow(LocalTime.of(7, 0))
-    val quietEnd: StateFlow<LocalTime> = _quietEnd.asStateFlow()
+    val quietEnd: StateFlow<LocalTime> = deps.settingsRepository.settings
+        .map { it.quietHoursEnd }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LocalTime.of(7, 0))
 
-    private val _quietDaysQuietStart = MutableStateFlow(LocalTime.of(10, 0))
-    val quietDaysQuietStart: StateFlow<LocalTime> = _quietDaysQuietStart.asStateFlow()
+    val quietDaysQuietStart: StateFlow<LocalTime> = deps.settingsRepository.settings
+        .map { it.quietDaysQuietStart }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LocalTime.of(10, 0))
 
-    private val _quietDaysQuietEnd = MutableStateFlow(LocalTime.of(18, 0))
-    val quietDaysQuietEnd: StateFlow<LocalTime> = _quietDaysQuietEnd.asStateFlow()
+    val quietDaysQuietEnd: StateFlow<LocalTime> = deps.settingsRepository.settings
+        .map { it.quietDaysQuietEnd }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LocalTime.of(18, 0))
 
-    private val _allowManualDuringQuiet = MutableStateFlow(true)
-    val allowManualDuringQuiet: StateFlow<Boolean> = _allowManualDuringQuiet.asStateFlow()
+    val allowManualDuringQuiet: StateFlow<Boolean> = deps.settingsRepository.settings
+        .map { it.allowManualDuringQuiet }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    private val _quietDaysDisabled = MutableStateFlow<Set<DayOfWeek>>(emptySet())
-    val quietDaysDisabled: StateFlow<Set<DayOfWeek>> = _quietDaysDisabled.asStateFlow()
+    val quietDaysDisabled: StateFlow<Set<DayOfWeek>> = deps.settingsRepository.settings
+        .map { it.quietDaysDisabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
-    private val _exactAlarmsEnabled = MutableStateFlow(false)
-    val exactAlarmsEnabled: StateFlow<Boolean> = _exactAlarmsEnabled.asStateFlow()
+    val exactAlarmsEnabled: StateFlow<Boolean> = deps.settingsRepository.settings
+        .map { it.exactAlarmsEnabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val notificationLogging: StateFlow<Boolean> = deps.settingsRepository.settings
+        .map { it.notificationLogging }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     // Whether the system currently allows exact alarms (re-checked on resume)
     private val _canScheduleExact = MutableStateFlow(false)
@@ -53,9 +68,6 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
     // True when user has enabled exact alarms but permission is not granted
     private val _needsExactPermission = MutableStateFlow(false)
     val needsExactPermission: StateFlow<Boolean> = _needsExactPermission.asStateFlow()
-
-    private val _notificationLogging = MutableStateFlow(false)
-    val notificationLogging: StateFlow<Boolean> = _notificationLogging.asStateFlow()
 
     private val _hasNotificationPermission = MutableStateFlow(true)
     val hasNotificationPermission: StateFlow<Boolean> = _hasNotificationPermission.asStateFlow()
@@ -74,21 +86,9 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
     }
 
     fun refreshAll() {
-        viewModelScope.launch {
-            val settings = deps.settingsRepository.settings.first()
-            _quietHoursEnabled.value = settings.quietHoursEnabled
-            _quietStart.value = settings.quietHoursStart
-            _quietEnd.value = settings.quietHoursEnd
-            _quietDaysQuietStart.value = settings.quietDaysQuietStart
-            _quietDaysQuietEnd.value = settings.quietDaysQuietEnd
-            _allowManualDuringQuiet.value = settings.allowManualDuringQuiet
-            _quietDaysDisabled.value = settings.quietDaysDisabled
-            _exactAlarmsEnabled.value = settings.exactAlarmsEnabled
-            _notificationLogging.value = settings.notificationLogging
-            checkExactAlarmPermission()
-            checkNotificationPermission()
-            checkBatteryOptimizations()
-        }
+        checkExactAlarmPermission()
+        checkNotificationPermission()
+        checkBatteryOptimizations()
     }
 
     fun checkExactAlarmPermission() {
@@ -97,11 +97,11 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         _canScheduleExact.value = can
 
         // If exact alarms are requested but permission not granted, show the permission card
-        _needsExactPermission.value = _exactAlarmsEnabled.value && !can &&
+        _needsExactPermission.value = exactAlarmsEnabled.value && !can &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
         // If permission was previously denied and is now granted, reschedule
-        if (wasDenied && can && _exactAlarmsEnabled.value) {
+        if (wasDenied && can && exactAlarmsEnabled.value) {
             viewModelScope.launch {
                 val settings = deps.settingsRepository.settings.first()
                 if (settings.hourlyAnnouncementsEnabled) {
@@ -142,59 +142,51 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
 
     fun setQuietHoursEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            deps.settingsRepository.setQuietHoursEnabled(enabled)
-            _quietHoursEnabled.value = enabled
+            deps.settingsRepository.update { it.copy(quietHoursEnabled = enabled) }
         }
     }
 
     fun setQuietStart(time: LocalTime) {
         viewModelScope.launch {
-            deps.settingsRepository.setQuietHoursStart(time)
-            _quietStart.value = time
+            deps.settingsRepository.update { it.copy(quietHoursStart = time) }
         }
     }
 
     fun setQuietEnd(time: LocalTime) {
         viewModelScope.launch {
-            deps.settingsRepository.setQuietHoursEnd(time)
-            _quietEnd.value = time
+            deps.settingsRepository.update { it.copy(quietHoursEnd = time) }
         }
     }
 
     fun setQuietDaysQuietStart(time: LocalTime) {
         viewModelScope.launch {
-            deps.settingsRepository.setQuietDaysQuietStart(time)
-            _quietDaysQuietStart.value = time
+            deps.settingsRepository.update { it.copy(quietDaysQuietStart = time) }
         }
     }
 
     fun setQuietDaysQuietEnd(time: LocalTime) {
         viewModelScope.launch {
-            deps.settingsRepository.setQuietDaysQuietEnd(time)
-            _quietDaysQuietEnd.value = time
+            deps.settingsRepository.update { it.copy(quietDaysQuietEnd = time) }
         }
     }
 
     fun setAllowManualDuringQuiet(enabled: Boolean) {
         viewModelScope.launch {
-            deps.settingsRepository.setAllowManualDuringQuiet(enabled)
-            _allowManualDuringQuiet.value = enabled
+            deps.settingsRepository.update { it.copy(allowManualDuringQuiet = enabled) }
         }
     }
 
     fun toggleQuietDay(day: DayOfWeek, disabled: Boolean) {
         viewModelScope.launch {
-            val current = _quietDaysDisabled.value.toMutableSet()
+            val current = quietDaysDisabled.value.toMutableSet()
             if (disabled) current.add(day) else current.remove(day)
-            deps.settingsRepository.setQuietDaysDisabled(current)
-            _quietDaysDisabled.value = current
+            deps.settingsRepository.update { it.copy(quietDaysDisabled = current) }
         }
     }
 
     fun setExactAlarmsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             val result = deps.hourlySchedulePolicy.setExactRequested(enabled)
-            _exactAlarmsEnabled.value = enabled
             _canScheduleExact.value = result.canScheduleExactAlarms
             _needsExactPermission.value = result.needsExactPermission
         }
@@ -202,8 +194,7 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
 
     fun setNotificationLogging(enabled: Boolean) {
         viewModelScope.launch {
-            deps.settingsRepository.setNotificationLogging(enabled)
-            _notificationLogging.value = enabled
+            deps.settingsRepository.update { it.copy(notificationLogging = enabled) }
         }
     }
 }

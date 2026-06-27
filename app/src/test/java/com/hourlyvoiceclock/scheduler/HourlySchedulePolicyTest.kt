@@ -104,12 +104,8 @@ class HourlySchedulePolicyTest {
 
         override val settings = state
 
-        override suspend fun setHourlyAnnouncements(enabled: Boolean) {
-            state.value = state.value.copy(hourlyAnnouncementsEnabled = enabled)
-        }
-
-        override suspend fun setExactAlarmsEnabled(enabled: Boolean) {
-            state.value = state.value.copy(exactAlarmsEnabled = enabled)
+        override suspend fun update(transform: (AppSettings) -> AppSettings) {
+            state.value = transform(state.value)
         }
     }
 

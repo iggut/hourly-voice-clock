@@ -155,7 +155,7 @@ class HomeViewModel(
 
     fun setAutoUpdateEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            deps.settingsRepository.setAutoUpdateEnabled(enabled)
+            deps.settingsRepository.update { it.copy(autoUpdateEnabled = enabled) }
         }
     }
 

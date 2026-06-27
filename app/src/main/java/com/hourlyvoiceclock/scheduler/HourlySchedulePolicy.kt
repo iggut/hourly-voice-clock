@@ -27,12 +27,12 @@ class HourlySchedulePolicy(
 ) {
 
     suspend fun setEnabled(enabled: Boolean): ScheduleSyncResult {
-        settingsStore.setHourlyAnnouncements(enabled)
+        settingsStore.update { it.copy(hourlyAnnouncementsEnabled = enabled) }
         return applyCurrentPolicy(ScheduleReason.HOURLY_TOGGLED)
     }
 
     suspend fun setExactRequested(enabled: Boolean): ScheduleSyncResult {
-        settingsStore.setExactAlarmsEnabled(enabled)
+        settingsStore.update { it.copy(exactAlarmsEnabled = enabled) }
 
         val settings = settingsStore.settings.first()
         val canExact = canScheduleExactAlarms()

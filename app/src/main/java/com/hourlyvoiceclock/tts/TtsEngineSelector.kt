@@ -36,7 +36,7 @@ class TtsEngineSelector(
         if (packageProbe.isInstalled(saved)) return saved
         Log.w(TAG, "Saved TTS engine $saved is not installed; clearing saved value")
         try {
-            settings.setSelectedTtsEnginePackage(null)
+            settings.update { it.copy(selectedTtsEnginePackage = null) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to clear stale TTS engine selection", e)
         }

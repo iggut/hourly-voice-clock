@@ -4,16 +4,18 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.di.DependenciesProvider
-import com.hourlyvoiceclock.tts.VoiceInfo
 import com.hourlyvoiceclock.tts.TtsEngineInfo
+import com.hourlyvoiceclock.tts.VoiceInfo
 import com.hourlyvoiceclock.tts.local.LocalTtsEngine
 import com.hourlyvoiceclock.tts.local.VoiceModel
-import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -77,8 +79,9 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     private val _selectedFilter = MutableStateFlow(VoiceListFilter.ALL)
     val selectedFilter: StateFlow<VoiceListFilter> = _selectedFilter.asStateFlow()
 
-    private val _selectedPresetId = MutableStateFlow<String?>(null)
-    val selectedPresetId: StateFlow<String?> = _selectedPresetId.asStateFlow()
+    val selectedPresetId: StateFlow<String?> = deps.settingsRepository.settings
+        .map { it.selectedVoicePresetId }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _isEspeakNgSelected = MutableStateFlow(false)
     val isEspeakNgSelected: StateFlow<Boolean> = _isEspeakNgSelected.asStateFlow()
@@ -91,9 +94,12 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             }
         }
 
-    private val _selectedVoiceName = MutableStateFlow<String?>(null)
-    val selectedVoiceName: StateFlow<String?> = _selectedVoiceName.asStateFlow()
+    val selectedVoiceName: StateFlow<String?> = deps.settingsRepository.settings
+        .map { it.selectedVoiceName }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    // Pitch and speech rate are kept as local MutableStateFlows so the
+    // sliders feel responsive; each drag commits to the repository.
     private val _pitch = MutableStateFlow(1.0f)
     val pitch: StateFlow<Float> = _pitch.asStateFlow()
 
@@ -127,8 +133,9 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
      * Currently-selected downloaded on-device voice id, or `null` if
      * the user is using the system TTS path.
      */
-    private val _selectedLocalModelId = MutableStateFlow<String?>(null)
-    val selectedLocalModelId: StateFlow<String?> = _selectedLocalModelId.asStateFlow()
+    val selectedLocalModelId: StateFlow<String?> = deps.settingsRepository.settings
+        .map { it.selectedLocalModelId }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     /**
      * Lightweight probe so the voice settings screen can read which
@@ -147,8 +154,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             _selectedEnginePackage.value = settings.selectedTtsEnginePackage
                 ?: deps.ttsEngine.getEngines().firstOrNull { it.isInstalled }?.packageName
             _isEspeakNgSelected.value = _selectedEnginePackage.value?.contains("espeak", ignoreCase = true) == true
-            _selectedVoiceName.value = settings.selectedVoiceName
-            _selectedPresetId.value = settings.selectedVoicePresetId
             _pitch.value = settings.pitch
             _speechRate.value = settings.speechRate
 
@@ -159,10 +164,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             reconcileStaleVoiceSelection(settings.selectedVoiceName, settings.selectedLocale)
             updateFilteredVoices()
 
-            // Refresh the list of on-device voices the user has
-            // downloaded, and surface the user's selected local model
-            // (if any) from settings.
-            _selectedLocalModelId.value = settings.selectedLocalModelId
             refreshDownloadedLocalModels()
         }
     }
@@ -198,9 +199,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
                     selectedVoicePresetId = null
                 )
             }
-            _selectedVoiceName.value = null
-            _selectedPresetId.value = null
-            _selectedLocalModelId.value = model.id
         }
     }
 
@@ -212,14 +210,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
      */
     fun clearLocalModelSelection() {
         viewModelScope.launch {
-            deps.settingsRepository.setSelectedLocalModelId(null)
-            _selectedLocalModelId.value = null
-            // The voice name in the system TTS engine is still the
-            // last-known one; reload it from settings so the radio
-            // button reflects the actual active selection.
-            val s = deps.settingsRepository.settings.first()
-            _selectedVoiceName.value = s.selectedVoiceName
-            _selectedPresetId.value = s.selectedVoicePresetId
+            deps.settingsRepository.update { it.copy(selectedLocalModelId = null) }
         }
     }
 
@@ -264,8 +255,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
                 }
                 _selectedEnginePackage.value = packageName
                 _isEspeakNgSelected.value = packageName.contains("espeak", ignoreCase = true)
-                _selectedVoiceName.value = null
-                _selectedPresetId.value = null
 
                 _engines.value = deps.ttsEngine.getEngines()
                 allNormalVoices = deps.ttsEngine.getVoices()
@@ -307,15 +296,11 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         deps.settingsRepository.update {
             it.copy(selectedVoiceName = null, selectedLocale = null, selectedVoicePresetId = null)
         }
-        _selectedVoiceName.value = null
-        _selectedPresetId.value = null
     }
 
     fun selectVoice(voiceName: String, localeTag: String) {
         viewModelScope.launch {
             writer.setVoice(voiceName, localeTag)
-            _selectedVoiceName.value = voiceName
-            _selectedPresetId.value = null
         }
     }
 
@@ -330,8 +315,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
         if (underlyingVoice != null) {
             writer.applyPreset(preset, underlyingVoice)
-            _selectedVoiceName.value = underlyingVoice.name
-            _selectedPresetId.value = preset.id
             _pitch.value = preset.pitch
             _speechRate.value = preset.speechRate
         }
@@ -391,8 +374,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             runCatching {
                 writer.setVoice(voiceName, localeTag)
-                _selectedVoiceName.value = voiceName
-                _selectedPresetId.value = null
                 deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
             }
         }
