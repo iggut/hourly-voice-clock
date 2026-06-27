@@ -1,6 +1,7 @@
 package com.hourlyvoiceclock.ui.home
 
-import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
+import com.hourlyvoiceclock.scheduler.NextAnnouncementCalculator
+import com.hourlyvoiceclock.scheduler.TopOfHourCalculator
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -17,7 +18,8 @@ import java.util.Locale
  */
 class Clock(
     private val zoneId: ZoneId = ZoneId.systemDefault(),
-    private val locale: Locale = Locale.getDefault()
+    private val locale: Locale = Locale.getDefault(),
+    private val nextAnnouncementCalculator: NextAnnouncementCalculator = TopOfHourCalculator()
 ) {
 
     fun now(): LocalDateTime = LocalDateTime.now(zoneId)
@@ -34,7 +36,7 @@ class Clock(
 
     fun nextAnnouncementText(now: LocalDateTime, enabled: Boolean): String {
         if (!enabled) return ""
-        val next = AnnouncementScheduler.getNextTopOfHour(now)
+        val next = nextAnnouncementCalculator.nextAnnouncementTime(now)
         return next.format(nextAnnouncementFormatter)
     }
 

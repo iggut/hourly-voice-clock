@@ -8,14 +8,16 @@ import android.util.Log
 import com.hourlyvoiceclock.receiver.AlarmReceiver
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 
-class AnnouncementScheduler(private val context: Context) : HourlyAlarmScheduler {
+class AnnouncementScheduler(
+    private val context: Context,
+    private val nextCalculator: NextAnnouncementCalculator = TopOfHourCalculator()
+) : HourlyAlarmScheduler {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     override fun scheduleNextHour(exact: Boolean) {
-        val nextHour = getNextTopOfHour()
+        val nextHour = nextCalculator.nextAnnouncementTime(java.time.LocalDateTime.now())
         val triggerAtMillis = nextHour.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         val intent = Intent(context, AlarmReceiver::class.java).apply {
@@ -68,9 +70,5 @@ class AnnouncementScheduler(private val context: Context) : HourlyAlarmScheduler
 
     companion object {
         private const val REQUEST_CODE_HOURLY = 1001
-
-        fun getNextTopOfHour(from: LocalDateTime = LocalDateTime.now()): LocalDateTime {
-            return from.plusHours(1).truncatedTo(ChronoUnit.HOURS)
-        }
     }
 }
