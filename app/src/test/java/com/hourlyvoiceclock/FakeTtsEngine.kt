@@ -3,6 +3,7 @@ package com.hourlyvoiceclock
 import com.hourlyvoiceclock.tts.TtsEngine
 import com.hourlyvoiceclock.tts.TtsEngineInfo
 import com.hourlyvoiceclock.tts.VoiceInfo
+import com.hourlyvoiceclock.tts.VoiceProfile
 
 class FakeTtsEngine : TtsEngine {
 
@@ -50,6 +51,16 @@ class FakeTtsEngine : TtsEngine {
     }
 
     override fun setAudioChannel(channel: com.hourlyvoiceclock.data.AudioChannel) {}
+
+    override fun configure(profile: VoiceProfile): Boolean {
+        lastVoiceName = profile.voiceName
+        lastLocaleTag = profile.localeTag
+        lastPitch = profile.pitch
+        lastSpeechRate = profile.speechRate
+        return profile.voiceName?.isNotBlank() == true
+            || profile.localeTag?.isNotBlank() == true
+            || profile.localModelId?.isNotBlank() == true
+    }
 
     override fun speak(text: String, utteranceId: String) {
         lastSpokenText = text

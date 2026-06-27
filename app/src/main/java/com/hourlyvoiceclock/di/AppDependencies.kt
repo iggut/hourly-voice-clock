@@ -11,7 +11,6 @@ import com.hourlyvoiceclock.announcer.HandlerDelayScheduler
 import com.hourlyvoiceclock.announcer.HapticPulse
 import com.hourlyvoiceclock.announcer.TimeAnnouncer
 import com.hourlyvoiceclock.announcer.ToastUserFeedback
-import com.hourlyvoiceclock.announcer.TtsConfigApplier
 import com.hourlyvoiceclock.announcer.TtsEngineRouter
 import com.hourlyvoiceclock.announcer.UserFeedback
 import com.hourlyvoiceclock.announcer.VolumeChecker
@@ -131,7 +130,6 @@ class AppDependencies(context: Context) {
             chimePlayer = chimePlayer,
             notifier = notifier,
             hapticPulse = HapticPulse(appContext),
-            ttsConfig = TtsConfigApplier(ttsEngine),
             audioFocusController = AudioFocusController(appContext),
             ttsEngineRouter = ttsEngineRouter,
             volumeChecker = volumeChecker,

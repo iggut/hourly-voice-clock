@@ -6,6 +6,7 @@ import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.tts.TtsEngine
 import com.hourlyvoiceclock.tts.VoiceInfo
+import com.hourlyvoiceclock.tts.VoiceProfile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -52,7 +53,6 @@ class TimeAnnouncerTest {
             chimePlayer = chimePlayer,
             notifier = notifier,
             hapticPulse = hapticPulse,
-            ttsConfig = TtsConfigApplier(primaryEngine),
             audioFocusController = audioFocusController,
             ttsEngineRouter = router,
             volumeChecker = volumeChecker,
@@ -134,6 +134,30 @@ class TimeAnnouncerTest {
     }
 
     @Test
+    fun `configures the selected engine with the user's voice profile`() {
+        localEngine.available = true
+        val settings = baseSettings.copy(
+            selectedLocalModelId = "piper_en_us_amy_medium",
+            selectedLocale = "en-US",
+            selectedVoiceName = "samantha",
+            pitch = 1.2f,
+            speechRate = 0.8f,
+            audioChannel = AudioChannel.NOTIFICATION
+        )
+
+        announcer.announceAt(settings, dateTime = LocalDateTime.of(2026, 1, 1, 12, 0)) {}
+        delayScheduler.runAll()
+
+        val profile = localEngine.configuredProfile
+        assertEquals("samantha", profile?.voiceName)
+        assertEquals("en-US", profile?.localeTag)
+        assertEquals("piper_en_us_amy_medium", profile?.localModelId)
+        assertEquals(1.2f, profile?.pitch)
+        assertEquals(0.8f, profile?.speechRate)
+        assertEquals(AudioChannel.NOTIFICATION, profile?.audioChannel)
+    }
+
+    @Test
     fun `falls back to primary engine when local model fails`() {
         localEngine.available = true
         localEngine.voiceSetFails = true
@@ -206,6 +230,7 @@ private class FakeTtsEngine(private val label: String) : TtsEngine {
     var available = true
     var voiceSetFails = false
     var setVoiceCalled = false
+    var configuredProfile: VoiceProfile? = null
     private var lastCallback: ((Boolean) -> Unit)? = null
 
     override suspend fun initialize(enginePackage: String?): Boolean = true
@@ -219,6 +244,10 @@ private class FakeTtsEngine(private val label: String) : TtsEngine {
     override fun setPitch(pitch: Float) {}
     override fun setSpeechRate(rate: Float) {}
     override fun setAudioChannel(channel: AudioChannel) {}
+    override fun configure(profile: VoiceProfile): Boolean {
+        configuredProfile = profile
+        return true
+    }
     override fun speak(text: String, utteranceId: String) {}
     override fun speakAsync(text: String, onComplete: (Boolean) -> Unit) {
         spoke = true

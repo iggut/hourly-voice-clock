@@ -4,6 +4,7 @@ import android.util.Log
 import com.hourlyvoiceclock.data.AppSettings
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.tts.TtsEngine
+import com.hourlyvoiceclock.tts.VoiceProfile
 
 /**
  * Orchestrates an hourly announcement: policy checks, chime, haptic,
@@ -17,7 +18,6 @@ class TimeAnnouncer(
     private val chimePlayer: ChimePlayer,
     private val notifier: AnnouncementNotifier,
     private val hapticPulse: HapticPulse,
-    private val ttsConfig: TtsConfigApplier,
     private val audioFocusController: AudioFocusController,
     private val ttsEngineRouter: TtsEngineRouter,
     private val volumeChecker: VolumeChecker,
@@ -101,17 +101,16 @@ class TimeAnnouncer(
             Log.w(TAG, "TTS not available - attempting init")
         }
 
-        if (engine === ttsEngine) {
-            ttsConfig.apply(
+        engine.configure(
+            VoiceProfile(
                 voiceName = settings.selectedVoiceName,
-                savedLocale = settings.selectedLocale,
+                localeTag = settings.selectedLocale,
+                localModelId = settings.selectedLocalModelId,
                 pitch = settings.pitch,
                 speechRate = settings.speechRate,
                 audioChannel = settings.audioChannel
             )
-        } else {
-            engine.setAudioChannel(settings.audioChannel)
-        }
+        )
 
         val text = AnnouncementFormatter.format(
             dateTime = dateTime,

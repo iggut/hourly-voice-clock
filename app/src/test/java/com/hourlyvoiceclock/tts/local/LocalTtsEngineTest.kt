@@ -3,6 +3,7 @@ package com.hourlyvoiceclock.tts.local
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.hourlyvoiceclock.data.AudioChannel
+import com.hourlyvoiceclock.tts.VoiceProfile
 import com.k2fsa.sherpa.onnx.GeneratedAudio
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import kotlinx.coroutines.CoroutineScope
@@ -68,6 +69,43 @@ class LocalTtsEngineTest {
 
         assertTrue(engine.setVoice(otherModel.id, "en-US"))
         assertEquals(otherModel.id, engine.getCurrentEnginePackage())
+    }
+
+    @Test
+    fun `configure loads the requested model and applies the audio channel`() = runTest {
+        val engine = createEngine()
+
+        val result = engine.configure(
+            VoiceProfile(
+                voiceName = fakeModel.id,
+                localeTag = "en-US",
+                localModelId = fakeModel.id,
+                pitch = 1.0f,
+                speechRate = 1.0f,
+                audioChannel = AudioChannel.CALL
+            )
+        )
+
+        assertTrue(result)
+        assertEquals(fakeModel.id, engine.getCurrentEnginePackage())
+    }
+
+    @Test
+    fun `configure returns false when no voice or locale is provided`() = runTest {
+        val engine = createEngine()
+
+        val result = engine.configure(
+            VoiceProfile(
+                voiceName = null,
+                localeTag = null,
+                localModelId = null,
+                pitch = 1.0f,
+                speechRate = 1.0f,
+                audioChannel = AudioChannel.MEDIA
+            )
+        )
+
+        assertFalse(result)
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.tts.TtsEngine
 import com.hourlyvoiceclock.tts.TtsEngineInfo
 import com.hourlyvoiceclock.tts.VoiceInfo
+import com.hourlyvoiceclock.tts.VoiceProfile
 import com.k2fsa.sherpa.onnx.getOfflineTtsConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -173,6 +174,22 @@ class LocalTtsEngine(
 
     override fun setAudioChannel(channel: AudioChannel) {
         currentAudioChannel = channel
+    }
+
+    override fun configure(profile: VoiceProfile): Boolean {
+        setAudioChannel(profile.audioChannel)
+        val modelId = profile.localModelId?.takeIf { it.isNotBlank() }
+            ?: profile.voiceName?.takeIf { it.isNotBlank() }
+        return if (modelId != null) {
+            setVoice(modelId, profile.localeTag ?: "")
+        } else {
+            val localeTag = profile.localeTag
+            if (!localeTag.isNullOrBlank()) {
+                setLanguage(localeTag)
+            } else {
+                false
+            }
+        }
     }
 
     override fun speak(text: String, utteranceId: String) {

@@ -26,6 +26,17 @@ interface TtsEngine {
     fun setPitch(pitch: Float)
     fun setSpeechRate(rate: Float)
     fun setAudioChannel(channel: AudioChannel)
+
+    /**
+     * Apply the given [profile] to this engine in one call.
+     *
+     * The adapter decides which fields are meaningful: the system
+     * engine walks the voice/locale fallback cascade, while the local
+     * engine loads the requested model. Returns `true` if a specific
+     * voice or model was successfully selected.
+     */
+    fun configure(profile: VoiceProfile): Boolean
+
     fun speak(text: String, utteranceId: String)
     fun speakAsync(text: String, onComplete: (Boolean) -> Unit)
     fun stop()
@@ -169,6 +180,19 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         val ttsInstance = tts ?: return
         currentAudioChannel = channel
         setupAudioAttributes(ttsInstance, channel)
+    }
+
+    override fun configure(profile: VoiceProfile): Boolean {
+        val voiceSet = selectVoiceOrLocale(
+            voiceName = profile.voiceName,
+            savedLocale = profile.localeTag,
+            setVoice = { name, tag -> setVoice(name, tag) },
+            setLanguage = { tag -> setLanguage(tag) }
+        )
+        setPitch(profile.pitch)
+        setSpeechRate(profile.speechRate)
+        setAudioChannel(profile.audioChannel)
+        return voiceSet
     }
 
     override fun speak(text: String, utteranceId: String) {
@@ -367,4 +391,32 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
 
         return null
     }
+}
+
+private const val FALLBACK_LOCALE = "en-US"
+
+/**
+ * Walk the voice-selection fallback cascade used by [AndroidTtsEngine.configure].
+ *
+ * Exposed as an internal file-level function so the policy can be unit-tested
+ * without constructing a real [android.speech.tts.TextToSpeech] instance.
+ * It is not part of the public [TtsEngine] seam.
+ */
+internal fun selectVoiceOrLocale(
+    voiceName: String?,
+    savedLocale: String?,
+    deviceDefaultLocale: String = Locale.getDefault().toLanguageTag(),
+    setVoice: (String, String) -> Boolean,
+    setLanguage: (String) -> Boolean
+): Boolean {
+    if (!voiceName.isNullOrBlank()) {
+        val localeTag = savedLocale?.takeIf { it.isNotBlank() } ?: ""
+        if (setVoice(voiceName, localeTag)) return true
+    }
+    if (!savedLocale.isNullOrBlank() && setLanguage(savedLocale)) return true
+    if (deviceDefaultLocale.isNotBlank() && setLanguage(deviceDefaultLocale)) return true
+    // Last resort. setLanguage is allowed to return false here — at
+    // least we tried to give the engine *something* to speak.
+    setLanguage(FALLBACK_LOCALE)
+    return false
 }
