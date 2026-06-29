@@ -491,6 +491,16 @@ fun ScheduleSettingsScreen(
                                 val errorColor = MaterialTheme.colorScheme.error
                                 val errorBgColor = errorColor.copy(alpha = 0.2f)
 
+                                // ⚡ Bolt: Cache locale-dependent DayOfWeek strings outside of the loop to prevent GC pressure
+                                val dayOfWeekNames = remember(locale, showFullText) {
+                                    DayOfWeek.entries.associateWith { day ->
+                                        day.getDisplayName(
+                                            if (showFullText) java.time.format.TextStyle.FULL else java.time.format.TextStyle.NARROW,
+                                            locale
+                                        )
+                                    }
+                                }
+
                                 if (showFullText) {
                                     val chipColors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = errorBgColor,
@@ -508,10 +518,7 @@ fun ScheduleSettingsScreen(
                                                 onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
                                                 label = {
                                                     Text(
-                                                        day.getDisplayName(
-                                                            java.time.format.TextStyle.FULL,
-                                                            locale
-                                                        ),
+                                                        dayOfWeekNames[day] ?: day.name,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -532,10 +539,7 @@ fun ScheduleSettingsScreen(
                                     ) {
                                         for (day in DayOfWeek.entries) {
                                             val isDisabled = day in quietDaysDisabled
-                                            val narrowName = day.getDisplayName(
-                                                java.time.format.TextStyle.NARROW,
-                                                locale
-                                            )
+                                            val narrowName = dayOfWeekNames[day] ?: day.name
 
                                             val bgColor = if (isDisabled) errorBgColor else transparentColor
                                             val borderColor = if (isDisabled) errorColor else outlineColor
