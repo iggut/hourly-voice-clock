@@ -34,3 +34,7 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+
+## 2024-08-01 - Prevent UI String Allocations for Localized Time Loop Entries
+**Learning:** Calling `DayOfWeek.getDisplayName()` (or similar Date/Time/Locale methods) repeatedly within high-frequency UI generation loops like Jetpack Compose lists creates redundant string allocations and lookup overhead on every recomposition.
+**Action:** Always hoist invariant localization mapping lookups outside of UI generation loops. Use `remember` combined with the system `Locale` as a key to cache the localized display names for entities like `DayOfWeek`, preventing constant string reallocation without breaking responsiveness to system language changes.
