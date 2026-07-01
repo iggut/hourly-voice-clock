@@ -34,3 +34,7 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+
+## 2024-08-01 - View Model Recomposition Loop String Format Fix
+**Learning:** Checking conditional variables or executing string formatting methods on variables inside high-frequency UI generation loops like `DayOfWeek.entries` generates unnecessary string allocations and CPU overhead on every recomposition.
+**Action:** Extract loop-invariant conditions and precompute shared resources (such as formatters, common Modifiers, or pre-formatted names using `remember(locale)`) outside of loops to minimize GC pressure and recomposition overhead.

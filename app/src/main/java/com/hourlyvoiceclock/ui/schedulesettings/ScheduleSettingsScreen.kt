@@ -496,6 +496,8 @@ fun ScheduleSettingsScreen(
                                         selectedContainerColor = errorBgColor,
                                         selectedLabelColor = errorColor
                                     )
+                                    // ⚡ Bolt: Cache day names to prevent redundant string allocations per recomposition
+                                    val fullNames = remember(locale) { DayOfWeek.entries.associateWith { it.getDisplayName(java.time.format.TextStyle.FULL, locale) } }
                                     FlowRow(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -508,10 +510,7 @@ fun ScheduleSettingsScreen(
                                                 onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
                                                 label = {
                                                     Text(
-                                                        day.getDisplayName(
-                                                            java.time.format.TextStyle.FULL,
-                                                            locale
-                                                        ),
+                                                        fullNames[day] ?: "",
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -525,6 +524,13 @@ fun ScheduleSettingsScreen(
                                     val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                                     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
 
+                                    // ⚡ Bolt: Cache narrow day names to prevent redundant allocations per recomposition
+                                    val narrowNames = remember(locale) { DayOfWeek.entries.associateWith { it.getDisplayName(java.time.format.TextStyle.NARROW, locale) } }
+
+                                    // ⚡ Bolt: Pre-allocate reusable modifiers
+                                    val disabledBorder = remember(errorColor) { BorderStroke(1.dp, errorColor) }
+                                    val enabledBorder = remember(outlineColor) { BorderStroke(1.dp, outlineColor) }
+
                                     Row(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -532,24 +538,17 @@ fun ScheduleSettingsScreen(
                                     ) {
                                         for (day in DayOfWeek.entries) {
                                             val isDisabled = day in quietDaysDisabled
-                                            val narrowName = day.getDisplayName(
-                                                java.time.format.TextStyle.NARROW,
-                                                locale
-                                            )
+                                            val narrowName = narrowNames[day] ?: ""
 
                                             val bgColor = if (isDisabled) errorBgColor else transparentColor
-                                            val borderColor = if (isDisabled) errorColor else outlineColor
+                                            val borderModifier = if (isDisabled) Modifier.border(disabledBorder, CircleShape) else Modifier.border(enabledBorder, CircleShape)
                                             val textColor = if (isDisabled) errorColor else onSurfaceColor
                                             Box(
                                                 modifier = Modifier
                                                     .size(40.dp)
                                                     .clip(CircleShape)
                                                     .background(bgColor)
-                                                    .border(
-                                                        width = 1.dp,
-                                                        color = borderColor,
-                                                        shape = CircleShape
-                                                    )
+                                                    .then(borderModifier)
                                                     .clickable { viewModel.toggleQuietDay(day, !isDisabled) },
                                                 contentAlignment = Alignment.Center
                                             ) {
