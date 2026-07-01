@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -322,7 +324,11 @@ fun HomeScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { viewModel.toggleHourly(!hourlyEnabled) }
+                                .toggleable(
+                                    value = hourlyEnabled,
+                                    onValueChange = { viewModel.toggleHourly(it) },
+                                    role = Role.Switch
+                                )
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -525,7 +531,11 @@ fun HomeScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { viewModel.setAutoUpdateEnabled(!settings.autoUpdateEnabled) }
+                                .toggleable(
+                                    value = settings.autoUpdateEnabled,
+                                    onValueChange = { viewModel.setAutoUpdateEnabled(it) },
+                                    role = Role.Switch
+                                )
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
