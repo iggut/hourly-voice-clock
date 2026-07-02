@@ -34,3 +34,6 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+## 2026-07-02 - Pre-allocate Modifiers Outside Recomposition Loops
+**Learning:** Constructing complex `Modifier` chains inside iterative UI generation loops (like `for` or `forEach`) generates significant redundant object allocations during each recomposition frame, putting unnecessary pressure on the garbage collector.
+**Action:** Extract and pre-allocate shared base `Modifier` chains (e.g., `val baseModifier = Modifier.size(40.dp).clip(CircleShape)`) outside of loops, and append any dynamic, iteration-specific modifiers onto the cached instance.
