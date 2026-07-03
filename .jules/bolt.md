@@ -34,3 +34,7 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+
+## 2026-06-25 - Avoid string format and modifier allocations in Compose loops
+**Learning:** In Jetpack Compose, fetching display names (e.g. `day.getDisplayName`) and constructing complex modifier chains (like `.size(40.dp).clip(CircleShape)`) per iteration inside lists/rows during recompositions adds up to garbage collection pressure and CPU overhead over time.
+**Action:** Pre-cache strings and hoist shared modifier instances outside of loops using `remember` (e.g. `remember { Modifier... }` or `remember(locale) { ... }`).
