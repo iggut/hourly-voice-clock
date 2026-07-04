@@ -34,3 +34,6 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+## 2026-07-04 - Over-remembering Color in Compose
+**Learning:** `Color` is a value class in Jetpack Compose. Passing it into the generic `remember<T>` function forces Kotlin to box it into a heap allocation, and checking the Compose slot table is computationally more expensive than a simple inline bitwise `.copy()` operation. Overzealously remembering colors is a micro-deoptimization. Furthermore, `java.util.Locale.getDefault()` within a `remember` block fails to dynamically update if the device locale changes at runtime without recreation.
+**Action:** Do NOT use `remember` for `Color` operations (like `Color.copy()`). Rely on inline execution. For dynamic locale, use `LocalConfiguration.current.locales[0]` instead of static default `Locale`.
