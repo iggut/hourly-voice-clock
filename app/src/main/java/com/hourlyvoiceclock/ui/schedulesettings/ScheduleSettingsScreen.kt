@@ -12,6 +12,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -256,13 +258,16 @@ fun ScheduleSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    val enabled = !exactAlarms
-                                    viewModel.setExactAlarmsEnabled(enabled)
-                                    if (enabled && !canScheduleExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        showExactAlarmDialog = true
-                                    }
-                                }
+                                .toggleable(
+                                    value = exactAlarms,
+                                    onValueChange = {
+                                        viewModel.setExactAlarmsEnabled(it)
+                                        if (it && !canScheduleExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                            showExactAlarmDialog = true
+                                        }
+                                    },
+                                    role = Role.Switch
+                                )
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -362,7 +367,11 @@ fun ScheduleSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { viewModel.setQuietHoursEnabled(!quietEnabled) }
+                                .toggleable(
+                                    value = quietEnabled,
+                                    onValueChange = { viewModel.setQuietHoursEnabled(it) },
+                                    role = Role.Switch
+                                )
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -454,7 +463,11 @@ fun ScheduleSettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { viewModel.setAllowManualDuringQuiet(!allowManual) }
+                                    .toggleable(
+                                        value = allowManual,
+                                        onValueChange = { viewModel.setAllowManualDuringQuiet(it) },
+                                        role = Role.Switch
+                                    )
                                     .padding(vertical = 8.dp, horizontal = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -550,7 +563,11 @@ fun ScheduleSettingsScreen(
                                                         color = borderColor,
                                                         shape = CircleShape
                                                     )
-                                                    .clickable { viewModel.toggleQuietDay(day, !isDisabled) },
+                                                    .toggleable(
+                                                        value = isDisabled,
+                                                        onValueChange = { viewModel.toggleQuietDay(day, it) },
+                                                        role = Role.Switch
+                                                    ),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
