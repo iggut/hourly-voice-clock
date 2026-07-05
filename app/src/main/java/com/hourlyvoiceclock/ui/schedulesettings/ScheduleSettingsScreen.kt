@@ -487,7 +487,25 @@ fun ScheduleSettingsScreen(
                                 val showFullText = isLandscape || maxWidth >= 600.dp
 
                                 val layoutModifier = Modifier.fillMaxWidth()
-                                val locale = java.util.Locale.getDefault()
+
+                                @Suppress("DEPRECATION")
+                                val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                    configuration.locales[0]
+                                } else {
+                                    configuration.locale
+                                }
+
+                                val fullDayNames = remember(locale) {
+                                    DayOfWeek.entries.associateWith { day ->
+                                        day.getDisplayName(java.time.format.TextStyle.FULL, locale)
+                                    }
+                                }
+                                val narrowDayNames = remember(locale) {
+                                    DayOfWeek.entries.associateWith { day ->
+                                        day.getDisplayName(java.time.format.TextStyle.NARROW, locale)
+                                    }
+                                }
+
                                 val errorColor = MaterialTheme.colorScheme.error
                                 val errorBgColor = errorColor.copy(alpha = 0.2f)
 
@@ -508,10 +526,7 @@ fun ScheduleSettingsScreen(
                                                 onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
                                                 label = {
                                                     Text(
-                                                        day.getDisplayName(
-                                                            java.time.format.TextStyle.FULL,
-                                                            locale
-                                                        ),
+                                                        fullDayNames[day] ?: day.name,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -532,10 +547,7 @@ fun ScheduleSettingsScreen(
                                     ) {
                                         for (day in DayOfWeek.entries) {
                                             val isDisabled = day in quietDaysDisabled
-                                            val narrowName = day.getDisplayName(
-                                                java.time.format.TextStyle.NARROW,
-                                                locale
-                                            )
+                                            val narrowName = narrowDayNames[day] ?: day.name
 
                                             val bgColor = if (isDisabled) errorBgColor else transparentColor
                                             val borderColor = if (isDisabled) errorColor else outlineColor

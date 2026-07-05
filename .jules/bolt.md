@@ -34,3 +34,6 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+## 2024-05-27 - Hoist Locale Formatting in Compose
+**Learning:** In Jetpack Compose, executing `java.time` formatting methods (like `day.getDisplayName()`) and repeatedly calling `java.util.Locale.getDefault()` within UI generation loops (like `DayOfWeek.entries`) incurs significant overhead and redundant string allocations.
+**Action:** Always pre-compute localized display names outside the loops using `remember(locale)` and a map, and retrieve the current locale safely using `LocalConfiguration.current.locales[0]` rather than relying on standard JVM calls during rendering.
