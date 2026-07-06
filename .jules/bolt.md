@@ -34,3 +34,7 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+
+## 2024-05-30 - Extract Modifiers Outside UI Loops
+**Learning:** Checking conditional variables or defining modifier chains (like `Modifier.size(40.dp).clip(CircleShape)`) inside high-frequency UI generation loops (like `DayOfWeek.entries` iterations) causes redundant object creations and puts pressure on garbage collection on every recomposition.
+**Action:** Extract and pre-allocate loop-invariant objects and shared `Modifier` chains outside the loop to minimize unnecessary allocations.

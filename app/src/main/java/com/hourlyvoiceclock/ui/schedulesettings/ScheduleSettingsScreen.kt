@@ -525,6 +525,10 @@ fun ScheduleSettingsScreen(
                                     val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                                     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
 
+                                    val baseCircleModifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+
                                     Row(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -541,9 +545,7 @@ fun ScheduleSettingsScreen(
                                             val borderColor = if (isDisabled) errorColor else outlineColor
                                             val textColor = if (isDisabled) errorColor else onSurfaceColor
                                             Box(
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(CircleShape)
+                                                modifier = baseCircleModifier
                                                     .background(bgColor)
                                                     .border(
                                                         width = 1.dp,
