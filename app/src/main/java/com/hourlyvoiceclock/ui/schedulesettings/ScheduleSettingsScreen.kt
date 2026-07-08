@@ -486,10 +486,15 @@ fun ScheduleSettingsScreen(
                                 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
                                 val showFullText = isLandscape || maxWidth >= 600.dp
 
-                                val layoutModifier = Modifier.fillMaxWidth()
-                                val locale = java.util.Locale.getDefault()
+                                val layoutModifier = remember { Modifier.fillMaxWidth() }
+                                @Suppress("DEPRECATION")
+                                val locale = configuration.locale
                                 val errorColor = MaterialTheme.colorScheme.error
                                 val errorBgColor = errorColor.copy(alpha = 0.2f)
+
+                                // ⚡ Bolt: Hoist shared Modifiers and remember formatted strings to avoid redundant
+                                // garbage collection overhead and object creation during recomposition of this loop.
+                                val baseDayModifier = remember { Modifier.size(40.dp).clip(CircleShape) }
 
                                 if (showFullText) {
                                     val chipColors = FilterChipDefaults.filterChipColors(
@@ -503,15 +508,15 @@ fun ScheduleSettingsScreen(
                                     ) {
                                         for (day in DayOfWeek.entries) {
                                             val isDisabled = day in quietDaysDisabled
+                                            val fullName = remember(day, locale) {
+                                                day.getDisplayName(java.time.format.TextStyle.FULL, locale)
+                                            }
                                             FilterChip(
                                                 selected = isDisabled,
                                                 onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
                                                 label = {
                                                     Text(
-                                                        day.getDisplayName(
-                                                            java.time.format.TextStyle.FULL,
-                                                            locale
-                                                        ),
+                                                        fullName,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -532,18 +537,15 @@ fun ScheduleSettingsScreen(
                                     ) {
                                         for (day in DayOfWeek.entries) {
                                             val isDisabled = day in quietDaysDisabled
-                                            val narrowName = day.getDisplayName(
-                                                java.time.format.TextStyle.NARROW,
-                                                locale
-                                            )
+                                            val narrowName = remember(day, locale) {
+                                                day.getDisplayName(java.time.format.TextStyle.NARROW, locale)
+                                            }
 
                                             val bgColor = if (isDisabled) errorBgColor else transparentColor
                                             val borderColor = if (isDisabled) errorColor else outlineColor
                                             val textColor = if (isDisabled) errorColor else onSurfaceColor
                                             Box(
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(CircleShape)
+                                                modifier = baseDayModifier
                                                     .background(bgColor)
                                                     .border(
                                                         width = 1.dp,

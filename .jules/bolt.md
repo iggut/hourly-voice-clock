@@ -34,3 +34,7 @@
 **Learning:** In Android, creating raw `Thread { ... }.start()` on demand is expensive and resource-intensive. Furthermore, using `Thread.sleep` to wait for I/O operations (like audio playback) blocks the entire underlying thread, leading to thread starvation and excessive memory overhead.
 **Action:** Replace raw threads with Kotlin Coroutines using `Dispatchers.IO`. Use `coroutineScope.launch { ... }` for async work, and replace blocking `Thread.sleep` calls with non-blocking, suspending `delay()` functions to free up the thread pool for other tasks during wait times.
 
+
+## 2026-07-08 - UI Loop String Formatting Optimization
+**Learning:** In Jetpack Compose, calling localized formatting methods (e.g. `day.getDisplayName()`) inside loops during the UI composition phase creates redundant string allocations and GC pressure every time the composable recomposes, even if the values haven't changed.
+**Action:** Prevent redundant formatting in loops by wrapping the formatting call in a `remember(key1, key2)` block (e.g. `remember(day, locale) { day.getDisplayName(...) }`) so the formatted string is cached across recompositions.
