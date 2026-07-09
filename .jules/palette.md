@@ -33,3 +33,7 @@
 **Learning:** Deleting large downloaded voice models without confirmation causes accidental data loss and forces users to re-download 100MB+ files. This is a critical UX/accessibility failure for destructive actions.
 **Action:** Always trigger a confirmation `AlertDialog` before executing destructive actions (e.g., deleting downloaded local voice models) to prevent accidental data loss.
 ## 2026-06-26 - Bounded Touch Ripples for Interactive Rows\n**Learning:** When applying the `.clickable` modifier to a `Row` or container in Jetpack Compose, failing to add a clipping modifier (e.g., `.clip(RoundedCornerShape(...))`) immediately *before* `.clickable` causes the ripple effect to awkwardly spill outside the container's visual bounds. This lacks visual polish.\n**Action:** Always ensure the ripple effect is properly bounded by applying a `.clip(...)` modifier immediately *before* `.clickable` for Jetpack Compose list items or rows.
+
+## 2026-07-09 - Accessible Toggle Rows for Home Screen
+**Learning:** Found instances where `Switch` elements on the main `HomeScreen` were using `.clickable` on their parent `Row` instead of the more accessible `.toggleable` modifier, preventing screen readers from properly announcing their state and role.
+**Action:** Always ensure that rows wrapping toggleable components (like `Switch` or `RadioButton`) use `.toggleable` (or `.selectable`) with the appropriate `Role` instead of `.clickable` to correctly merge screen reader semantics.
