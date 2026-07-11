@@ -497,11 +497,25 @@ fun ScheduleSettingsScreen(
                                 val errorColor = MaterialTheme.colorScheme.error
                                 val errorBgColor = errorColor.copy(alpha = 0.2f)
 
+                                // ⚡ Bolt: Extract shared object instantiations and formatting out of loops
+                                val chipColors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = errorBgColor,
+                                    selectedLabelColor = errorColor
+                                )
+                                val baseBoxModifier = remember { Modifier.size(40.dp).clip(CircleShape) }
+
+                                val fullDayNames = remember(locale) {
+                                    DayOfWeek.entries.associateWith { day ->
+                                        day.getDisplayName(java.time.format.TextStyle.FULL, locale)
+                                    }
+                                }
+                                val narrowDayNames = remember(locale) {
+                                    DayOfWeek.entries.associateWith { day ->
+                                        day.getDisplayName(java.time.format.TextStyle.NARROW, locale)
+                                    }
+                                }
+
                                 if (showFullText) {
-                                    val chipColors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = errorBgColor,
-                                        selectedLabelColor = errorColor
-                                    )
                                     FlowRow(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -514,10 +528,7 @@ fun ScheduleSettingsScreen(
                                                 onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
                                                 label = {
                                                     Text(
-                                                        day.getDisplayName(
-                                                            java.time.format.TextStyle.FULL,
-                                                            locale
-                                                        ),
+                                                        fullDayNames[day] ?: "",
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -538,18 +549,13 @@ fun ScheduleSettingsScreen(
                                     ) {
                                         for (day in DayOfWeek.entries) {
                                             val isDisabled = day in quietDaysDisabled
-                                            val narrowName = day.getDisplayName(
-                                                java.time.format.TextStyle.NARROW,
-                                                locale
-                                            )
+                                            val narrowName = narrowDayNames[day] ?: ""
 
                                             val bgColor = if (isDisabled) errorBgColor else transparentColor
                                             val borderColor = if (isDisabled) errorColor else outlineColor
                                             val textColor = if (isDisabled) errorColor else onSurfaceColor
                                             Box(
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(CircleShape)
+                                                modifier = baseBoxModifier
                                                     .background(bgColor)
                                                     .border(
                                                         width = 1.dp,
