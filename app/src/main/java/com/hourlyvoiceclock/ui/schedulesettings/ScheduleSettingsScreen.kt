@@ -481,21 +481,41 @@ fun ScheduleSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(8.dp))
+
+                            // ⚡ Bolt: Hoist and memoize formatting and color copies outside the constraints and loops
+                            val configuration = LocalConfiguration.current
+                            val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                configuration.locales[0]
+                            } else {
+                                @Suppress("DEPRECATION")
+                                configuration.locale
+                            }
+
+                            val fullDayNames = remember(locale) {
+                                DayOfWeek.entries.associateWith { it.getDisplayName(java.time.format.TextStyle.FULL, locale) }
+                            }
+                            val narrowDayNames = remember(locale) {
+                                DayOfWeek.entries.associateWith { it.getDisplayName(java.time.format.TextStyle.NARROW, locale) }
+                            }
+
+                            val errorColor = MaterialTheme.colorScheme.error
+                            val errorBgColor = errorColor.copy(alpha = 0.2f)
+                            val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                            val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+                            val transparentColor = Color.Transparent
+
+                            val chipColors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = errorBgColor,
+                                selectedLabelColor = errorColor
+                            )
+
                             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                                val configuration = LocalConfiguration.current
                                 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
                                 val showFullText = isLandscape || maxWidth >= 600.dp
 
                                 val layoutModifier = Modifier.fillMaxWidth()
-                                val locale = java.util.Locale.getDefault()
-                                val errorColor = MaterialTheme.colorScheme.error
-                                val errorBgColor = errorColor.copy(alpha = 0.2f)
 
                                 if (showFullText) {
-                                    val chipColors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = errorBgColor,
-                                        selectedLabelColor = errorColor
-                                    )
                                     FlowRow(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -508,10 +528,7 @@ fun ScheduleSettingsScreen(
                                                 onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
                                                 label = {
                                                     Text(
-                                                        day.getDisplayName(
-                                                            java.time.format.TextStyle.FULL,
-                                                            locale
-                                                        ),
+                                                        fullDayNames.getValue(day),
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -521,10 +538,6 @@ fun ScheduleSettingsScreen(
                                         }
                                     }
                                 } else {
-                                    val transparentColor = Color.Transparent
-                                    val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-
                                     Row(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -532,10 +545,7 @@ fun ScheduleSettingsScreen(
                                     ) {
                                         for (day in DayOfWeek.entries) {
                                             val isDisabled = day in quietDaysDisabled
-                                            val narrowName = day.getDisplayName(
-                                                java.time.format.TextStyle.NARROW,
-                                                locale
-                                            )
+                                            val narrowName = narrowDayNames.getValue(day)
 
                                             val bgColor = if (isDisabled) errorBgColor else transparentColor
                                             val borderColor = if (isDisabled) errorColor else outlineColor
