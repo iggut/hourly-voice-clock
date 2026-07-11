@@ -1,0 +1,11 @@
+--- app/src/main/java/com/hourlyvoiceclock/tts/local/LocalTtsEngine.kt
++++ app/src/main/java/com/hourlyvoiceclock/tts/local/LocalTtsEngine.kt
+@@ -468,7 +468,7 @@
+             track.play()
+             track.write(pcmData, 0, pcmData.size)
+             val playbackDurationMs = (samples.size.toLong() * 1000) / sampleRate
+-            Thread.sleep(playbackDurationMs + 50)
++            kotlinx.coroutines.delay(playbackDurationMs + 50)
+         } finally {
+             try {
+                 track.stop()
