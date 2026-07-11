@@ -36,3 +36,6 @@
 ## 2024-07-08 - Use toggleable/selectable for Compose settings
 **Learning:** Found that when wrapping Jetpack Compose `Switch` or `RadioButton` settings elements in a clickable row, using `Modifier.clickable` fails to correctly merge screen reader semantics and roles. Screen readers won't announce the state change intuitively.
 **Action:** Always use `Modifier.toggleable` (with `Role.Switch`) or `Modifier.selectable` (with `Role.RadioButton`) instead of `Modifier.clickable` on the parent container when building interactive setting items.
+## 2024-10-25 - Screen reader semantics for Compose expand/collapse accordions
+**Learning:** Found an accordion element ("OEM Specific Instructions") using a `Modifier.clickable` modifier without a `role` or semantic state, meaning screen readers cannot announce its expanded/collapsed state to users. This is an accessibility gap for standard expand/collapse toggle rows.
+**Action:** Always ensure accordion-style rows use explicit roles and states via `Modifier.clickable(role = Role.Button)` and `Modifier.semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }` with localized strings.
