@@ -10,7 +10,7 @@ import kotlin.system.measureTimeMillis
 
 class LocalTtsEnginePerfTest {
 
-    @Test
+    `@Test`
     fun benchmarkWaitMethodsConcurrent() = runBlocking {
         val durationMs = 50L
         val concurrentTasks = 100 // Simulate 100 concurrent playback waits
@@ -37,5 +37,7 @@ class LocalTtsEnginePerfTest {
 
         println("Baseline time (Thread.sleep) for 100 concurrent tasks: $sleepTime ms")
         println("Optimized time (delay) for 100 concurrent tasks: $delayTime ms")
+        assertTrue("delay should be faster than Thread.sleep under concurrency",
+            delayTime < sleepTime)
     }
 }
