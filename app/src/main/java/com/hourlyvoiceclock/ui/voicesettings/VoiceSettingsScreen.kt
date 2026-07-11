@@ -8,6 +8,9 @@ import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -184,28 +187,32 @@ fun VoiceSettingsScreen(
                             Card(
                                 modifier = Modifier
                                     .width(160.dp)
-                                    .clickable {
-                                        when {
-                                            engine.isInstalled && isSelected -> {
-                                                context.openTtsEngineSettings(engine.packageName)
-                                            }
-                                            engine.isInstalled -> {
-                                                viewModel.switchTtsEngine(engine.packageName)
-                                            }
-                                            else -> {
-                                                val playStoreUri = Uri.parse("market://details?id=${engine.packageName}")
-                                                val playStoreIntent = Intent(Intent.ACTION_VIEW, playStoreUri).apply {
-                                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    .selectable(
+                                        selected = isSelected,
+                                        onClick = {
+                                            when {
+                                                engine.isInstalled && isSelected -> {
+                                                    context.openTtsEngineSettings(engine.packageName)
                                                 }
-                                                try {
-                                                    context.startActivity(playStoreIntent)
-                                                } catch (e: Exception) {
-                                                    val webUri = Uri.parse("https://play.google.com/store/apps/details?id=${engine.packageName}")
-                                                    context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                                                engine.isInstalled -> {
+                                                    viewModel.switchTtsEngine(engine.packageName)
+                                                }
+                                                else -> {
+                                                    val playStoreUri = Uri.parse("market://details?id=${engine.packageName}")
+                                                    val playStoreIntent = Intent(Intent.ACTION_VIEW, playStoreUri).apply {
+                                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                    }
+                                                    try {
+                                                        context.startActivity(playStoreIntent)
+                                                    } catch (e: Exception) {
+                                                        val webUri = Uri.parse("https://play.google.com/store/apps/details?id=${engine.packageName}")
+                                                        context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                                                    }
                                                 }
                                             }
-                                        }
-                                    },
+                                        },
+                                        role = Role.RadioButton
+                                    ),
                                 shape = RoundedCornerShape(16.dp),
                                 border = BorderStroke(1.dp, borderTint),
                                 colors = CardDefaults.cardColors(containerColor = engineBg)
@@ -659,7 +666,7 @@ fun SpecialPresetItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onSelectPreset)
+            .selectable(selected = isSelected, onClick = onSelectPreset, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -719,7 +726,7 @@ fun VoiceItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .clickable { onSelectVoice(voice.name, voice.localeTag) }
+            .selectable(selected = isSelected, onClick = { onSelectVoice(voice.name, voice.localeTag) }, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -833,7 +840,7 @@ fun LocalVoiceItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onSelect)
+            .selectable(selected = isSelected, onClick = onSelect, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically

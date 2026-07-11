@@ -2,6 +2,9 @@ package com.hourlyvoiceclock.ui.localvoices
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -214,7 +217,7 @@ private fun ErrorChip(message: String, onClear: () -> Unit) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onErrorContainer,
             modifier = Modifier
-                .clickable { onClear() }
+                .clickable(onClick = onClear, role = Role.Button)
                 .padding(horizontal = 4.dp)
         )
     }
