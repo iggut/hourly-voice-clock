@@ -15,6 +15,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -907,11 +909,19 @@ fun ScheduleSettingsScreen(
                             color = if (isDark) GlassBorderDark else GlassBorderLight
                         )
 
+                        val expandedText = stringResource(R.string.expanded)
+                        val collapsedText = stringResource(R.string.collapsed)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { oemGuidesExpanded = !oemGuidesExpanded }
+                                .clickable(
+                                    role = Role.Button,
+                                    onClick = { oemGuidesExpanded = !oemGuidesExpanded }
+                                )
+                                .semantics {
+                                    stateDescription = if (oemGuidesExpanded) expandedText else collapsedText
+                                }
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
