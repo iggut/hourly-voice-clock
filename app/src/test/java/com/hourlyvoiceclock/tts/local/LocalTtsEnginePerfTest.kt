@@ -4,13 +4,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
 
 class LocalTtsEnginePerfTest {
 
-    `@Test`
+    @Test
     fun benchmarkWaitMethodsConcurrent() = runBlocking {
         val durationMs = 50L
         val concurrentTasks = 100 // Simulate 100 concurrent playback waits
