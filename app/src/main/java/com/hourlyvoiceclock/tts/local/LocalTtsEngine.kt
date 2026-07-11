@@ -468,7 +468,7 @@ class LocalTtsEngine(private val context: Context) : TtsEngine {
             track.play()
             track.write(pcmData, 0, pcmData.size)
             val playbackDurationMs = (samples.size.toLong() * 1000) / sampleRate
-            Thread.sleep(playbackDurationMs + 50)
+            kotlinx.coroutines.delay(playbackDurationMs + 50)
         } finally {
             try {
                 track.stop()
