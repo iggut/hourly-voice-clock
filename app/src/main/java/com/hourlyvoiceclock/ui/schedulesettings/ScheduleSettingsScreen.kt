@@ -491,6 +491,10 @@ fun ScheduleSettingsScreen(
                                 val errorColor = MaterialTheme.colorScheme.error
                                 val errorBgColor = errorColor.copy(alpha = 0.2f)
 
+                                // ⚡ Bolt: Cache day names to prevent string allocation in loops
+                                val dayNamesFull = remember(locale) { DayOfWeek.entries.associateWith { it.getDisplayName(java.time.format.TextStyle.FULL, locale) } }
+                                val dayNamesNarrow = remember(locale) { DayOfWeek.entries.associateWith { it.getDisplayName(java.time.format.TextStyle.NARROW, locale) } }
+
                                 if (showFullText) {
                                     val chipColors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = errorBgColor,
@@ -508,10 +512,7 @@ fun ScheduleSettingsScreen(
                                                 onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
                                                 label = {
                                                     Text(
-                                                        day.getDisplayName(
-                                                            java.time.format.TextStyle.FULL,
-                                                            locale
-                                                        ),
+                                                        dayNamesFull[day] ?: "",
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -524,6 +525,8 @@ fun ScheduleSettingsScreen(
                                     val transparentColor = Color.Transparent
                                     val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                                     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+                                    // ⚡ Bolt: Share modifier instance to reduce allocation overhead
+                                    val baseCircleModifier = remember { Modifier.size(40.dp).clip(CircleShape) }
 
                                     Row(
                                         modifier = layoutModifier,
@@ -532,18 +535,13 @@ fun ScheduleSettingsScreen(
                                     ) {
                                         for (day in DayOfWeek.entries) {
                                             val isDisabled = day in quietDaysDisabled
-                                            val narrowName = day.getDisplayName(
-                                                java.time.format.TextStyle.NARROW,
-                                                locale
-                                            )
+                                            val narrowName = dayNamesNarrow[day] ?: ""
 
                                             val bgColor = if (isDisabled) errorBgColor else transparentColor
                                             val borderColor = if (isDisabled) errorColor else outlineColor
                                             val textColor = if (isDisabled) errorColor else onSurfaceColor
                                             Box(
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(CircleShape)
+                                                modifier = baseCircleModifier
                                                     .background(bgColor)
                                                     .border(
                                                         width = 1.dp,
