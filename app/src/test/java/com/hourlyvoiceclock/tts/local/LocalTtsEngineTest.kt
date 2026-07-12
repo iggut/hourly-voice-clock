@@ -29,8 +29,8 @@ class LocalTtsEngineTest {
 
     private val fakeModel = VoiceModel(
         id = "piper_en_us_amy_medium",
-        displayName = "Amy",
-        description = "Test voice",
+        displayNameRes = com.hourlyvoiceclock.R.string.voice_piper_en_us_amy_medium_name,
+        descriptionRes = com.hourlyvoiceclock.R.string.voice_piper_en_us_amy_medium_desc,
         language = "en-US",
         sizeBytes = 100,
         onnxDownloadUrl = "",

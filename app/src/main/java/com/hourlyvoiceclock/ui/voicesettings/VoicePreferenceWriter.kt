@@ -30,19 +30,31 @@ class VoicePreferenceWriter(
             it.copy(
                 selectedVoiceName = voiceName,
                 selectedLocale = localeTag,
-                selectedVoicePresetId = null
+                selectedVoicePresetId = null,
+                selectedLocalModelId = null
             )
         }
     }
 
     suspend fun setPitch(value: Float) {
         engine.setPitch(value)
-        repo.update { it.copy(pitch = value) }
+        repo.update {
+            it.copy(
+                pitch = value,
+                // Manual slider tweaks leave the Special preset selection.
+                selectedVoicePresetId = null
+            )
+        }
     }
 
     suspend fun setSpeechRate(value: Float) {
         engine.setSpeechRate(value)
-        repo.update { it.copy(speechRate = value) }
+        repo.update {
+            it.copy(
+                speechRate = value,
+                selectedVoicePresetId = null
+            )
+        }
     }
 
     /**
@@ -60,6 +72,7 @@ class VoicePreferenceWriter(
                 selectedVoiceName = voice.name,
                 selectedLocale = voice.localeTag,
                 selectedVoicePresetId = preset.id,
+                selectedLocalModelId = null,
                 pitch = preset.pitch,
                 speechRate = preset.speechRate
             )

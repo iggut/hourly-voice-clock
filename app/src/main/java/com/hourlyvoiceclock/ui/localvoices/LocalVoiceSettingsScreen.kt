@@ -2,8 +2,8 @@ package com.hourlyvoiceclock.ui.localvoices
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,11 +29,10 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -42,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -55,17 +54,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.tts.local.VoiceCategory
 import com.hourlyvoiceclock.tts.local.VoiceModel
 import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
+import com.hourlyvoiceclock.tts.local.VoiceSourceKind
 import com.hourlyvoiceclock.ui.theme.GlassBgDark
 import com.hourlyvoiceclock.ui.theme.GlassBgLight
-import com.hourlyvoiceclock.ui.theme.GlassBorderDark
-import com.hourlyvoiceclock.ui.theme.GlassBorderLight
 import com.hourlyvoiceclock.ui.theme.LightBgStart
 import com.hourlyvoiceclock.ui.theme.LightBgEnd
 import com.hourlyvoiceclock.ui.theme.DarkBgStart
@@ -82,10 +82,12 @@ fun LocalVoiceSettingsScreen(
     )
 ) {
     val downloadedModels by viewModel.downloadedModels.collectAsState()
-    val downloadingModel by viewModel.downloadingModel.collectAsState()
-    val downloadProgress by viewModel.downloadProgress.collectAsState()
-    val isSpeaking by viewModel.isSpeaking.collectAsState()
+    val downloadProgressByModelId by viewModel.downloadProgressByModelId.collectAsState()
+    val previewingModelId by viewModel.previewingModelId.collectAsState()
+    val selectedLocalModelId by viewModel.selectedLocalModelId.collectAsState()
+    val listFilter by viewModel.listFilter.collectAsState()
     val errorsByModelId by viewModel.errorsByModelId.collectAsState()
+    val context = LocalContext.current
 
     val isDark = isSystemInDarkTheme()
     val bgGradient = Brush.verticalGradient(
@@ -94,6 +96,7 @@ fun LocalVoiceSettingsScreen(
             if (isDark) DarkBgEnd else LightBgEnd
         )
     )
+    val downloadedIds = remember(downloadedModels) { downloadedModels.map { it.id }.toSet() }
 
     Box(
         modifier = Modifier
@@ -104,10 +107,19 @@ fun LocalVoiceSettingsScreen(
             containerColor = Color.Transparent,
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text("Local Voices", fontWeight = FontWeight.Bold, fontSize = 20.sp) },
+                    title = {
+                        Text(
+                            stringResource(R.string.local_voices_title),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -128,7 +140,7 @@ fun LocalVoiceSettingsScreen(
                 item {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Download and use local AI voices. These run entirely on your device - no internet needed after download.",
+                        stringResource(R.string.local_voices_intro),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -138,41 +150,73 @@ fun LocalVoiceSettingsScreen(
                     PreviewBanner()
                 }
 
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val chipShape = RoundedCornerShape(12.dp)
+                        FilterChip(
+                            selected = listFilter == LocalVoiceListFilter.ALL,
+                            onClick = { viewModel.setListFilter(LocalVoiceListFilter.ALL) },
+                            label = {
+                                Text(stringResource(R.string.filter_all), fontWeight = FontWeight.Bold)
+                            },
+                            shape = chipShape
+                        )
+                        FilterChip(
+                            selected = listFilter == LocalVoiceListFilter.INSTALLED,
+                            onClick = { viewModel.setListFilter(LocalVoiceListFilter.INSTALLED) },
+                            label = {
+                                Text(stringResource(R.string.filter_installed), fontWeight = FontWeight.Bold)
+                            },
+                            shape = chipShape
+                        )
+                    }
+                }
+
                 val categories = listOf(
-                    VoiceCategory.STANDARD to "Standard",
-                    VoiceCategory.CHARACTER to "Character",
-                    VoiceCategory.NARRATOR to "Narrator",
-                    VoiceCategory.ACCENT to "Accents"
+                    VoiceCategory.STANDARD to R.string.category_standard,
+                    VoiceCategory.CHARACTER to R.string.category_character,
+                    VoiceCategory.NARRATOR to R.string.category_narrator,
+                    VoiceCategory.ACCENT to R.string.category_accents
                 )
 
-                categories.forEach { (category, label) ->
+                categories.forEach { (category, labelRes) ->
                     val voices = VoiceModelRegistry.getVoicesByCategory(category)
+                        .filter { model ->
+                            listFilter == LocalVoiceListFilter.ALL || model.id in downloadedIds
+                        }
                     if (voices.isNotEmpty()) {
                         item {
                             Text(
-                                label,
+                                stringResource(labelRes),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(top = 8.dp)
                             )
                         }
 
-                        items(voices) { model ->
-                            val isDownloaded = downloadedModels.any { it.id == model.id }
-                            val isDownloading = downloadingModel?.id == model.id
+                        items(voices, key = { it.id }) { model ->
+                            val isDownloaded = model.id in downloadedIds
+                            val progress = downloadProgressByModelId[model.id]
+                            val isDownloading = progress != null
                             val errorMessage = errorsByModelId[model.id]
 
                             VoiceModelCard(
                                 model = model,
                                 isDownloaded = isDownloaded,
                                 isDownloading = isDownloading,
-                                downloadProgress = if (isDownloading) downloadProgress else 0f,
-                                isSpeaking = isSpeaking,
+                                downloadProgress = progress ?: 0f,
+                                isPreviewing = previewingModelId == model.id,
+                                isActiveHourly = selectedLocalModelId == model.id,
                                 errorMessage = errorMessage,
                                 onDownload = { viewModel.downloadModel(model) },
+                                onCancelDownload = { viewModel.cancelDownload(model.id) },
                                 onDelete = { viewModel.deleteModel(model) },
                                 onPreview = { viewModel.previewVoice(model) },
-                                onStop = { viewModel.stopSpeaking() },
                                 onClearError = { viewModel.clearError(model.id) },
                                 isDark = isDark
                             )
@@ -213,7 +257,7 @@ private fun ErrorChip(message: String, onClear: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
-            "Dismiss",
+            stringResource(R.string.dismiss),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onErrorContainer,
             modifier = Modifier
@@ -246,9 +290,7 @@ private fun PreviewBanner() {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                "Download a voice, then pick it from the Voices list back in the " +
-                    "Voice Settings screen to use it for the hourly announcement. " +
-                    "Local voices run entirely on this device and do not need internet.",
+                stringResource(R.string.local_voices_preview_banner),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -262,15 +304,18 @@ private fun VoiceModelCard(
     isDownloaded: Boolean,
     isDownloading: Boolean,
     downloadProgress: Float,
-    isSpeaking: Boolean,
+    isPreviewing: Boolean,
+    isActiveHourly: Boolean,
     errorMessage: String?,
     onDownload: () -> Unit,
+    onCancelDownload: () -> Unit,
     onDelete: () -> Unit,
     onPreview: () -> Unit,
-    onStop: () -> Unit,
     onClearError: () -> Unit,
     isDark: Boolean
 ) {
+    val context = LocalContext.current
+    val displayName = stringResource(model.displayNameRes)
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -285,29 +330,56 @@ private fun VoiceModelCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            displayName,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (isActiveHourly) {
+                            Text(
+                                stringResource(R.string.active),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                     Text(
-                        model.displayName,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        model.description,
+                        stringResource(model.descriptionRes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(
-                        VoiceModelRegistry.formatSize(model.sizeBytes),
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Text(
+                            VoiceModelRegistry.formatSize(context, model.sizeBytes),
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        SourceBadge(model)
+                    }
                 }
 
                 if (isDownloaded) {
                     Row {
                         IconButton(onClick = onPreview) {
                             Icon(
-                                if (isSpeaking) Icons.Default.Stop else Icons.Default.PlayArrow,
-                                contentDescription = if (isSpeaking) "Stop" else "Preview",
+                                if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                contentDescription = if (isPreviewing) {
+                                    stringResource(R.string.stop)
+                                } else {
+                                    stringResource(R.string.preview)
+                                },
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -317,7 +389,7 @@ private fun VoiceModelCard(
                         IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Delete",
+                                contentDescription = stringResource(R.string.delete),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -328,21 +400,32 @@ private fun VoiceModelCard(
                                 containerColor = com.hourlyvoiceclock.ui.theme.dialogContainerColor(),
                                 titleContentColor = com.hourlyvoiceclock.ui.theme.dialogContentColor(),
                                 textContentColor = com.hourlyvoiceclock.ui.theme.dialogContentColor(),
-                                title = { Text("Delete Voice Model", fontWeight = FontWeight.Bold) },
-                                text = { Text("Are you sure you want to delete ${model.displayName}? You will need to download it again to use it.") },
+                                title = {
+                                    Text(
+                                        stringResource(R.string.delete_voice_model_title),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                text = {
+                                    Text(stringResource(R.string.delete_voice_model_confirm, displayName))
+                                },
                                 confirmButton = {
-                                    androidx.compose.material3.TextButton(
+                                    TextButton(
                                         onClick = {
                                             showDeleteDialog = false
                                             onDelete()
                                         }
                                     ) {
-                                        Text("Delete", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                                        Text(
+                                            stringResource(R.string.delete),
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
                                     }
                                 },
                                 dismissButton = {
-                                    androidx.compose.material3.TextButton(onClick = { showDeleteDialog = false }) {
-                                        Text("Cancel")
+                                    TextButton(onClick = { showDeleteDialog = false }) {
+                                        Text(stringResource(R.string.cancel))
                                     }
                                 }
                             )
@@ -362,11 +445,23 @@ private fun VoiceModelCard(
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
-                Text(
-                    "Downloading... ${(downloadProgress * 100).toInt()}%",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(
+                            R.string.download_progress_percent,
+                            (downloadProgress * 100).toInt()
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    TextButton(onClick = onCancelDownload) {
+                        Text(stringResource(R.string.cancel_download))
+                    }
+                }
             } else if (!isDownloaded) {
                 if (errorMessage != null) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -381,7 +476,11 @@ private fun VoiceModelCard(
                     Icon(Icons.Default.CloudDownload, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        if (errorMessage != null) "Retry download" else "Download",
+                        if (errorMessage != null) {
+                            stringResource(R.string.retry_download)
+                        } else {
+                            stringResource(R.string.download)
+                        },
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -392,11 +491,38 @@ private fun VoiceModelCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Installed",
+                    if (isActiveHourly) {
+                        stringResource(R.string.installed_selected_hourly)
+                    } else {
+                        stringResource(R.string.installed)
+                    },
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
             }
         }
     }
+}
+
+@Composable
+private fun SourceBadge(model: VoiceModel) {
+    val label = when {
+        model.personalTestingOnly || model.sourceKind == VoiceSourceKind.COMMUNITY ->
+            stringResource(R.string.badge_community_personal_testing)
+        else -> stringResource(R.string.badge_official)
+    }
+    val color = if (model.personalTestingOnly || model.sourceKind == VoiceSourceKind.COMMUNITY) {
+        MaterialTheme.colorScheme.secondary
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    Text(
+        label,
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+        color = color,
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(color.copy(alpha = 0.12f))
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    )
 }

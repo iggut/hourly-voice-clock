@@ -31,7 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OfflineBolt
 import androidx.compose.material.icons.filled.PlayArrow
@@ -47,17 +46,22 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -104,7 +108,11 @@ fun VoiceSettingsScreen(
     val isEspeakNgSelected by viewModel.isEspeakNgSelected.collectAsState()
     val downloadedLocalModels by viewModel.downloadedLocalModels.collectAsState()
     val selectedLocalModelId by viewModel.selectedLocalModelId.collectAsState()
+    val specialTagFilter by viewModel.specialTagFilter.collectAsState()
+    val userMessage by viewModel.userMessage.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val localVoiceSelected = selectedLocalModelId != null
 
     val isDark = isSystemInDarkTheme()
     val bgGradient = Brush.verticalGradient(
@@ -118,8 +126,14 @@ fun VoiceSettingsScreen(
     // becomes active. The user can navigate to the Local Voices
     // screen, download or delete a model, then return here — we
     // need the new list to be visible on the way back.
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         viewModel.refreshDownloadedLocalModels()
+    }
+
+    LaunchedEffect(userMessage) {
+        val message = userMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.consumeUserMessage()
     }
 
     Box(
@@ -129,6 +143,7 @@ fun VoiceSettingsScreen(
     ) {
         Scaffold(
             containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 CenterAlignedTopAppBar(
                     title = { Text(stringResource(R.string.voice_settings), fontWeight = FontWeight.Bold, fontSize = 20.sp) },
@@ -158,7 +173,7 @@ fun VoiceSettingsScreen(
                 // Speech Engines Section
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Preferred Speech Engine",
+                        text = stringResource(R.string.preferred_speech_engine),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.ExtraBold
@@ -231,15 +246,15 @@ fun VoiceSettingsScreen(
                                     if (engine.isInstalled) {
                                         Text(
                                             text = when {
-                                                isSelected -> "Active — Tap for Settings"
-                                                else -> "Tap to Switch"
+                                                isSelected -> stringResource(R.string.engine_active_tap_settings)
+                                                else -> stringResource(R.string.engine_tap_to_switch)
                                             },
                                             style = MaterialTheme.typography.labelSmall,
                                             color = textTint.copy(alpha = 0.7f)
                                         )
                                     } else {
                                         Text(
-                                            text = "Tap to Install",
+                                            text = stringResource(R.string.engine_tap_to_install),
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                             color = MaterialTheme.colorScheme.error
                                         )
@@ -264,7 +279,7 @@ fun VoiceSettingsScreen(
                             ) {
                                 Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
                                 Text(
-                                    text = "Single Voice Engine Detected",
+                                    text = stringResource(R.string.single_voice_engine_detected),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
@@ -308,31 +323,43 @@ fun VoiceSettingsScreen(
                     )
                 ) {
                     Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        if (localVoiceSelected) {
+                            Text(
+                                text = stringResource(R.string.pitch_rate_system_tts_only),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
                         // Pitch slider
-                        Column {
+                        Column(modifier = Modifier.alpha(if (localVoiceSelected) 0.45f else 1f)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(stringResource(R.string.pitch), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                                 Text("%.1f".format(pitch), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                             }
+                            val pitchA11y = stringResource(R.string.voice_pitch_a11y)
                             Slider(
                                 value = pitch,
                                 onValueChange = { viewModel.setPitch(it) },
+                                enabled = !localVoiceSelected,
                                 valueRange = 0.5f..2.0f,
-                                modifier = Modifier.semantics { contentDescription = "Voice Pitch" }
+                                modifier = Modifier.semantics { contentDescription = pitchA11y }
                             )
                         }
 
                         // Speech rate slider
-                        Column {
+                        Column(modifier = Modifier.alpha(if (localVoiceSelected) 0.45f else 1f)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(stringResource(R.string.speech_rate), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                                 Text("%.1f".format(speechRate), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                             }
+                            val rateA11y = stringResource(R.string.speech_rate_a11y)
                             Slider(
                                 value = speechRate,
                                 onValueChange = { viewModel.setSpeechRate(it) },
+                                enabled = !localVoiceSelected,
                                 valueRange = 0.5f..2.0f,
-                                modifier = Modifier.semantics { contentDescription = "Speech Rate" }
+                                modifier = Modifier.semantics { contentDescription = rateA11y }
                             )
                         }
 
@@ -353,7 +380,7 @@ fun VoiceSettingsScreen(
                 // Voice filter: All / Male / Female / Special
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Voices",
+                        text = stringResource(R.string.voices_section_title),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -372,10 +399,10 @@ fun VoiceSettingsScreen(
                                 label = {
                                     Text(
                                         text = when (filter) {
-                                            VoiceListFilter.ALL -> "All"
-                                            VoiceListFilter.MALE -> "Male"
-                                            VoiceListFilter.FEMALE -> "Female"
-                                            VoiceListFilter.SPECIAL -> "Special"
+                                            VoiceListFilter.ALL -> stringResource(R.string.filter_all)
+                                            VoiceListFilter.MALE -> stringResource(R.string.filter_male)
+                                            VoiceListFilter.FEMALE -> stringResource(R.string.filter_female)
+                                            VoiceListFilter.SPECIAL -> stringResource(R.string.filter_special)
                                         },
                                         fontWeight = FontWeight.Bold
                                     )
@@ -416,18 +443,60 @@ fun VoiceSettingsScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = if (isEspeakNgSelected) {
-                                        "Special & eSpeak NG"
+                                        stringResource(R.string.special_and_espeak)
                                     } else {
-                                        "Special Voices"
+                                        stringResource(R.string.special_voices)
                                     },
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 14.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val tagChipShape = RoundedCornerShape(10.dp)
+                                FilterChip(
+                                    selected = specialTagFilter == null,
+                                    onClick = { viewModel.setSpecialTagFilter(null) },
+                                    label = { Text(stringResource(R.string.filter_all), fontWeight = FontWeight.Bold) },
+                                    shape = tagChipShape
+                                )
+                                listOf(
+                                    SpecialVoiceTag.FUN,
+                                    SpecialVoiceTag.CHARACTER,
+                                    SpecialVoiceTag.ACCENT
+                                ).forEach { tag ->
+                                    FilterChip(
+                                        selected = specialTagFilter == tag,
+                                        onClick = { viewModel.setSpecialTagFilter(tag) },
+                                        label = {
+                                            Text(stringResource(specialVoiceTagLabelRes(tag)), fontWeight = FontWeight.Bold)
+                                        },
+                                        shape = tagChipShape
+                                    )
+                                }
+                                if (isEspeakNgSelected) {
+                                    FilterChip(
+                                        selected = specialTagFilter == SpecialVoiceTag.ESPEAK,
+                                        onClick = { viewModel.setSpecialTagFilter(SpecialVoiceTag.ESPEAK) },
+                                        label = {
+                                            Text(stringResource(specialVoiceTagLabelRes(SpecialVoiceTag.ESPEAK)), fontWeight = FontWeight.Bold)
+                                        },
+                                        shape = tagChipShape
+                                    )
+                                }
+                            }
+
                             viewModel.activeSpecialPresets.forEach { preset ->
                                 SpecialPresetItem(
                                     preset = preset,
-                                    isSelected = selectedPresetId == preset.id,
+                                    isSelected = selectedPresetId == preset.id && !localVoiceSelected,
+                                    matchedVoiceName = if (selectedPresetId == preset.id) selectedVoice else null,
                                     onSelectPreset = { viewModel.selectVoicePreset(preset) },
                                     onPreviewPreset = { viewModel.selectAndPreviewPreset(preset) }
                                 )
@@ -437,11 +506,8 @@ fun VoiceSettingsScreen(
                 }
 
                 // Local AI voices — downloaded Piper / Sherpa-ONNX models.
-                // These appear as first-class voice options so the user can
-                // pick one as the active hourly-announcement voice. The
-                // announcer routes through LocalTtsEngine when a local
-                // model is selected, bypassing the system TTS path.
-                if (downloadedLocalModels.isNotEmpty()) {
+                // Hidden on the Special filter so that tab stays focused on presets.
+                if (selectedFilter != VoiceListFilter.SPECIAL) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
@@ -466,11 +532,12 @@ fun VoiceSettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Local AI Voices",
+                                    text = stringResource(R.string.local_ai_voices),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                                     color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
+
                             downloadedLocalModels.forEach { model ->
                                 LocalVoiceItem(
                                     model = model,
@@ -479,11 +546,47 @@ fun VoiceSettingsScreen(
                                     onPreview = { viewModel.previewLocalModel(model) }
                                 )
                             }
-                            // A row to clear the local voice selection and
-                            // fall back to whichever system voice is set.
                             if (selectedLocalModelId != null) {
                                 LocalVoiceClearRow(
                                     onClear = { viewModel.clearLocalModelSelection() }
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { onNavigateToLocalVoices() }
+                                    .padding(horizontal = 18.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CloudSync,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.tertiary
+                                    )
+                                    Column {
+                                        Text(
+                                            stringResource(R.string.browse_and_download),
+                                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            stringResource(R.string.on_device_voices_subtitle),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -556,13 +659,13 @@ fun VoiceSettingsScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
-                                text = "Get More Accents & Voices",
+                                text = stringResource(R.string.get_more_accents_voices),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Text(
-                            text = "To download additional high-quality voices with accents (e.g. UK, Australia, India, Ireland, Canada), open your Android Text-to-Speech settings and select 'Install voice data' under your preferred speech engine.",
+                            text = stringResource(R.string.get_more_accents_body),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )
@@ -585,60 +688,7 @@ fun VoiceSettingsScreen(
                                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                             )
                         ) {
-                            Text("Open TTS Settings")
-                        }
-                    }
-                }
-
-                // ── Local AI Voices Card ─────────────────────────────────────────────
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
-                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
-                ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { onNavigateToLocalVoices() }
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CloudSync,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.tertiary
-                                    )
-                                }
-                                Column {
-                                    Text(
-                                        "Local AI Voices",
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        "On-device voices, no internet needed",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Text(stringResource(R.string.open_tts_settings_short))
                         }
                     }
                 }
@@ -653,6 +703,7 @@ fun VoiceSettingsScreen(
 fun SpecialPresetItem(
     preset: SpecialVoicePreset,
     isSelected: Boolean,
+    matchedVoiceName: String? = null,
     onSelectPreset: () -> Unit,
     onPreviewPreset: () -> Unit
 ) {
@@ -660,6 +711,12 @@ fun SpecialPresetItem(
         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
     } else {
         Color.Transparent
+    }
+    val displayName = stringResource(preset.nameRes)
+    val description = stringResource(preset.descriptionRes)
+    val genderLabel = when (preset.preferredGender) {
+        "Female" -> stringResource(R.string.gender_female)
+        else -> stringResource(R.string.gender_male)
     }
 
     Row(
@@ -678,26 +735,63 @@ fun SpecialPresetItem(
         Spacer(modifier = Modifier.width(10.dp))
         Box(
             modifier = Modifier
-                .size(width = 4.dp, height = 44.dp)
+                .size(width = 4.dp, height = 52.dp)
                 .clip(RoundedCornerShape(2.dp))
                 .background(presetGradientFor(preset.id))
         )
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                    ),
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                Text(
+                    text = stringResource(specialVoiceTagLabelRes(preset.tag)),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = preset.displayName,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
-                ),
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(4.dp))
+            val meta = if (isSelected && !matchedVoiceName.isNullOrBlank()) {
+                stringResource(
+                    R.string.special_voice_meta_matched,
+                    preset.pitch,
+                    preset.speechRate,
+                    genderLabel,
+                    matchedVoiceName
+                )
+            } else {
+                stringResource(
+                    R.string.special_voice_meta,
+                    preset.pitch,
+                    preset.speechRate,
+                    genderLabel
+                )
+            }
             Text(
-                text = "Pitch %.1f · Rate %.1f · ${preset.preferredGender}",
+                text = meta,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -705,7 +799,7 @@ fun SpecialPresetItem(
         IconButton(onClick = onPreviewPreset) {
             Icon(
                 imageVector = Icons.Default.PlayArrow,
-                contentDescription = "Preview ${preset.displayName}",
+                contentDescription = stringResource(R.string.preview_named, displayName),
                 tint = MaterialTheme.colorScheme.primary
             )
         }
@@ -786,7 +880,11 @@ fun VoiceItem(
                     ) {
                         Icon(badgeIcon, contentDescription = null, size = 12.dp, tint = badgeText)
                         Text(
-                            text = if (voice.requiresNetwork) "Cloud Sync" else "Offline",
+                            text = if (voice.requiresNetwork) {
+                                stringResource(R.string.badge_cloud_sync)
+                            } else {
+                                stringResource(R.string.badge_offline)
+                            },
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = badgeText
                         )
@@ -802,7 +900,7 @@ fun VoiceItem(
         ) {
             Icon(
                 imageVector = Icons.Default.PlayArrow,
-                contentDescription = "Preview voice $title",
+                contentDescription = stringResource(R.string.preview_voice_named, title),
                 tint = MaterialTheme.colorScheme.primary
             )
         }
@@ -836,6 +934,7 @@ fun LocalVoiceItem(
     } else {
         Color.Transparent
     }
+    val displayName = stringResource(model.displayNameRes)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -852,7 +951,7 @@ fun LocalVoiceItem(
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = model.displayName,
+                text = displayName,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
                 ),
@@ -867,8 +966,6 @@ fun LocalVoiceItem(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // "On-device" badge so the user can tell this voice
-                // does not hit a network at announcement time.
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
@@ -886,14 +983,14 @@ fun LocalVoiceItem(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            "On-device",
+                            stringResource(R.string.badge_on_device),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.tertiary
                         )
                     }
                 }
                 Text(
-                    text = model.description,
+                    text = stringResource(model.descriptionRes),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -902,7 +999,7 @@ fun LocalVoiceItem(
         IconButton(onClick = onPreview) {
             Icon(
                 imageVector = Icons.Default.PlayArrow,
-                contentDescription = "Preview ${model.displayName}",
+                contentDescription = stringResource(R.string.preview_named, displayName),
                 tint = MaterialTheme.colorScheme.primary
             )
         }
@@ -929,12 +1026,12 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
         Spacer(modifier = Modifier.width(14.dp))
         Column {
             Text(
-                text = "Use system voice",
+                text = stringResource(R.string.use_system_voice),
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Fall back to the selected Android TTS engine and voice",
+                text = stringResource(R.string.use_system_voice_subtitle),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -78,6 +78,8 @@ import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.TimeFormat
 import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
+import com.hourlyvoiceclock.ui.voicesettings.ESpeakNgVoiceVariants
+import com.hourlyvoiceclock.ui.voicesettings.SPECIAL_VOICE_PRESETS
 import com.hourlyvoiceclock.ui.theme.GlassBgLight
 import com.hourlyvoiceclock.ui.theme.GlassBgDark
 import com.hourlyvoiceclock.ui.theme.GlassBorderLight
@@ -432,12 +434,33 @@ fun HomeScreen(
                         .padding(top = 12.dp)
                 ) {
                     val voiceSubtitle = when {
-                        settings.selectedLocalModelId != null -> "Local: " +
-                            (VoiceModelRegistry.availableVoices
+                        settings.selectedLocalModelId != null -> {
+                            val localModel = VoiceModelRegistry.availableVoices
                                 .firstOrNull { it.id == settings.selectedLocalModelId }
-                                ?.displayName
-                                ?: settings.selectedLocalModelId)
-                        else -> settings.selectedVoiceName ?: "System Default voice"
+                            if (localModel != null) {
+                                stringResource(
+                                    R.string.home_voice_subtitle_local,
+                                    stringResource(localModel.displayNameRes)
+                                )
+                            } else {
+                                stringResource(R.string.home_voice_subtitle_missing_local)
+                            }
+                        }
+                        settings.selectedVoicePresetId != null -> {
+                            val preset = SPECIAL_VOICE_PRESETS
+                                .plus(ESpeakNgVoiceVariants)
+                                .firstOrNull { it.id == settings.selectedVoicePresetId }
+                            when {
+                                preset != null -> stringResource(
+                                    R.string.home_voice_subtitle_special,
+                                    stringResource(preset.nameRes)
+                                )
+                                else -> settings.selectedVoiceName
+                                    ?: stringResource(R.string.home_voice_subtitle_system_default)
+                            }
+                        }
+                        else -> settings.selectedVoiceName
+                            ?: stringResource(R.string.home_voice_subtitle_system_default)
                     }
                     DashboardCard(
                         title = stringResource(R.string.voice_settings),

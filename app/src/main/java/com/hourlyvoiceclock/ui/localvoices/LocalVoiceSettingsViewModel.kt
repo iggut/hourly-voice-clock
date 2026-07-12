@@ -6,43 +6,63 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.hourlyvoiceclock.R
+import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.tts.local.DownloadException
 import com.hourlyvoiceclock.tts.local.LocalVoiceRepository
 import com.hourlyvoiceclock.tts.local.VoiceModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+
+enum class LocalVoiceListFilter {
+    ALL,
+    INSTALLED
+}
 
 class LocalVoiceSettingsViewModel(
     application: Application,
-    private val repository: LocalVoiceRepository
+    private val repository: LocalVoiceRepository,
+    private val settingsRepository: SettingsRepository
 ) : AndroidViewModel(application) {
 
     val downloadedModels: StateFlow<List<VoiceModel>> = repository.downloadedModels
 
-    private val _downloadingModel = MutableStateFlow<VoiceModel?>(null)
-    val downloadingModel: StateFlow<VoiceModel?> = _downloadingModel.asStateFlow()
+    val downloadProgressByModelId: StateFlow<Map<String, Float>> = repository.downloadProgressByModelId
 
-    private val _downloadProgress = MutableStateFlow(0f)
-    val downloadProgress: StateFlow<Float> = _downloadProgress.asStateFlow()
+    val selectedLocalModelId: StateFlow<String?> = settingsRepository.settings
+        .map { it.selectedLocalModelId }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    private val _isSpeaking = MutableStateFlow(false)
-    val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
+    private val _previewingModelId = MutableStateFlow<String?>(null)
+    val previewingModelId: StateFlow<String?> = _previewingModelId.asStateFlow()
+
+    private val _listFilter = MutableStateFlow(LocalVoiceListFilter.ALL)
+    val listFilter: StateFlow<LocalVoiceListFilter> = _listFilter.asStateFlow()
 
     /**
-     * Per-model error message to surface inline in the card so the user
-     * sees a failed download instead of a silent button reset. Cleared
-     * when the user starts a new download for the same model.
+     * Per-model errors from downloads (queue) plus preview failures.
      */
-    private val _errorsByModelId = MutableStateFlow<Map<String, String>>(emptyMap())
-    val errorsByModelId: StateFlow<Map<String, String>> = _errorsByModelId.asStateFlow()
+    private val _localErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val errorsByModelId: StateFlow<Map<String, String>> =
+        kotlinx.coroutines.flow.combine(
+            repository.downloadErrorsByModelId,
+            _localErrors
+        ) { downloadErrors, local ->
+            downloadErrors + local
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     init {
         refreshDownloadedModels()
+    }
+
+    fun setListFilter(filter: LocalVoiceListFilter) {
+        _listFilter.value = filter
     }
 
     fun refreshDownloadedModels() {
@@ -52,75 +72,68 @@ class LocalVoiceSettingsViewModel(
     }
 
     fun downloadModel(model: VoiceModel) {
-        if (_downloadingModel.value != null) return
-        // Clear any prior error for this model.
-        _errorsByModelId.value = _errorsByModelId.value - model.id
-
-        _downloadingModel.value = model
-        _downloadProgress.value = 0f
-
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                repository.downloadModel(model) { progress ->
-                    _downloadProgress.value = progress
-                }
-            }
-
-            _downloadingModel.value = null
-            _downloadProgress.value = 0f
-
-            result.fold(
-                onSuccess = {
-                    Log.d(TAG, "Downloaded model: ${model.id}")
-                    refreshDownloadedModels()
-                },
-                onFailure = { throwable ->
-                    val message = humanize(throwable)
-                    Log.e(TAG, "Failed to download model: ${model.id}", throwable)
-                    _errorsByModelId.value = _errorsByModelId.value + (model.id to message)
-                    refreshDownloadedModels()
-                }
-            )
+        _localErrors.value = _localErrors.value - model.id
+        val started = repository.enqueueDownload(model)
+        if (!started) {
+            Log.d(TAG, "Download not started for ${model.id} (already active or installed)")
         }
     }
 
+    fun cancelDownload(modelId: String) {
+        repository.cancelDownload(modelId)
+    }
+
     fun clearError(modelId: String) {
-        if (_errorsByModelId.value.containsKey(modelId)) {
-            _errorsByModelId.value = _errorsByModelId.value - modelId
-        }
+        _localErrors.value = _localErrors.value - modelId
     }
 
     fun deleteModel(model: VoiceModel) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { repository.deleteModel(model) }
+            if (_previewingModelId.value == model.id) {
+                repository.stopPreview()
+                _previewingModelId.value = null
+            }
+            repository.cancelDownload(model.id)
+            repository.deleteModel(model)
+            settingsRepository.update { settings ->
+                if (settings.selectedLocalModelId == model.id) {
+                    settings.copy(selectedLocalModelId = null)
+                } else {
+                    settings
+                }
+            }
             refreshDownloadedModels()
         }
     }
 
     fun previewVoice(model: VoiceModel) {
-        if (_isSpeaking.value) {
-            repository.stopPreview()
-            _isSpeaking.value = false
+        if (downloadProgressByModelId.value.containsKey(model.id)) {
+            _localErrors.value = _localErrors.value + (
+                model.id to getApplication<Application>().getString(R.string.download_failed)
+            )
             return
+        }
+        val current = _previewingModelId.value
+        if (current != null) {
+            repository.stopPreview()
+            _previewingModelId.value = null
+            if (current == model.id) return
         }
 
         viewModelScope.launch {
-            _isSpeaking.value = true
+            _previewingModelId.value = model.id
             repository.preview(model) { message ->
-                _isSpeaking.value = false
-                _errorsByModelId.value = _errorsByModelId.value + (model.id to message)
+                _localErrors.value = _localErrors.value + (model.id to message)
+            }
+            if (_previewingModelId.value == model.id) {
+                _previewingModelId.value = null
             }
         }
     }
 
     fun stopSpeaking() {
         repository.stopPreview()
-        _isSpeaking.value = false
-    }
-
-    private fun humanize(t: Throwable): String = when (t) {
-        is DownloadException -> t.message ?: "Download failed"
-        else -> t.message ?: t.javaClass.simpleName
+        _previewingModelId.value = null
     }
 
     companion object {
@@ -134,8 +147,12 @@ class LocalVoiceSettingsViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LocalVoiceSettingsViewModel::class.java)) {
-            val repo = (application as DependenciesProvider).dependencies.localVoiceRepository
-            return LocalVoiceSettingsViewModel(application, repo) as T
+            val deps = (application as DependenciesProvider).dependencies
+            return LocalVoiceSettingsViewModel(
+                application,
+                deps.localVoiceRepository,
+                deps.settingsRepository
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }

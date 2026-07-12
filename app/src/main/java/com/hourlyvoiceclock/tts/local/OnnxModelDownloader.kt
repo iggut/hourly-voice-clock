@@ -2,6 +2,7 @@ package com.hourlyvoiceclock.tts.local
 
 import android.content.Context
 import android.util.Log
+import com.hourlyvoiceclock.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -172,9 +173,7 @@ open class OnnxModelDownloader(private val context: Context) {
             }
             val root = JSONObject(payload)
             val map = root.optJSONObject("phoneme_id_map")
-                ?: return Result.failure(
-                    DownloadException("phoneme_id_map missing in ${jsonFile.name}")
-                )
+                ?: return phonemeMapFailure("phoneme_id_map missing in ${jsonFile.name}")
 
             // Build a list of (id, token) pairs and sort by id.
             val entries = mutableListOf<Pair<Int, String>>()
@@ -182,17 +181,13 @@ open class OnnxModelDownloader(private val context: Context) {
             while (keys.hasNext()) {
                 val key = keys.next()
                 val idArray = map.optJSONArray(key)
-                    ?: return Result.failure(
-                        DownloadException("phoneme_id_map entry '$key' is not an array")
-                    )
+                    ?: return phonemeMapFailure("phoneme_id_map entry '$key' is not an array")
                 // Piper may map a single key to multiple ids (variants).
                 // The C++ side reads the first id only, so we use the
                 // first element for the canonical token id.
                 val id = idArray.optInt(0, -1)
                 if (id < 0) {
-                    return Result.failure(
-                        DownloadException("phoneme_id_map entry '$key' has no integer id")
-                    )
+                    return phonemeMapFailure("phoneme_id_map entry '$key' has no integer id")
                 }
                 entries.add(id to key)
             }
@@ -200,26 +195,20 @@ open class OnnxModelDownloader(private val context: Context) {
             val byId = entries.sortedBy { it.first }
             val maxId = entries.maxOfOrNull { it.first }
             if (maxId == null) {
-                return Result.failure(
-                    DownloadException("phoneme_id_map is empty in ${jsonFile.name}")
-                )
+                return phonemeMapFailure("phoneme_id_map is empty in ${jsonFile.name}")
             }
             if (maxId < 0) {
-                return Result.failure(
-                    DownloadException("phoneme_id_map has invalid ids in ${jsonFile.name}")
-                )
+                return phonemeMapFailure("phoneme_id_map has invalid ids in ${jsonFile.name}")
             }
             // Verify no gaps: every id from 0..maxId must appear.
             val seen = BooleanArray(maxId + 1)
             entries.forEach { (id, _) -> seen[id] = true }
             val missing = (0..maxId).filter { !seen[it] }
             if (missing.isNotEmpty()) {
-                return Result.failure(
-                    DownloadException(
-                        "phoneme_id_map has gaps (missing ids: ${missing.take(8)}" +
-                            (if (missing.size > 8) "..." else "") +
-                            "); cannot build a contiguous tokens.txt"
-                    )
+                return phonemeMapFailure(
+                    "phoneme_id_map has gaps (missing ids: ${missing.take(8)}" +
+                        (if (missing.size > 8) "..." else "") +
+                        "); cannot build a contiguous tokens.txt"
                 )
             }
 
@@ -240,11 +229,32 @@ open class OnnxModelDownloader(private val context: Context) {
             Result.success(Unit)
         } catch (e: IOException) {
             tokensFile.delete()
-            Result.failure(DownloadException("I/O error generating tokens.txt: ${e.message}", e))
+            Result.failure(
+                DownloadException(
+                    context.getString(R.string.download_error_tokens_io, e.message ?: ""),
+                    e
+                )
+            )
         } catch (e: Exception) {
             tokensFile.delete()
-            Result.failure(DownloadException("Failed to generate tokens.txt: ${e.message ?: e.javaClass.simpleName}", e))
+            Result.failure(
+                DownloadException(
+                    context.getString(
+                        R.string.download_error_tokens_failed,
+                        e.message ?: e.javaClass.simpleName
+                    ),
+                    e
+                )
+            )
         }
+    }
+
+    /** Phoneme-map details stay in logs; UI gets a generic corrupt-model string. */
+    private fun phonemeMapFailure(detail: String): Result<Unit> {
+        Log.e(TAG, detail)
+        return Result.failure(
+            DownloadException(context.getString(R.string.download_error_model_corrupt))
+        )
     }
 
     internal fun validateModelFiles(
@@ -253,45 +263,77 @@ open class OnnxModelDownloader(private val context: Context) {
         jsonFile: File,
         tokensFile: File
     ): Result<Unit> {
+        val name = model.displayName(context)
         if (!onnxFile.exists() || onnxFile.length() <= 0L) {
-            return Result.failure(DownloadException("ONNX model missing for ${model.displayName}"))
+            return Result.failure(
+                DownloadException(context.getString(R.string.download_error_onnx_missing, name))
+            )
         }
         if (!jsonFile.exists() || jsonFile.length() <= 0L) {
-            return Result.failure(DownloadException("ONNX JSON missing for ${model.displayName}"))
+            return Result.failure(
+                DownloadException(context.getString(R.string.download_error_json_missing, name))
+            )
         }
         if (!tokensFile.exists() || tokensFile.length() <= 0L) {
-            return Result.failure(DownloadException("tokens.txt missing for ${model.displayName}"))
+            return Result.failure(
+                DownloadException(context.getString(R.string.download_error_tokens_missing, name))
+            )
         }
 
         val minExpectedBytes = max(MIN_ONNX_BYTES, model.sizeBytes / 5L)
         if (onnxFile.length() < minExpectedBytes) {
             return Result.failure(
                 DownloadException(
-                    "Downloaded ONNX is too small for ${model.displayName}: " +
-                        "${onnxFile.length()} bytes; expected at least $minExpectedBytes"
+                    context.getString(
+                        R.string.download_error_onnx_too_small,
+                        name,
+                        onnxFile.length(),
+                        minExpectedBytes
+                    )
                 )
             )
         }
 
         val prefix = readPrefix(onnxFile).trimStart()
         if (prefix.startsWith("version https://git-lfs.github.com/spec/v1")) {
-            return Result.failure(DownloadException("Downloaded ${model.displayName} is a Git-LFS pointer, not ONNX weights"))
+            return Result.failure(
+                DownloadException(context.getString(R.string.download_error_lfs_pointer, name))
+            )
         }
         if (prefix.startsWith("<") || prefix.startsWith("{") || prefix.startsWith("<!DOCTYPE", ignoreCase = true)) {
-            return Result.failure(DownloadException("Downloaded ${model.displayName} is not an ONNX binary"))
+            return Result.failure(
+                DownloadException(context.getString(R.string.download_error_not_onnx, name))
+            )
         }
 
         return try {
             val payload = jsonFile.source().buffer().use { it.readUtf8() }
             val root = JSONObject(payload)
             val map = root.optJSONObject("phoneme_id_map")
-                ?: return Result.failure(DownloadException("phoneme_id_map missing in ${jsonFile.name}"))
+            if (map == null) {
+                Log.e(TAG, "phoneme_id_map missing in ${jsonFile.name}")
+                return Result.failure(
+                    DownloadException(context.getString(R.string.download_error_model_corrupt))
+                )
+            }
             if (map.length() == 0) {
-                return Result.failure(DownloadException("phoneme_id_map is empty in ${jsonFile.name}"))
+                Log.e(TAG, "phoneme_id_map is empty in ${jsonFile.name}")
+                return Result.failure(
+                    DownloadException(context.getString(R.string.download_error_model_corrupt))
+                )
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(DownloadException("Invalid ONNX JSON for ${model.displayName}: ${e.message ?: e.javaClass.simpleName}", e))
+            Result.failure(
+                DownloadException(
+                    context.getString(
+                        R.string.download_error_invalid_json,
+                        name,
+                        e.message ?: e.javaClass.simpleName
+                    ),
+                    e
+                )
+            )
         }
     }
 
@@ -344,17 +386,28 @@ open class OnnxModelDownloader(private val context: Context) {
         val response = try {
             client.newCall(request).execute()
         } catch (e: IOException) {
-            return Result.failure(DownloadException("Network error: ${e.message ?: e.javaClass.simpleName}", e))
+            return Result.failure(
+                DownloadException(
+                    context.getString(
+                        R.string.download_error_network,
+                        e.message ?: e.javaClass.simpleName
+                    ),
+                    e
+                )
+            )
         }
 
         response.use { r ->
             if (!r.isSuccessful) {
+                Log.e(TAG, "HTTP ${r.code} for $url")
                 return Result.failure(
-                    DownloadException("Download failed: HTTP ${r.code} for $url")
+                    DownloadException(context.getString(R.string.download_error_http, r.code))
                 )
             }
             val body = r.body
-                ?: return Result.failure(DownloadException("Empty response body for $url"))
+                ?: return Result.failure(
+                    DownloadException(context.getString(R.string.download_error_empty_body))
+                )
 
             val totalBytes = body.contentLength()
             var downloaded = 0L
@@ -377,7 +430,15 @@ open class OnnxModelDownloader(private val context: Context) {
                 }
             } catch (e: IOException) {
                 target.delete()
-                return Result.failure(DownloadException("I/O error: ${e.message ?: e.javaClass.simpleName}", e))
+                return Result.failure(
+                    DownloadException(
+                        context.getString(
+                            R.string.download_error_io,
+                            e.message ?: e.javaClass.simpleName
+                        ),
+                        e
+                    )
+                )
             }
         }
         return Result.success(Unit)
@@ -414,7 +475,7 @@ open class OnnxModelDownloader(private val context: Context) {
         onProgress: (Float) -> Unit
     ): Result<Unit> {
         val archiveUrl = model.archiveDownloadUrl ?: return Result.failure(
-            DownloadException("archiveDownloadUrl is null for ${model.id}")
+            DownloadException(context.getString(R.string.download_error_archive_type))
         )
 
         val ext = archiveUrl.substringAfterLast('?', "")
@@ -428,10 +489,9 @@ open class OnnxModelDownloader(private val context: Context) {
                 }
             }
         if (ext == "unknown") {
+            Log.e(TAG, "Archive type not recognised for ${model.id}: $archiveUrl")
             return Result.failure(
-                DownloadException(
-                    "Archive type not recognised for ${model.id} (need .zip, .tar.gz, or .tgz): $archiveUrl"
-                )
+                DownloadException(context.getString(R.string.download_error_archive_type))
             )
         }
 
@@ -493,13 +553,16 @@ open class OnnxModelDownloader(private val context: Context) {
                 name.endsWith(".tar.gz") || name.endsWith(".tgz") ->
                     extractFromTarGz(archive, onnxOut, jsonOut)
                 else -> Result.failure(
-                    DownloadException("Archive type not recognised: ${archive.name}")
+                    DownloadException(context.getString(R.string.download_error_archive_type))
                 )
             }
         } catch (e: Exception) {
             Result.failure(
                 DownloadException(
-                    "Failed to extract ${archive.name}: ${e.message ?: e.javaClass.simpleName}",
+                    context.getString(
+                        R.string.download_error_archive_extract,
+                        e.message ?: e.javaClass.simpleName
+                    ),
                     e
                 )
             )
@@ -551,12 +614,16 @@ open class OnnxModelDownloader(private val context: Context) {
             !foundOnnx -> {
                 onnxOut.delete()
                 jsonOut.delete()
-                Result.failure(DownloadException("Archive did not contain a .onnx file"))
+                Result.failure(
+                    DownloadException(context.getString(R.string.download_error_archive_no_onnx))
+                )
             }
             !foundJson -> {
                 onnxOut.delete()
                 jsonOut.delete()
-                Result.failure(DownloadException("Archive did not contain a .onnx.json or config.json"))
+                Result.failure(
+                    DownloadException(context.getString(R.string.download_error_archive_no_json))
+                )
             }
             else -> Result.success(Unit)
         }
@@ -589,8 +656,11 @@ open class OnnxModelDownloader(private val context: Context) {
                         val read = readFully(tar, header, 0, 512)
                         if (read == 0) break
                         if (read < 512) {
+                            Log.e(TAG, "Truncated tar header (read $read bytes)")
                             return Result.failure(
-                                DownloadException("Truncated tar header (read $read bytes)")
+                                DownloadException(
+                                    context.getString(R.string.download_error_archive_extract, "truncated header")
+                                )
                             )
                         }
                         // End-of-archive: two consecutive zero blocks. We only
@@ -600,9 +670,14 @@ open class OnnxModelDownloader(private val context: Context) {
                         val name = readTarString(header, 0, 100)
                         val sizeStr = readTarString(header, 124, 12).trim()
                         // Tar sizes are octal (POSIX ustar). Parse base 8.
-                        val size = sizeStr.toLongOrNull(8) ?: return Result.failure(
-                            DownloadException("Bad tar size '$sizeStr' for entry '$name'")
-                        )
+                        val size = sizeStr.toLongOrNull(8) ?: run {
+                            Log.e(TAG, "Bad tar size '$sizeStr' for entry '$name'")
+                            return Result.failure(
+                                DownloadException(
+                                    context.getString(R.string.download_error_archive_extract, "bad tar size")
+                                )
+                            )
+                        }
                         // Round up to 512-byte boundary.
                         val blocks = ((size + 511) / 512).toInt()
                         val dataBytes = blocks * 512
@@ -642,12 +717,16 @@ open class OnnxModelDownloader(private val context: Context) {
             !foundOnnx -> {
                 onnxOut.delete()
                 jsonOut.delete()
-                Result.failure(DownloadException("Archive did not contain a .onnx file"))
+                Result.failure(
+                    DownloadException(context.getString(R.string.download_error_archive_no_onnx))
+                )
             }
             !foundJson -> {
                 onnxOut.delete()
                 jsonOut.delete()
-                Result.failure(DownloadException("Archive did not contain a .onnx.json or config.json"))
+                Result.failure(
+                    DownloadException(context.getString(R.string.download_error_archive_no_json))
+                )
             }
             else -> Result.success(Unit)
         }

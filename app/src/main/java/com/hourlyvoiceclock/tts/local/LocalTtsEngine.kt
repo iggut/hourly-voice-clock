@@ -126,7 +126,7 @@ class LocalTtsEngine(
                 latency = 2,
                 requiresNetwork = false,
                 genderLabel = null,
-                description = model.displayName,
+                description = model.id,
                 isSpecial = true
             )
         }
@@ -222,7 +222,7 @@ class LocalTtsEngine(
                     audioPlayer.play(samples, sr, currentAudioChannel)
                     success = true
                 }
-                Log.d(TAG, "Spoke with ${currentModel?.displayName}: $text")
+                Log.d(TAG, "Spoke with ${currentModel?.id}: $text")
             } catch (e: Throwable) {
                 Log.e(TAG, "Async speak failed", e)
             } finally {
@@ -267,7 +267,7 @@ class LocalTtsEngine(
         return downloader.getDownloadedModels().map { model ->
             TtsEngineInfo(
                 packageName = model.id,
-                label = model.displayName,
+                label = model.id,
                 isInstalled = true
             )
         }

@@ -277,8 +277,11 @@ class OnnxModelDownloaderTest {
         val out = File(tmpDir, "tokens.txt")
         val result = downloader.generateTokensFile(json, out)
         assertTrue(result.isFailure)
-        val msg = result.exceptionOrNull()?.message ?: ""
-        assertTrue("expected gap message, got: $msg", msg.contains("gaps"))
+        assertFalse(out.exists())
+        assertEquals(
+            ctx.getString(com.hourlyvoiceclock.R.string.download_error_model_corrupt),
+            result.exceptionOrNull()?.message
+        )
     }
 
     // ================================================================
