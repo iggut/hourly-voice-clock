@@ -46,7 +46,8 @@ class SettingsMapper {
             notificationLogging = prefs[KEY_NOTIFICATION_LOGGING] ?: false,
             audioChannel = safeEnumValueOf(prefs[KEY_AUDIO_CHANNEL], AudioChannel.MEDIA),
             selectedTtsEnginePackage = prefs[KEY_SELECTED_TTS_ENGINE_PACKAGE]?.takeIf { it.isNotBlank() },
-            autoUpdateEnabled = prefs[KEY_AUTO_UPDATE_ENABLED] ?: true
+            autoUpdateEnabled = prefs[KEY_AUTO_UPDATE_ENABLED] ?: true,
+            useDynamicColor = prefs[KEY_USE_DYNAMIC_COLOR] ?: false
         )
     }
 
@@ -77,6 +78,7 @@ class SettingsMapper {
         prefs[KEY_AUDIO_CHANNEL] = settings.audioChannel.name
         if (settings.selectedTtsEnginePackage != null) prefs[KEY_SELECTED_TTS_ENGINE_PACKAGE] = settings.selectedTtsEnginePackage else prefs.remove(KEY_SELECTED_TTS_ENGINE_PACKAGE)
         prefs[KEY_AUTO_UPDATE_ENABLED] = settings.autoUpdateEnabled
+        prefs[KEY_USE_DYNAMIC_COLOR] = settings.useDynamicColor
     }
 
     companion object {
@@ -106,6 +108,7 @@ class SettingsMapper {
         internal val KEY_AUDIO_CHANNEL = stringPreferencesKey("audio_channel")
         internal val KEY_SELECTED_TTS_ENGINE_PACKAGE = stringPreferencesKey("selected_tts_engine_package")
         internal val KEY_AUTO_UPDATE_ENABLED = booleanPreferencesKey("auto_update_enabled")
+        internal val KEY_USE_DYNAMIC_COLOR = booleanPreferencesKey("use_dynamic_color")
 
         fun parseTime(value: String?, fallback: String): LocalTime {
             val cleanValue = if (value.isNullOrBlank()) fallback else value

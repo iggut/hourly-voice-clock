@@ -46,6 +46,10 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
         .map { it.audioChannel }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AudioChannel.MEDIA)
 
+    val useDynamicColor: StateFlow<Boolean> = deps.settingsRepository.settings
+        .map { it.useDynamicColor }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     // Text fields keep a local source of truth so keystrokes are reflected
     // immediately; the debounced write persists to the repository.
     private val _customPrefix = MutableStateFlow("It is now ")
@@ -117,6 +121,12 @@ class FormatSettingsViewModel(application: Application) : AndroidViewModel(appli
     fun setAudioChannel(channel: AudioChannel) {
         viewModelScope.launch {
             deps.settingsRepository.update { it.copy(audioChannel = channel) }
+        }
+    }
+
+    fun setUseDynamicColor(enabled: Boolean) {
+        viewModelScope.launch {
+            deps.settingsRepository.update { it.copy(useDynamicColor = enabled) }
         }
     }
 }

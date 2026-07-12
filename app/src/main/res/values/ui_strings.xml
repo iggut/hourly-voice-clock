@@ -34,4 +34,8 @@
     <string name="local_voices_empty_body">Browse the catalog to download on-device voices for hourly announcements.</string>
     <string name="local_voices_installed_empty">No installed voices yet. Switch to All to browse the catalog.</string>
     <string name="local_ai_empty_in_voice">No Local AI voices downloaded. Browse the catalog to add on-device voices.</string>
+    <string name="appearance_section">Appearance</string>
+    <string name="material_you_colors">Material You colors</string>
+    <string name="material_you_colors_desc">Use wallpaper colors from your system theme (Android 12+). Brand glass stays the default when off.</string>
+    <string name="material_you_unavailable">Requires Android 12 or newer</string>
 </resources>

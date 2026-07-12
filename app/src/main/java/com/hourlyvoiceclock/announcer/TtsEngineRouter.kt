@@ -25,7 +25,11 @@ import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
  */
 class TtsEngineRouter(
     private val primaryEngine: TtsEngine,
-    private val localEngineFactory: () -> TtsEngine
+    private val localEngineFactory: () -> TtsEngine,
+    private val isKnownModel: (modelId: String) -> Boolean = {
+        VoiceModelRegistry.getVoiceById(it) != null
+    },
+    private val isLocalModelDownloaded: (modelId: String) -> Boolean = { true }
 ) {
 
     @Volatile
@@ -45,11 +49,14 @@ class TtsEngineRouter(
         if (localId.isNullOrBlank()) {
             return primaryEngine
         }
-        // Validate the model id is real; otherwise fall through to the
-        // primary engine. We do not want a stale id (e.g. a model the
-        // user deleted) to leave the announcer mute.
-        if (VoiceModelRegistry.getVoiceById(localId) == null) {
-            Log.w(TAG, "selectedLocalModelId=$localId is not a known model; falling back to primary engine")
+        // Validate the model id is real and present on disk; otherwise
+        // fall through to the primary engine. We do not want a stale id
+        // (e.g. a model the user deleted) to leave the announcer mute
+        // or force a pointless local-engine init.
+        if (!isKnownModel(localId)) {
+            return primaryEngine
+        }
+        if (!isLocalModelDownloaded(localId)) {
             return primaryEngine
         }
         val local = localEngineInstance ?: synchronized(this) {

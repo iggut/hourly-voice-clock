@@ -1,7 +1,9 @@
 package com.hourlyvoiceclock.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 // Modern Vibrant Color Palette
@@ -37,10 +39,27 @@ val AccentMale = Color(0xFF3B82F6)
 val AccentCloud = Color(0xFFEAB308)
 val AccentOffline = Color(0xFF10B981)
 
-@Composable
-fun glassContainerColor(): Color =
-    if (isSystemInDarkTheme()) GlassBgDark else GlassBgLight
+/** Whether Material You dynamic color is active for this composition. */
+val LocalDynamicColor = compositionLocalOf { false }
 
 @Composable
-fun glassBorderColor(): Color =
-    if (isSystemInDarkTheme()) GlassBorderDark else GlassBorderLight
+fun glassContainerColor(): Color {
+    return if (LocalDynamicColor.current) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+    } else if (isSystemInDarkTheme()) {
+        GlassBgDark
+    } else {
+        GlassBgLight
+    }
+}
+
+@Composable
+fun glassBorderColor(): Color {
+    return if (LocalDynamicColor.current) {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+    } else if (isSystemInDarkTheme()) {
+        GlassBorderDark
+    } else {
+        GlassBorderLight
+    }
+}

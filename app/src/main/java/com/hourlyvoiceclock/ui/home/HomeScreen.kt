@@ -71,6 +71,7 @@ import com.hourlyvoiceclock.ui.components.DashboardCard
 import com.hourlyvoiceclock.ui.components.GlassCard
 import com.hourlyvoiceclock.ui.components.GlassInfoBanner
 import com.hourlyvoiceclock.ui.components.GlassScreen
+import com.hourlyvoiceclock.ui.components.HeroGlassCard
 import com.hourlyvoiceclock.ui.components.glassPagePadding
 import com.hourlyvoiceclock.ui.theme.GlassShapes
 import com.hourlyvoiceclock.ui.theme.GlassSpacing
@@ -149,14 +150,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Hero: clock + primary CTA
-            GlassCard(
-                shape = GlassShapes.Hero,
-                contentPadding = 0.dp
-            ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 36.dp, horizontal = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            HeroGlassCard {
                     if (timeState.hoursMinutes.isNotBlank()) {
                         Row(
                             verticalAlignment = Alignment.Bottom,
@@ -262,7 +256,6 @@ fun HomeScreen(
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
-                }
             }
 
             // Hourly control

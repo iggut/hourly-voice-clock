@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.os.Build
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.data.AudioChannel
@@ -74,6 +76,8 @@ fun FormatSettingsScreen(
     val vibrateBefore by viewModel.vibrateBefore.collectAsState()
     val announceDate by viewModel.announceDate.collectAsState()
     val audioChannel by viewModel.audioChannel.collectAsState()
+    val useDynamicColor by viewModel.useDynamicColor.collectAsState()
+    val dynamicColorSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     GlassScreen(
         title = stringResource(R.string.format_settings),
@@ -213,6 +217,45 @@ fun FormatSettingsScreen(
                                 )
                             }
                         }
+                }
+
+                SectionHeader(title = stringResource(R.string.appearance_section), icon = Icons.Default.Palette)
+                GlassCard {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GlassShapes.Chip)
+                            .toggleable(
+                                value = useDynamicColor,
+                                enabled = dynamicColorSupported,
+                                onValueChange = { viewModel.setUseDynamicColor(it) },
+                                role = Role.Switch
+                            )
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                stringResource(R.string.material_you_colors),
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+                            )
+                            Text(
+                                if (dynamicColorSupported) {
+                                    stringResource(R.string.material_you_colors_desc)
+                                } else {
+                                    stringResource(R.string.material_you_unavailable)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = useDynamicColor && dynamicColorSupported,
+                            onCheckedChange = null,
+                            enabled = dynamicColorSupported
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(GlassSpacing.BottomSpacer))

@@ -20,6 +20,7 @@ class HourlyVoiceClockApp : Application(), DependenciesProvider {
         dependencies = AppDependencies(this)
         runBlocking {
             dependencies.settingsRepository.runMigrations()
+            dependencies.voiceSelectionReconciler.reconcile()
         }
         createNotificationChannel()
     }

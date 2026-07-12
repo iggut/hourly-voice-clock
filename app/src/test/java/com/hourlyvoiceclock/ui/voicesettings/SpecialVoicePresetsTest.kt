@@ -58,4 +58,36 @@ class SpecialVoicePresetsTest {
             presetGradientFor(id)
         }
     }
+
+    @Test
+    fun `male gender filter returns only male preferred presets`() {
+        val filtered = filterSpecialPresets(
+            includeEspeak = false,
+            tagFilter = null,
+            genderFilter = "Male"
+        )
+        assertTrue(filtered.isNotEmpty())
+        filtered.forEach { assertEquals("Male", it.preferredGender) }
+    }
+
+    @Test
+    fun `female gender filter returns only female preferred presets`() {
+        val filtered = filterSpecialPresets(
+            includeEspeak = false,
+            tagFilter = null,
+            genderFilter = "Female"
+        )
+        assertTrue(filtered.isNotEmpty())
+        filtered.forEach { assertEquals("Female", it.preferredGender) }
+    }
+
+    @Test
+    fun `null gender filter returns all special presets`() {
+        val filtered = filterSpecialPresets(
+            includeEspeak = false,
+            tagFilter = null,
+            genderFilter = null
+        )
+        assertEquals(SPECIAL_VOICE_PRESETS.size, filtered.size)
+    }
 }

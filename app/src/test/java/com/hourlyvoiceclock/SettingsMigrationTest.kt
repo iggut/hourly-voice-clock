@@ -42,4 +42,18 @@ class SettingsMigrationTest {
         assertNull(prefs[voiceKey])
         assertNull(prefs[engineKey])
     }
+
+    @Test
+    fun `migrateToV2 removes blank selected local model id`() {
+        val localKey = stringPreferencesKey("selected_local_model_id")
+        val prefs = mutablePreferencesOf(
+            intPreferencesKey("settings_schema_version") to 1,
+            localKey to "   "
+        )
+
+        SettingsMigration.migrateInPlace(prefs)
+
+        assertNull(prefs[localKey])
+        assertEquals(2, prefs[intPreferencesKey("settings_schema_version")])
+    }
 }

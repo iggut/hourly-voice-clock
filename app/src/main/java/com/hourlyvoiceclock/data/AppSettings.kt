@@ -68,5 +68,7 @@ data class AppSettings(
     val notificationLogging: Boolean = false,
     val audioChannel: AudioChannel = AudioChannel.MEDIA,
     val selectedTtsEnginePackage: String? = null,
-    val autoUpdateEnabled: Boolean = true
+    val autoUpdateEnabled: Boolean = true,
+    /** When true on API 31+, use Material You dynamic colors; default keeps brand glass. */
+    val useDynamicColor: Boolean = false
 )

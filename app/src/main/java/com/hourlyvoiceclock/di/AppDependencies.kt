@@ -27,6 +27,7 @@ import com.hourlyvoiceclock.data.UpdateChecker
 import com.hourlyvoiceclock.data.UpdateDownloader
 import com.hourlyvoiceclock.data.UpdateManager
 import com.hourlyvoiceclock.data.UpdateUiDelegate
+import com.hourlyvoiceclock.data.VoiceSelectionReconciler
 import com.hourlyvoiceclock.scheduler.AndroidExactAlarmCapability
 import com.hourlyvoiceclock.scheduler.AnnouncementScheduler
 import com.hourlyvoiceclock.scheduler.ExactAlarmCapability
@@ -38,6 +39,8 @@ import com.hourlyvoiceclock.tts.TtsEngineSelector
 import com.hourlyvoiceclock.tts.local.DefaultLocalVoiceRepository
 import com.hourlyvoiceclock.tts.local.LocalTtsEngine
 import com.hourlyvoiceclock.tts.local.LocalVoiceRepository
+import com.hourlyvoiceclock.tts.local.OnnxModelDownloader
+import com.hourlyvoiceclock.tts.local.VoiceModelRegistry
 import kotlinx.coroutines.SupervisorJob
 
 /**
@@ -107,14 +110,34 @@ class AppDependencies(context: Context) {
      * models) and the dedicated Local Voices screen (which downloads
      * and deletes them).
      */
+    val onnxModelDownloader: OnnxModelDownloader by lazy {
+        OnnxModelDownloader(appContext)
+    }
+
     val localVoiceRepository: LocalVoiceRepository by lazy {
         DefaultLocalVoiceRepository(appContext)
+    }
+
+    val voiceSelectionReconciler: VoiceSelectionReconciler by lazy {
+        VoiceSelectionReconciler(
+            settings = settingsRepository,
+            engineSelector = ttsEngineSelector,
+            ttsEngine = ttsEngine,
+            isLocalModelDownloaded = { modelId ->
+                val model = VoiceModelRegistry.getVoiceById(modelId) ?: return@VoiceSelectionReconciler false
+                onnxModelDownloader.isModelDownloaded(model)
+            }
+        )
     }
 
     private val ttsEngineRouter: TtsEngineRouter by lazy {
         TtsEngineRouter(
             primaryEngine = ttsEngine,
-            localEngineFactory = { LocalTtsEngine(appContext) }
+            localEngineFactory = { LocalTtsEngine(appContext) },
+            isLocalModelDownloaded = { modelId ->
+                val model = VoiceModelRegistry.getVoiceById(modelId) ?: return@TtsEngineRouter false
+                onnxModelDownloader.isModelDownloaded(model)
+            }
         )
     }
 

@@ -373,10 +373,18 @@ fun VoiceSettingsScreen(
                 }
 
                 val showSpecialSection = selectedFilter == VoiceListFilter.ALL ||
-                    selectedFilter == VoiceListFilter.SPECIAL
+                    selectedFilter == VoiceListFilter.SPECIAL ||
+                    selectedFilter == VoiceListFilter.MALE ||
+                    selectedFilter == VoiceListFilter.FEMALE
                 val showNormalVoices = selectedFilter != VoiceListFilter.SPECIAL
+                val specialPresetsForFilter = viewModel.activeSpecialPresets
+                val showSpecialCard = showSpecialSection && (
+                    selectedFilter == VoiceListFilter.ALL ||
+                        selectedFilter == VoiceListFilter.SPECIAL ||
+                        specialPresetsForFilter.isNotEmpty()
+                    )
 
-                if (showSpecialSection) {
+                if (showSpecialCard) {
                     GlassCard(contentPadding = 0.dp) {
                         Column(modifier = Modifier.padding(vertical = 10.dp)) {
                             Row(

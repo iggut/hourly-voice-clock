@@ -31,6 +31,23 @@ enum class SpecialVoiceTag {
     ESPEAK
 }
 
+/** Filters Special / eSpeak presets for the unified voice list (no carousel). */
+fun filterSpecialPresets(
+    includeEspeak: Boolean,
+    tagFilter: SpecialVoiceTag?,
+    genderFilter: String?
+): List<SpecialVoicePreset> {
+    return buildList {
+        addAll(SPECIAL_VOICE_PRESETS)
+        if (includeEspeak) {
+            addAll(ESpeakNgVoiceVariants)
+        }
+    }.filter { preset ->
+        (tagFilter == null || preset.tag == tagFilter) &&
+            (genderFilter == null || preset.preferredGender == genderFilter)
+    }
+}
+
 data class SpecialVoicePreset(
     val id: String,
     @androidx.annotation.StringRes val nameRes: Int,
@@ -332,15 +349,15 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     val isEspeakNgSelected: StateFlow<Boolean> = _isEspeakNgSelected.asStateFlow()
 
     val activeSpecialPresets: List<SpecialVoicePreset>
-        get() {
-            val tag = _specialTagFilter.value
-            return buildList {
-                addAll(SPECIAL_VOICE_PRESETS)
-                if (_isEspeakNgSelected.value) {
-                    addAll(ESpeakNgVoiceVariants)
-                }
-            }.filter { tag == null || it.tag == tag }
-        }
+        get() = filterSpecialPresets(
+            includeEspeak = _isEspeakNgSelected.value,
+            tagFilter = _specialTagFilter.value,
+            genderFilter = when (_selectedFilter.value) {
+                VoiceListFilter.MALE -> "Male"
+                VoiceListFilter.FEMALE -> "Female"
+                else -> null
+            }
+        )
 
     val selectedVoiceName: StateFlow<String?> = deps.settingsRepository.settings
         .map { it.selectedVoiceName }
@@ -387,9 +404,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     init {
         viewModelScope.launch {
-            deps.settingsRepository.runMigrations()
-            val selectedPackage = deps.ttsEngineSelector.select()
-            deps.ttsEngine.initialize(selectedPackage)
+            deps.voiceSelectionReconciler.reconcile()
 
             val settings = deps.settingsRepository.settings.first()
             _selectedEnginePackage.value = settings.selectedTtsEnginePackage
@@ -402,7 +417,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             allNormalVoices = deps.ttsEngine.getVoices()
             _hasMultipleVoices.value = allNormalVoices.size > 1
 
-            reconcileStaleVoiceSelection(settings.selectedVoiceName, settings.selectedLocale)
             updateFilteredVoices()
 
             refreshDownloadedLocalModels()
@@ -521,19 +535,6 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             allNormalVoices.filter { it.genderLabel == genderFilter }
         }
         _normalVoicesByLocale.value = filtered.groupBy { it.localeDisplayName }
-    }
-
-    private suspend fun reconcileStaleVoiceSelection(savedVoiceName: String?, savedLocale: String?) {
-        if (savedVoiceName.isNullOrBlank()) return
-
-        val voiceStillExists = allNormalVoices.any {
-            it.name == savedVoiceName && (savedLocale.isNullOrBlank() || it.localeTag == savedLocale)
-        }
-        if (voiceStillExists) return
-
-        deps.settingsRepository.update {
-            it.copy(selectedVoiceName = null, selectedLocale = null, selectedVoicePresetId = null)
-        }
     }
 
     fun selectVoice(voiceName: String, localeTag: String) {

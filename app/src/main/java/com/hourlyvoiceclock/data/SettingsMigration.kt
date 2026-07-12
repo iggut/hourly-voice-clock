@@ -12,7 +12,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
  */
 object SettingsMigration {
 
-    const val CURRENT_SCHEMA_VERSION = 1
+    const val CURRENT_SCHEMA_VERSION = 2
 
     private val KEY_SCHEMA_VERSION = intPreferencesKey("settings_schema_version")
 
@@ -22,6 +22,10 @@ object SettingsMigration {
         if (version < 1) {
             migrateToV1(prefs)
             version = 1
+        }
+        if (version < 2) {
+            migrateToV2(prefs)
+            version = 2
         }
 
         prefs[KEY_SCHEMA_VERSION] = version
@@ -39,7 +43,16 @@ object SettingsMigration {
         }
     }
 
-    private fun sanitizeOptionalString(prefs: MutablePreferences, key: androidx.datastore.preferences.core.Preferences.Key<String>) {
+    private fun migrateToV2(prefs: MutablePreferences) {
+        with(SettingsMapper) {
+            sanitizeOptionalString(prefs, KEY_SELECTED_LOCAL_MODEL_ID)
+        }
+    }
+
+    private fun sanitizeOptionalString(
+        prefs: MutablePreferences,
+        key: androidx.datastore.preferences.core.Preferences.Key<String>
+    ) {
         val value = prefs[key] ?: return
         if (value.isBlank()) {
             prefs.remove(key)
