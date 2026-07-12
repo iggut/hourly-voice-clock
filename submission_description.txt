@@ -1,8 +1,0 @@
-💡 **What:** Replaced the blocking `Thread.sleep` call with the non-blocking, suspending `kotlinx.coroutines.delay` function inside the `playSamples` method of `LocalTtsEngine.kt`.
-
-🎯 **Why:** To eliminate thread starvation and blocking I/O overhead on the IO dispatcher during TTS audio playback. Using `delay` suspends the coroutine efficiently, freeing the underlying thread for other operations instead of holding it idle.
-
-📊 **Measured Improvement:** Baseline vs Optimized performance was measured by simulating 100 concurrent playback waits:
-* **Baseline time (Thread.sleep):** ~142 ms
-* **Optimized time (delay):** ~67 ms
-* **Result:** ~53% reduction in execution time, freeing dispatcher threads and reducing concurrency overhead.
