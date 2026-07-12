@@ -8,6 +8,9 @@ import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -167,49 +170,49 @@ fun VoiceSettingsScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        // ⚡ Bolt: Hoist shared styles outside the high-frequency iteration loop to prevent redundant object allocations
+                        val selectedEngineBg = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                        val unselectedEngineBg = if (isDark) GlassBgDark else GlassBgLight
+                        val selectedBorderTint = MaterialTheme.colorScheme.primary
+                        val unselectedBorderTint = if (isDark) GlassBorderDark else GlassBorderLight
+                        val selectedTextTint = MaterialTheme.colorScheme.onPrimaryContainer
+                        val unselectedTextTint = MaterialTheme.colorScheme.onBackground
+
                         engines.forEach { engine ->
                             val isSelected = selectedEnginePackage == engine.packageName
-                            val engineBg = if (isSelected) {
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
-                            } else {
-                                if (isDark) GlassBgDark else GlassBgLight
-                            }
-                            val borderTint = if (isSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                if (isDark) GlassBorderDark else GlassBorderLight
-                            }
-                            val textTint = if (isSelected) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onBackground
-                            }
+                            val engineBg = if (isSelected) selectedEngineBg else unselectedEngineBg
+                            val borderTint = if (isSelected) selectedBorderTint else unselectedBorderTint
+                            val textTint = if (isSelected) selectedTextTint else unselectedTextTint
 
                             Card(
                                 modifier = Modifier
                                     .width(160.dp)
-                                    .clickable {
-                                        when {
-                                            engine.isInstalled && isSelected -> {
-                                                context.openTtsEngineSettings(engine.packageName)
-                                            }
-                                            engine.isInstalled -> {
-                                                viewModel.switchTtsEngine(engine.packageName)
-                                            }
-                                            else -> {
-                                                val playStoreUri = Uri.parse("market://details?id=${engine.packageName}")
-                                                val playStoreIntent = Intent(Intent.ACTION_VIEW, playStoreUri).apply {
-                                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    .selectable(
+                                        selected = isSelected,
+                                        onClick = {
+                                            when {
+                                                engine.isInstalled && isSelected -> {
+                                                    context.openTtsEngineSettings(engine.packageName)
                                                 }
-                                                try {
-                                                    context.startActivity(playStoreIntent)
-                                                } catch (e: Exception) {
-                                                    val webUri = Uri.parse("https://play.google.com/store/apps/details?id=${engine.packageName}")
-                                                    context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                                                engine.isInstalled -> {
+                                                    viewModel.switchTtsEngine(engine.packageName)
+                                                }
+                                                else -> {
+                                                    val playStoreUri = Uri.parse("market://details?id=${engine.packageName}")
+                                                    val playStoreIntent = Intent(Intent.ACTION_VIEW, playStoreUri).apply {
+                                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                    }
+                                                    try {
+                                                        context.startActivity(playStoreIntent)
+                                                    } catch (e: Exception) {
+                                                        val webUri = Uri.parse("https://play.google.com/store/apps/details?id=${engine.packageName}")
+                                                        context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                                                    }
                                                 }
                                             }
-                                        }
-                                    },
+                                        },
+                                        role = Role.RadioButton
+                                    ),
                                 shape = RoundedCornerShape(16.dp),
                                 border = BorderStroke(1.dp, borderTint),
                                 colors = CardDefaults.cardColors(containerColor = engineBg)
@@ -360,6 +363,8 @@ fun VoiceSettingsScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        // ⚡ Bolt: Pre-allocate shape to prevent instantiating it per filter item
+                        val filterChipShape = RoundedCornerShape(12.dp)
                         VoiceListFilter.entries.forEach { filter ->
                             FilterChip(
                                 selected = selectedFilter == filter,
@@ -375,7 +380,7 @@ fun VoiceSettingsScreen(
                                         fontWeight = FontWeight.Bold
                                     )
                                 },
-                                shape = RoundedCornerShape(12.dp)
+                                shape = filterChipShape
                             )
                         }
                     }
@@ -487,23 +492,30 @@ fun VoiceSettingsScreen(
 
                 // System voices grouped by locale
                 if (showNormalVoices) {
+                // ⚡ Bolt: Extract loop-invariant styles out of locale loop entirely
+                val normalVoiceCardShape = RoundedCornerShape(24.dp)
+                val normalVoiceCardColors = CardDefaults.cardColors(
+                    containerColor = if (isDark) GlassBgDark else GlassBgLight
+                )
+                val normalVoiceCardBorder = BorderStroke(
+                    width = 1.dp,
+                    color = if (isDark) GlassBorderDark else GlassBorderLight
+                )
+                val localeTitleStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+                val localeTitleColor = MaterialTheme.colorScheme.primary
+
                 normalVoicesByLocale.forEach { (localeName, voices) ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isDark) GlassBgDark else GlassBgLight
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (isDark) GlassBorderDark else GlassBorderLight
-                        )
+                        shape = normalVoiceCardShape,
+                        colors = normalVoiceCardColors,
+                        border = normalVoiceCardBorder
                     ) {
                         Column(modifier = Modifier.padding(vertical = 10.dp)) {
                             Text(
                                 text = localeName,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                color = MaterialTheme.colorScheme.primary,
+                                style = localeTitleStyle,
+                                color = localeTitleColor,
                                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
                             )
                             voices.forEach { voice ->
@@ -653,7 +665,8 @@ fun SpecialPresetItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onSelectPreset)
+            .clip(RoundedCornerShape(8.dp))
+            .selectable(selected = isSelected, onClick = onSelectPreset, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -712,7 +725,8 @@ fun VoiceItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onSelectVoice(voice.name, voice.localeTag) }
+            .clip(RoundedCornerShape(8.dp))
+            .selectable(selected = isSelected, onClick = { onSelectVoice(voice.name, voice.localeTag) }, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -825,7 +839,8 @@ fun LocalVoiceItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onSelect)
+            .clip(RoundedCornerShape(8.dp))
+            .selectable(selected = isSelected, onClick = onSelect, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -905,6 +920,7 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClear)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically

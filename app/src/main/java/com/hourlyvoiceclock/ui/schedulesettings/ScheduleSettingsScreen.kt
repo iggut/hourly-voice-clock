@@ -12,6 +12,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -257,13 +262,16 @@ fun ScheduleSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    val enabled = !exactAlarms
-                                    viewModel.setExactAlarmsEnabled(enabled)
-                                    if (enabled && !canScheduleExact) {
-                                        showExactAlarmDialog = true
-                                    }
-                                }
+                                .toggleable(
+                                    value = exactAlarms,
+                                    onValueChange = { enabled ->
+                                        viewModel.setExactAlarmsEnabled(enabled)
+                                        if (enabled && !canScheduleExact) {
+                                            showExactAlarmDialog = true
+                                        }
+                                    },
+                                    role = Role.Switch
+                                )
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -360,7 +368,7 @@ fun ScheduleSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { viewModel.setQuietHoursEnabled(!quietEnabled) }
+                                .toggleable(value = quietEnabled, onValueChange = { viewModel.setQuietHoursEnabled(it) }, role = Role.Switch)
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -452,7 +460,7 @@ fun ScheduleSettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { viewModel.setAllowManualDuringQuiet(!allowManual) }
+                                    .toggleable(value = allowManual, onValueChange = { viewModel.setAllowManualDuringQuiet(it) }, role = Role.Switch)
                                     .padding(vertical = 8.dp, horizontal = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -489,11 +497,25 @@ fun ScheduleSettingsScreen(
                                 val errorColor = MaterialTheme.colorScheme.error
                                 val errorBgColor = errorColor.copy(alpha = 0.2f)
 
+                                // ⚡ Bolt: Extract shared object instantiations and formatting out of loops
+                                val chipColors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = errorBgColor,
+                                    selectedLabelColor = errorColor
+                                )
+                                val baseBoxModifier = remember { Modifier.size(40.dp).clip(CircleShape) }
+
+                                val fullDayNames = remember(locale) {
+                                    DayOfWeek.entries.associateWith { day ->
+                                        day.getDisplayName(java.time.format.TextStyle.FULL, locale)
+                                    }
+                                }
+                                val narrowDayNames = remember(locale) {
+                                    DayOfWeek.entries.associateWith { day ->
+                                        day.getDisplayName(java.time.format.TextStyle.NARROW, locale)
+                                    }
+                                }
+
                                 if (showFullText) {
-                                    val chipColors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = errorBgColor,
-                                        selectedLabelColor = errorColor
-                                    )
                                     FlowRow(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -506,10 +528,7 @@ fun ScheduleSettingsScreen(
                                                 onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
                                                 label = {
                                                     Text(
-                                                        day.getDisplayName(
-                                                            java.time.format.TextStyle.FULL,
-                                                            locale
-                                                        ),
+                                                        fullDayNames[day] ?: "",
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -530,25 +549,20 @@ fun ScheduleSettingsScreen(
                                     ) {
                                         for (day in DayOfWeek.entries) {
                                             val isDisabled = day in quietDaysDisabled
-                                            val narrowName = day.getDisplayName(
-                                                java.time.format.TextStyle.NARROW,
-                                                locale
-                                            )
+                                            val narrowName = narrowDayNames[day] ?: ""
 
                                             val bgColor = if (isDisabled) errorBgColor else transparentColor
                                             val borderColor = if (isDisabled) errorColor else outlineColor
                                             val textColor = if (isDisabled) errorColor else onSurfaceColor
                                             Box(
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(CircleShape)
+                                                modifier = baseBoxModifier
                                                     .background(bgColor)
                                                     .border(
                                                         width = 1.dp,
                                                         color = borderColor,
                                                         shape = CircleShape
                                                     )
-                                                    .clickable { viewModel.toggleQuietDay(day, !isDisabled) },
+                                                    .selectable(selected = !isDisabled, onClick = { viewModel.toggleQuietDay(day, !isDisabled) }),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
@@ -697,28 +711,31 @@ fun ScheduleSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    val checked = !notificationLogging
-                                    if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
-                                        val activity = context as? androidx.activity.ComponentActivity
-                                        val shouldShowRationale = activity?.let {
-                                            androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
-                                                it,
-                                                Manifest.permission.POST_NOTIFICATIONS
-                                            )
-                                        } ?: false
+                                .toggleable(
+                                    value = notificationLogging,
+                                    onValueChange = { checked ->
+                                        if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                                            val activity = context as? androidx.activity.ComponentActivity
+                                            val shouldShowRationale = activity?.let {
+                                                androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
+                                                    it,
+                                                    Manifest.permission.POST_NOTIFICATIONS
+                                                )
+                                            } ?: false
 
-                                        if (shouldShowRationale) {
-                                            showRationaleDialog = true
-                                        } else {
-                                            // Either first request or permanently denied.
-                                            // We check settings.notificationLogging's prior state or try launching direct.
-                                            // Let's trigger launcher first:
-                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                            if (shouldShowRationale) {
+                                                showRationaleDialog = true
+                                            } else {
+                                                // Either first request or permanently denied.
+                                                // We check settings.notificationLogging's prior state or try launching direct.
+                                                // Let's trigger launcher first:
+                                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                            }
                                         }
-                                    }
-                                    viewModel.setNotificationLogging(checked)
-                                }
+                                        viewModel.setNotificationLogging(checked)
+                                    },
+                                    role = Role.Switch
+                                )
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -890,11 +907,19 @@ fun ScheduleSettingsScreen(
                             color = if (isDark) GlassBorderDark else GlassBorderLight
                         )
 
+                        val expandedText = stringResource(R.string.expanded)
+                        val collapsedText = stringResource(R.string.collapsed)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { oemGuidesExpanded = !oemGuidesExpanded }
+                                .clickable(
+                                    role = Role.Button,
+                                    onClick = { oemGuidesExpanded = !oemGuidesExpanded }
+                                )
+                                .semantics {
+                                    stateDescription = if (oemGuidesExpanded) expandedText else collapsedText
+                                }
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically

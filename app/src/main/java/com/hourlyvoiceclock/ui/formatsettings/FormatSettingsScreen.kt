@@ -3,6 +3,9 @@ package com.hourlyvoiceclock.ui.formatsettings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -145,14 +148,14 @@ fun FormatSettingsScreen(
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setTimeFormat(TimeFormat.HOUR_12) }) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).selectable(selected = timeFormat == TimeFormat.HOUR_12, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }, role = Role.RadioButton)) {
                             RadioButton(
                                 selected = timeFormat == TimeFormat.HOUR_12,
                                 onClick = null
                             )
                             Text("12-hour (e.g. 3:00 PM)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setTimeFormat(TimeFormat.HOUR_24) }) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).selectable(selected = timeFormat == TimeFormat.HOUR_24, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }, role = Role.RadioButton)) {
                             RadioButton(
                                 selected = timeFormat == TimeFormat.HOUR_24,
                                 onClick = null
@@ -178,8 +181,10 @@ fun FormatSettingsScreen(
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
+                        // ⚡ Bolt: Pre-allocate shape outside loop to prevent redundant object creation
+                        val optionShape = RoundedCornerShape(8.dp)
                         PhraseStyle.values().forEach { style ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setPhraseStyle(style) }) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).selectable(selected = phraseStyle == style, onClick = { viewModel.setPhraseStyle(style) }, role = Role.RadioButton)) {
                                 RadioButton(
                                     selected = phraseStyle == style,
                                     onClick = null
@@ -239,7 +244,7 @@ fun FormatSettingsScreen(
                             )
                         }
                         Row(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setVibrateBefore(!vibrateBefore) },
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).toggleable(value = vibrateBefore, onValueChange = { viewModel.setVibrateBefore(it) }, role = Role.Switch),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -250,7 +255,7 @@ fun FormatSettingsScreen(
                             )
                         }
                         Row(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setAnnounceDate(!announceDate) },
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).toggleable(value = announceDate, onValueChange = { viewModel.setAnnounceDate(it) }, role = Role.Switch),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -285,8 +290,10 @@ fun FormatSettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(10.dp))
+                        // ⚡ Bolt: Pre-allocate shape outside loop
+                        val optionShape = RoundedCornerShape(8.dp)
                         AudioChannel.values().forEach { channel ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { viewModel.setAudioChannel(channel) }) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).selectable(selected = audioChannel == channel, onClick = { viewModel.setAudioChannel(channel) }, role = Role.RadioButton)) {
                                 RadioButton(
                                     selected = audioChannel == channel,
                                     onClick = null
