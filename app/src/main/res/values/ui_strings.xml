@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Home dashboard / updates -->
+    <string name="app_updates">App Updates</string>
+    <string name="announcements_active">Announcements active</string>
+    <string name="announcements_disabled">Announcements disabled</string>
+    <string name="format_subtitle_12h">12-hour</string>
+    <string name="format_subtitle_24h">24-hour</string>
+    <string name="phrase_style_simple">Simple style</string>
+    <string name="phrase_style_detailed">Detailed style</string>
+    <string name="phrase_style_friendly">Friendly style</string>
+    <string name="phrase_style_custom">Custom prefix/suffix</string>
+    <string name="home_format_subtitle">%1$s • %2$s</string>
+    <string name="quiet_hours_enabled">Quiet hours enabled</string>
+    <string name="quiet_hours_disabled">Quiet hours disabled</string>
+    <string name="exact_alarms_suffix"> • Exact Alarms</string>
+    <string name="update_available_version">Update available • Version %1$s</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_download_ready">Download ready • Tap to install</string>
+    <string name="update_installing">Installing…</string>
+    <string name="update_up_to_date">Version %1$s • Up to date</string>
+    <string name="update_no_release">Version %1$s • No release published</string>
+    <string name="update_check_failed">Check failed • Tap to retry</string>
+    <string name="update_installed">Update installed!</string>
+    <string name="update_install_failed">Install failed • Tap to retry</string>
+    <string name="update_version_auto_on">Version %1$s • Auto-check active</string>
+    <string name="update_version_auto_off">Version %1$s • Auto-check disabled</string>
+    <string name="current_version_label">Current version: v%1$s</string>
+    <string name="check_now">Check Now</string>
+    <string name="close">Close</string>
+    <string name="retry">Retry</string>
+    <string name="local_voices_empty_title">No local voices downloaded yet</string>
+    <string name="local_voices_empty_body">Browse the catalog to download on-device voices for hourly announcements.</string>
+    <string name="local_voices_installed_empty">No installed voices yet. Switch to All to browse the catalog.</string>
+    <string name="local_ai_empty_in_voice">No Local AI voices downloaded. Browse the catalog to add on-device voices.</string>
+</resources>

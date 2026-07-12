@@ -23,7 +23,7 @@ private val DarkColorScheme = darkColorScheme(
     background = DarkBgStart,
     surface = Color(0xFF1E293B).copy(alpha = 0.4f), // Glassmorphic translucent default
     surfaceVariant = Color(0xFF1E293B).copy(alpha = 0.7f),
-    onSurface = Color(0xFFF1F5F9).copy(alpha = 0.7f),
+    onSurface = Color(0xFFF1F5F9),
     onBackground = Color(0xFFF8FAFC)
 )
 

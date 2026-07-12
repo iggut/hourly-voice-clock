@@ -1,12 +1,7 @@
 package com.hourlyvoiceclock.ui.formatsettings
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.semantics.Role
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,61 +11,50 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Style
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.ChimeSound
 import com.hourlyvoiceclock.data.PhraseStyle
 import com.hourlyvoiceclock.data.TimeFormat
-import com.hourlyvoiceclock.ui.theme.GlassBgLight
-import com.hourlyvoiceclock.ui.theme.GlassBgDark
-import com.hourlyvoiceclock.ui.theme.GlassBorderLight
-import com.hourlyvoiceclock.ui.theme.GlassBorderDark
-import com.hourlyvoiceclock.ui.theme.LightBgStart
-import com.hourlyvoiceclock.ui.theme.LightBgEnd
-import com.hourlyvoiceclock.ui.theme.DarkBgStart
-import com.hourlyvoiceclock.ui.theme.DarkBgEnd
+import com.hourlyvoiceclock.ui.components.GlassCard
+import com.hourlyvoiceclock.ui.components.GlassScreen
+import com.hourlyvoiceclock.ui.components.SectionHeader
+import com.hourlyvoiceclock.ui.components.glassPagePadding
+import com.hourlyvoiceclock.ui.theme.GlassShapes
+import com.hourlyvoiceclock.ui.theme.GlassSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,98 +75,40 @@ fun FormatSettingsScreen(
     val announceDate by viewModel.announceDate.collectAsState()
     val audioChannel by viewModel.audioChannel.collectAsState()
 
-    val isDark = isSystemInDarkTheme()
-    val bgGradient = Brush.verticalGradient(
-        colors = listOf(
-            if (isDark) DarkBgStart else LightBgStart,
-            if (isDark) DarkBgEnd else LightBgEnd
-        )
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(bgGradient)
-    ) {
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = { Text(stringResource(R.string.format_settings), fontWeight = FontWeight.Bold, fontSize = 20.sp) },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
-                )
-            }
-        ) { padding ->
+    GlassScreen(
+        title = stringResource(R.string.format_settings),
+        onBack = onBack
+    ) { padding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 20.dp)
+                    .glassPagePadding(padding)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(GlassSpacing.SectionGap)
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Time format
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
-                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
-                ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            Text(
-                                stringResource(R.string.time_format),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).selectable(selected = timeFormat == TimeFormat.HOUR_12, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }, role = Role.RadioButton)) {
+                SectionHeader(title = stringResource(R.string.time_format), icon = Icons.Default.HourglassEmpty)
+                GlassCard {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).selectable(selected = timeFormat == TimeFormat.HOUR_12, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }, role = Role.RadioButton)) {
                             RadioButton(
                                 selected = timeFormat == TimeFormat.HOUR_12,
                                 onClick = null
                             )
                             Text("12-hour (e.g. 3:00 PM)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).selectable(selected = timeFormat == TimeFormat.HOUR_24, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }, role = Role.RadioButton)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).selectable(selected = timeFormat == TimeFormat.HOUR_24, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }, role = Role.RadioButton)) {
                             RadioButton(
                                 selected = timeFormat == TimeFormat.HOUR_24,
                                 onClick = null
                             )
                             Text("24-hour (e.g. 15:00)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                         }
-                    }
                 }
 
-                // Phrase style
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
-                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
-                ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.Style, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            Text(
-                                stringResource(R.string.phrase_style),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        // ⚡ Bolt: Pre-allocate shape outside loop to prevent redundant object creation
-                        val optionShape = RoundedCornerShape(8.dp)
+                SectionHeader(title = stringResource(R.string.phrase_style), icon = Icons.Default.Style)
+                GlassCard {
+                        val optionShape = GlassShapes.Chip
                         PhraseStyle.values().forEach { style ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).selectable(selected = phraseStyle == style, onClick = { viewModel.setPhraseStyle(style) }, role = Role.RadioButton)) {
                                 RadioButton(
@@ -209,7 +135,7 @@ fun FormatSettingsScreen(
                                 label = { Text("Prefix") },
                                 placeholder = { Text("e.g., 'Hello, it is now '") },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp)
+                                shape = GlassShapes.Item
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
@@ -218,20 +144,13 @@ fun FormatSettingsScreen(
                                 label = { Text("Suffix") },
                                 placeholder = { Text("e.g., ' master.'") },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp)
+                                shape = GlassShapes.Item
                             )
                         }
-                    }
                 }
 
-                // Toggles
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
-                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
-                ) {
-                    Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                GlassCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -244,7 +163,7 @@ fun FormatSettingsScreen(
                             )
                         }
                         Row(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).toggleable(value = vibrateBefore, onValueChange = { viewModel.setVibrateBefore(it) }, role = Role.Switch),
+                            modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).toggleable(value = vibrateBefore, onValueChange = { viewModel.setVibrateBefore(it) }, role = Role.Switch),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -255,7 +174,7 @@ fun FormatSettingsScreen(
                             )
                         }
                         Row(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).toggleable(value = announceDate, onValueChange = { viewModel.setAnnounceDate(it) }, role = Role.Switch),
+                            modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).toggleable(value = announceDate, onValueChange = { viewModel.setAnnounceDate(it) }, role = Role.Switch),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -268,30 +187,15 @@ fun FormatSettingsScreen(
                     }
                 }
 
-                // Audio channel
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
-                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
-                ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            Text(
-                                stringResource(R.string.audio_channel),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
+                SectionHeader(title = stringResource(R.string.audio_channel), icon = Icons.AutoMirrored.Filled.VolumeUp)
+                GlassCard {
                         Text(
                             stringResource(R.string.audio_channel_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(10.dp))
-                        // ⚡ Bolt: Pre-allocate shape outside loop
-                        val optionShape = RoundedCornerShape(8.dp)
+                        val optionShape = GlassShapes.Chip
                         AudioChannel.values().forEach { channel ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).selectable(selected = audioChannel == channel, onClick = { viewModel.setAudioChannel(channel) }, role = Role.RadioButton)) {
                                 RadioButton(
@@ -309,13 +213,12 @@ fun FormatSettingsScreen(
                                 )
                             }
                         }
-                    }
                 }
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(GlassSpacing.BottomSpacer))
             }
-        }
     }
+
 }
 
 @Composable
@@ -329,7 +232,7 @@ fun ChimeSoundSelector(
     Box(modifier = modifier) {
         OutlinedButton(
             onClick = { expanded = true },
-            shape = RoundedCornerShape(12.dp)
+            shape = GlassShapes.Chip
         ) {
             Text(
                 text = when (selectedSound) {

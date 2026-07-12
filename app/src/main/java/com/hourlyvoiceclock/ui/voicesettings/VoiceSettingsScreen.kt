@@ -76,14 +76,31 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.tts.VoiceInfo
 import com.hourlyvoiceclock.tts.local.VoiceModel
-import com.hourlyvoiceclock.ui.theme.GlassBgLight
+import com.hourlyvoiceclock.ui.components.DashboardCard
+import com.hourlyvoiceclock.ui.components.GlassCard
+import com.hourlyvoiceclock.ui.components.GlassFilterChip
+import com.hourlyvoiceclock.ui.components.GlassFilterChipRow
+import com.hourlyvoiceclock.ui.components.GlassInfoBanner
+import com.hourlyvoiceclock.ui.components.GlassScreen
+import com.hourlyvoiceclock.ui.components.SectionHeader
+import com.hourlyvoiceclock.ui.components.SoftStatusBadge
+import com.hourlyvoiceclock.ui.components.StatusBadge
+import com.hourlyvoiceclock.ui.components.glassPagePadding
+import com.hourlyvoiceclock.ui.theme.AccentCloud
+import com.hourlyvoiceclock.ui.theme.AccentFemale
+import com.hourlyvoiceclock.ui.theme.AccentMale
+import com.hourlyvoiceclock.ui.theme.AccentOffline
 import com.hourlyvoiceclock.ui.theme.GlassBgDark
-import com.hourlyvoiceclock.ui.theme.GlassBorderLight
+import com.hourlyvoiceclock.ui.theme.GlassBgLight
 import com.hourlyvoiceclock.ui.theme.GlassBorderDark
-import com.hourlyvoiceclock.ui.theme.LightBgStart
-import com.hourlyvoiceclock.ui.theme.LightBgEnd
-import com.hourlyvoiceclock.ui.theme.DarkBgStart
-import com.hourlyvoiceclock.ui.theme.DarkBgEnd
+import com.hourlyvoiceclock.ui.theme.GlassBorderLight
+import com.hourlyvoiceclock.ui.theme.GlassShapes
+import com.hourlyvoiceclock.ui.theme.GlassSpacing
+import com.hourlyvoiceclock.ui.theme.GlassTypography
+import com.hourlyvoiceclock.ui.theme.glassBorderColor
+import com.hourlyvoiceclock.ui.theme.glassContainerColor
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,12 +132,6 @@ fun VoiceSettingsScreen(
     val localVoiceSelected = selectedLocalModelId != null
 
     val isDark = isSystemInDarkTheme()
-    val bgGradient = Brush.verticalGradient(
-        colors = listOf(
-            if (isDark) DarkBgStart else LightBgStart,
-            if (isDark) DarkBgEnd else LightBgEnd
-        )
-    )
 
     // Refresh the list of on-device voices whenever the screen
     // becomes active. The user can navigate to the Local Voices
@@ -136,48 +147,23 @@ fun VoiceSettingsScreen(
         viewModel.consumeUserMessage()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(bgGradient)
-    ) {
-        Scaffold(
-            containerColor = Color.Transparent,
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = { Text(stringResource(R.string.voice_settings), fontWeight = FontWeight.Bold, fontSize = 20.sp) },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
-                )
-            }
-        ) { padding ->
+    GlassScreen(
+        title = stringResource(R.string.voice_settings),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
+    ) { padding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 20.dp)
+                    .glassPagePadding(padding)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                verticalArrangement = Arrangement.spacedBy(GlassSpacing.SectionGap)
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 // Speech Engines Section
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = stringResource(R.string.preferred_speech_engine),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    SectionHeader(title = stringResource(R.string.preferred_speech_engine))
                     
                     Row(
                         modifier = Modifier
@@ -302,7 +288,7 @@ fun VoiceSettingsScreen(
                                         context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                                     }
                                 },
-                                shape = RoundedCornerShape(12.dp)
+                                shape = GlassShapes.Chip
                             ) {
                                 Text(stringResource(R.string.open_tts_settings))
                             }
@@ -311,18 +297,8 @@ fun VoiceSettingsScreen(
                 }
 
                 // Sliders Section
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isDark) GlassBgDark else GlassBgLight
-                    ),
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = if (isDark) GlassBorderDark else GlassBorderLight
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                GlassCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (localVoiceSelected) {
                             Text(
                                 text = stringResource(R.string.pitch_rate_system_tts_only),
@@ -368,7 +344,7 @@ fun VoiceSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = GlassShapes.Item
                         ) {
                             Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
@@ -379,35 +355,18 @@ fun VoiceSettingsScreen(
 
                 // Voice filter: All / Male / Female / Special
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = stringResource(R.string.voices_section_title),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // ⚡ Bolt: Pre-allocate shape to prevent instantiating it per filter item
-                        val filterChipShape = RoundedCornerShape(12.dp)
+                    SectionHeader(title = stringResource(R.string.voices_section_title))
+                    GlassFilterChipRow {
                         VoiceListFilter.entries.forEach { filter ->
-                            FilterChip(
+                            GlassFilterChip(
                                 selected = selectedFilter == filter,
                                 onClick = { viewModel.setVoiceFilter(filter) },
-                                label = {
-                                    Text(
-                                        text = when (filter) {
-                                            VoiceListFilter.ALL -> stringResource(R.string.filter_all)
-                                            VoiceListFilter.MALE -> stringResource(R.string.filter_male)
-                                            VoiceListFilter.FEMALE -> stringResource(R.string.filter_female)
-                                            VoiceListFilter.SPECIAL -> stringResource(R.string.filter_special)
-                                        },
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                shape = filterChipShape
+                                label = when (filter) {
+                                    VoiceListFilter.ALL -> stringResource(R.string.filter_all)
+                                    VoiceListFilter.MALE -> stringResource(R.string.filter_male)
+                                    VoiceListFilter.FEMALE -> stringResource(R.string.filter_female)
+                                    VoiceListFilter.SPECIAL -> stringResource(R.string.filter_special)
+                                }
                             )
                         }
                     }
@@ -418,17 +377,7 @@ fun VoiceSettingsScreen(
                 val showNormalVoices = selectedFilter != VoiceListFilter.SPECIAL
 
                 if (showSpecialSection) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isDark) GlassBgDark else GlassBgLight
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (isDark) GlassBorderDark else GlassBorderLight
-                        )
-                    ) {
+                    GlassCard(contentPadding = 0.dp) {
                         Column(modifier = Modifier.padding(vertical = 10.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -452,42 +401,30 @@ fun VoiceSettingsScreen(
                                 )
                             }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(horizontal = 14.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            GlassFilterChipRow(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
                             ) {
-                                val tagChipShape = RoundedCornerShape(10.dp)
-                                FilterChip(
+                                GlassFilterChip(
                                     selected = specialTagFilter == null,
                                     onClick = { viewModel.setSpecialTagFilter(null) },
-                                    label = { Text(stringResource(R.string.filter_all), fontWeight = FontWeight.Bold) },
-                                    shape = tagChipShape
+                                    label = stringResource(R.string.filter_all)
                                 )
                                 listOf(
                                     SpecialVoiceTag.FUN,
                                     SpecialVoiceTag.CHARACTER,
                                     SpecialVoiceTag.ACCENT
                                 ).forEach { tag ->
-                                    FilterChip(
+                                    GlassFilterChip(
                                         selected = specialTagFilter == tag,
                                         onClick = { viewModel.setSpecialTagFilter(tag) },
-                                        label = {
-                                            Text(stringResource(specialVoiceTagLabelRes(tag)), fontWeight = FontWeight.Bold)
-                                        },
-                                        shape = tagChipShape
+                                        label = stringResource(specialVoiceTagLabelRes(tag))
                                     )
                                 }
                                 if (isEspeakNgSelected) {
-                                    FilterChip(
+                                    GlassFilterChip(
                                         selected = specialTagFilter == SpecialVoiceTag.ESPEAK,
                                         onClick = { viewModel.setSpecialTagFilter(SpecialVoiceTag.ESPEAK) },
-                                        label = {
-                                            Text(stringResource(specialVoiceTagLabelRes(SpecialVoiceTag.ESPEAK)), fontWeight = FontWeight.Bold)
-                                        },
-                                        shape = tagChipShape
+                                        label = stringResource(specialVoiceTagLabelRes(SpecialVoiceTag.ESPEAK))
                                     )
                                 }
                             }
@@ -508,17 +445,7 @@ fun VoiceSettingsScreen(
                 // Local AI voices — downloaded Piper / Sherpa-ONNX models.
                 // Hidden on the Special filter so that tab stays focused on presets.
                 if (selectedFilter != VoiceListFilter.SPECIAL) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isDark) GlassBgDark else GlassBgLight
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (isDark) GlassBorderDark else GlassBorderLight
-                        )
-                    ) {
+                    GlassCard(contentPadding = 0.dp) {
                         Column(modifier = Modifier.padding(vertical = 10.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -538,82 +465,47 @@ fun VoiceSettingsScreen(
                                 )
                             }
 
-                            downloadedLocalModels.forEach { model ->
-                                LocalVoiceItem(
-                                    model = model,
-                                    isSelected = selectedLocalModelId == model.id,
-                                    onSelect = { viewModel.selectLocalModel(model) },
-                                    onPreview = { viewModel.previewLocalModel(model) }
+                            if (downloadedLocalModels.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.local_ai_empty_in_voice),
+                                    style = GlassTypography.cardSubtitle,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
                                 )
-                            }
-                            if (selectedLocalModelId != null) {
-                                LocalVoiceClearRow(
-                                    onClear = { viewModel.clearLocalModelSelection() }
-                                )
+                            } else {
+                                downloadedLocalModels.forEach { model ->
+                                    LocalVoiceItem(
+                                        model = model,
+                                        isSelected = selectedLocalModelId == model.id,
+                                        onSelect = { viewModel.selectLocalModel(model) },
+                                        onPreview = { viewModel.previewLocalModel(model) }
+                                    )
+                                }
+                                if (selectedLocalModelId != null) {
+                                    LocalVoiceClearRow(
+                                        onClear = { viewModel.clearLocalModelSelection() }
+                                    )
+                                }
                             }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onNavigateToLocalVoices() }
-                                    .padding(horizontal = 18.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CloudSync,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.tertiary
-                                    )
-                                    Column {
-                                        Text(
-                                            stringResource(R.string.browse_and_download),
-                                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            stringResource(R.string.on_device_voices_subtitle),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            DashboardCard(
+                                title = stringResource(R.string.browse_and_download),
+                                subtitle = stringResource(R.string.on_device_voices_subtitle),
+                                icon = Icons.Default.CloudSync,
+                                onClick = onNavigateToLocalVoices,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
                         }
                     }
                 }
 
                 // System voices grouped by locale
                 if (showNormalVoices) {
-                // ⚡ Bolt: Extract loop-invariant styles out of locale loop entirely
-                val normalVoiceCardShape = RoundedCornerShape(24.dp)
-                val normalVoiceCardColors = CardDefaults.cardColors(
-                    containerColor = if (isDark) GlassBgDark else GlassBgLight
-                )
-                val normalVoiceCardBorder = BorderStroke(
-                    width = 1.dp,
-                    color = if (isDark) GlassBorderDark else GlassBorderLight
-                )
                 val localeTitleStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
                 val localeTitleColor = MaterialTheme.colorScheme.primary
 
                 normalVoicesByLocale.forEach { (localeName, voices) ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = normalVoiceCardShape,
-                        colors = normalVoiceCardColors,
-                        border = normalVoiceCardBorder
-                    ) {
+                    GlassCard(contentPadding = 0.dp) {
                         Column(modifier = Modifier.padding(vertical = 10.dp)) {
                             Text(
                                 text = localeName,
@@ -635,17 +527,8 @@ fun VoiceSettingsScreen(
                 }
 
                 // Help/Info Card for more accents and high-quality voices
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f) 
-                                         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                    ),
-                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
-                ) {
+                GlassCard(shape = GlassShapes.Dashboard) {
                     Column(
-                        modifier = Modifier.padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(
@@ -683,7 +566,7 @@ fun VoiceSettingsScreen(
                                     } catch (_: Exception) {}
                                 }
                             },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = GlassShapes.Chip,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                             )
@@ -693,9 +576,8 @@ fun VoiceSettingsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(GlassSpacing.BottomSpacer))
             }
-        }
     }
 }
 
@@ -707,11 +589,12 @@ fun SpecialPresetItem(
     onSelectPreset: () -> Unit,
     onPreviewPreset: () -> Unit
 ) {
-    val backgroundColor = if (isSelected) {
+    val targetBg = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
     } else {
         Color.Transparent
     }
+    val backgroundColor by animateColorAsState(targetBg, tween(180), label = "specialSel")
     val displayName = stringResource(preset.nameRes)
     val description = stringResource(preset.descriptionRes)
     val genderLabel = when (preset.preferredGender) {
@@ -722,10 +605,10 @@ fun SpecialPresetItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(GlassShapes.Chip)
             .selectable(selected = isSelected, onClick = onSelectPreset, role = Role.RadioButton)
             .background(backgroundColor)
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+            .padding(horizontal = 18.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
@@ -736,7 +619,7 @@ fun SpecialPresetItem(
         Box(
             modifier = Modifier
                 .size(width = 4.dp, height = 52.dp)
-                .clip(RoundedCornerShape(2.dp))
+                .clip(GlassShapes.Badge)
                 .background(presetGradientFor(preset.id))
         )
         Spacer(modifier = Modifier.width(14.dp))
@@ -757,23 +640,17 @@ fun SpecialPresetItem(
                     },
                     modifier = Modifier.weight(1f, fill = false)
                 )
-                Text(
+                SoftStatusBadge(
                     text = stringResource(specialVoiceTagLabelRes(preset.tag)),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                    accent = MaterialTheme.colorScheme.primary
                 )
             }
-            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = GlassTypography.cardSubtitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
             )
-            Spacer(modifier = Modifier.height(4.dp))
             val meta = if (isSelected && !matchedVoiceName.isNullOrBlank()) {
                 stringResource(
                     R.string.special_voice_meta_matched,
@@ -792,8 +669,8 @@ fun SpecialPresetItem(
             }
             Text(
                 text = meta,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = GlassTypography.badgeLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
             )
         }
         IconButton(onClick = onPreviewPreset) {
@@ -814,12 +691,13 @@ fun VoiceItem(
     onPreviewVoice: (String, String) -> Unit
 ) {
     val isSelected = selectedVoice == voice.name
-    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else Color.Transparent
+    val targetBg = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else Color.Transparent
+    val backgroundColor by animateColorAsState(targetBg, tween(180), label = "voiceSel")
     
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(GlassShapes.Chip)
             .selectable(selected = isSelected, onClick = { onSelectVoice(voice.name, voice.localeTag) }, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -847,49 +725,20 @@ fun VoiceItem(
             ) {
                 // Gender badge
                 voice.genderLabel?.let { gender ->
-                    val badgeColor = if (gender == "Female") Color(0xFFEC4899) else Color(0xFF3B82F6)
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(badgeColor.copy(alpha = 0.15f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = gender,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = badgeColor
-                        )
-                    }
+                    SoftStatusBadge(
+                        text = gender,
+                        accent = if (gender == "Female") AccentFemale else AccentMale
+                    )
                 }
 
-                // Cloud vs Offline badge
-                val (badgeBg, badgeText, badgeIcon) = if (voice.requiresNetwork) {
-                    Triple(Color(0xFFEAB308).copy(alpha = 0.15f), Color(0xFFCA8A04), Icons.Default.CloudSync)
-                } else {
-                    Triple(Color(0xFF10B981).copy(alpha = 0.15f), Color(0xFF059669), Icons.Default.OfflineBolt)
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(badgeBg)
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(badgeIcon, contentDescription = null, size = 12.dp, tint = badgeText)
-                        Text(
-                            text = if (voice.requiresNetwork) {
-                                stringResource(R.string.badge_cloud_sync)
-                            } else {
-                                stringResource(R.string.badge_offline)
-                            },
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = badgeText
-                        )
-                    }
-                }
+                SoftStatusBadge(
+                    text = if (voice.requiresNetwork) {
+                        stringResource(R.string.badge_cloud_sync)
+                    } else {
+                        stringResource(R.string.badge_offline)
+                    },
+                    accent = if (voice.requiresNetwork) AccentCloud else AccentOffline
+                )
             }
         }
         
@@ -929,16 +778,17 @@ fun LocalVoiceItem(
     onSelect: () -> Unit,
     onPreview: () -> Unit
 ) {
-    val backgroundColor = if (isSelected) {
+    val targetBg = if (isSelected) {
         MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f)
     } else {
         Color.Transparent
     }
+    val backgroundColor by animateColorAsState(targetBg, tween(180), label = "localSel")
     val displayName = stringResource(model.displayNameRes)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(GlassShapes.Chip)
             .selectable(selected = isSelected, onClick = onSelect, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -1017,7 +867,7 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(GlassShapes.Chip)
             .clickable(onClick = onClear)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically

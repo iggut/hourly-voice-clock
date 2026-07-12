@@ -1,5 +1,7 @@
 package com.hourlyvoiceclock.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 // Modern Vibrant Color Palette
@@ -29,3 +31,16 @@ val DialogSurfaceLight = Color(0xFFFFFFFF)
 val DialogOnSurfaceDark = Color(0xFFF1F5F9)
 val DialogOnSurfaceLight = Color(0xFF0F172A)
 
+// Semantic badge / status accents
+val AccentFemale = Color(0xFFEC4899)
+val AccentMale = Color(0xFF3B82F6)
+val AccentCloud = Color(0xFFEAB308)
+val AccentOffline = Color(0xFF10B981)
+
+@Composable
+fun glassContainerColor(): Color =
+    if (isSystemInDarkTheme()) GlassBgDark else GlassBgLight
+
+@Composable
+fun glassBorderColor(): Color =
+    if (isSystemInDarkTheme()) GlassBorderDark else GlassBorderLight

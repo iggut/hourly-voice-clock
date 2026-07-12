@@ -87,16 +87,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import java.time.DayOfWeek
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.scheduler.ExactAlarmState
-import com.hourlyvoiceclock.ui.theme.GlassBgLight
+import com.hourlyvoiceclock.ui.components.GlassCard
+import com.hourlyvoiceclock.ui.components.GlassFilterChip
+import com.hourlyvoiceclock.ui.components.GlassScreen
+import com.hourlyvoiceclock.ui.components.OpaqueAlertDialog
+import com.hourlyvoiceclock.ui.components.glassPagePadding
 import com.hourlyvoiceclock.ui.theme.GlassBgDark
-import com.hourlyvoiceclock.ui.theme.GlassBorderLight
+import com.hourlyvoiceclock.ui.theme.GlassBgLight
 import com.hourlyvoiceclock.ui.theme.GlassBorderDark
-import com.hourlyvoiceclock.ui.theme.LightBgStart
-import com.hourlyvoiceclock.ui.theme.LightBgEnd
-import com.hourlyvoiceclock.ui.theme.DarkBgStart
-import com.hourlyvoiceclock.ui.theme.DarkBgEnd
+import com.hourlyvoiceclock.ui.theme.GlassBorderLight
+import com.hourlyvoiceclock.ui.theme.GlassShapes
+import com.hourlyvoiceclock.ui.theme.GlassSpacing
 import com.hourlyvoiceclock.ui.theme.dialogContainerColor
 import com.hourlyvoiceclock.ui.theme.dialogContentColor
+import com.hourlyvoiceclock.ui.theme.glassBorderColor
+import com.hourlyvoiceclock.ui.theme.glassContainerColor
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -146,12 +151,9 @@ fun ScheduleSettingsScreen(
     val deviceGuidance = viewModel.deviceGuidance()
 
     if (showExactAlarmDialog) {
-        AlertDialog(
+        OpaqueAlertDialog(
             onDismissRequest = { showExactAlarmDialog = false },
-            containerColor = dialogContainerColor(),
-            titleContentColor = dialogContentColor(),
-            textContentColor = dialogContentColor(),
-            title = { Text(stringResource(R.string.exact_alarm_permission_title), fontWeight = FontWeight.Bold) },
+            title = stringResource(R.string.exact_alarm_permission_title),
             text = {
                 Column {
                     Text(stringResource(R.string.exact_alarm_permission_explanation))
@@ -172,21 +174,12 @@ fun ScheduleSettingsScreen(
                     }
                 }
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showExactAlarmDialog = false
-                        viewModel.openExactAlarmSettings()
-                    }
-                ) {
-                    Text(stringResource(R.string.grant_permission), fontWeight = FontWeight.Bold)
-                }
+            confirmLabel = stringResource(R.string.grant_permission),
+            onConfirm = {
+                showExactAlarmDialog = false
+                viewModel.openExactAlarmSettings()
             },
-            dismissButton = {
-                TextButton(onClick = { showExactAlarmDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
+            dismissLabel = stringResource(R.string.cancel)
         )
     }
 
@@ -198,43 +191,17 @@ fun ScheduleSettingsScreen(
     }
 
     val isDark = isSystemInDarkTheme()
-    val bgGradient = Brush.verticalGradient(
-        colors = listOf(
-            if (isDark) DarkBgStart else LightBgStart,
-            if (isDark) DarkBgEnd else LightBgEnd
-        )
-    )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(bgGradient)
-    ) {
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = { Text(stringResource(R.string.schedule_settings), fontWeight = FontWeight.Bold, fontSize = 20.sp) },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
-                )
-            }
-        ) { padding ->
+    GlassScreen(
+        title = stringResource(R.string.schedule_settings),
+        onBack = onBack
+    ) { padding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 20.dp)
+                    .glassPagePadding(padding)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(GlassSpacing.SectionGap)
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -242,18 +209,18 @@ fun ScheduleSettingsScreen(
                 val cardBorder = if (needsExactPermission) {
                     BorderStroke(1.5.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                 } else {
-                    BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                    BorderStroke(1.dp, glassBorderColor())
                 }
                 
                 val cardBg = if (needsExactPermission) {
                     MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
                 } else {
-                    if (isDark) GlassBgDark else GlassBgLight
+                    glassContainerColor()
                 }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = GlassShapes.Section,
                     colors = CardDefaults.cardColors(containerColor = cardBg),
                     border = cardBorder
                 ) {
@@ -261,7 +228,7 @@ fun ScheduleSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(GlassShapes.Chip)
                                 .toggleable(
                                     value = exactAlarms,
                                     onValueChange = { enabled ->
@@ -280,7 +247,7 @@ fun ScheduleSettingsScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .clip(GlassShapes.Chip)
                                         .background(
                                             if (needsExactPermission)
                                                 MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
@@ -347,7 +314,7 @@ fun ScheduleSettingsScreen(
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
                                 onClick = { viewModel.openExactAlarmSettings() },
-                                shape = RoundedCornerShape(12.dp),
+                                shape = GlassShapes.Chip,
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
                                 Text(stringResource(R.string.open_alarm_permission), color = Color.White, fontWeight = FontWeight.Bold)
@@ -359,15 +326,15 @@ fun ScheduleSettingsScreen(
                 // ── Quiet hours card ───────────────────────────────────────────────
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) GlassBgDark else GlassBgLight),
-                    border = BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                    shape = GlassShapes.Section,
+                    colors = CardDefaults.cardColors(containerColor = glassContainerColor()),
+                    border = BorderStroke(1.dp, glassBorderColor())
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(GlassShapes.Chip)
                                 .toggleable(value = quietEnabled, onValueChange = { viewModel.setQuietHoursEnabled(it) }, role = Role.Switch)
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -377,7 +344,7 @@ fun ScheduleSettingsScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .clip(GlassShapes.Chip)
                                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -459,7 +426,7 @@ fun ScheduleSettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(GlassShapes.Chip)
                                     .toggleable(value = allowManual, onValueChange = { viewModel.setAllowManualDuringQuiet(it) }, role = Role.Switch)
                                     .padding(vertical = 8.dp, horizontal = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -635,74 +602,54 @@ fun ScheduleSettingsScreen(
                 val notifCardBorder = if (showPermissionWarning) {
                     BorderStroke(1.5.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                 } else {
-                    BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                    BorderStroke(1.dp, glassBorderColor())
                 }
                 val notifCardBg = if (showPermissionWarning) {
                     MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
                 } else {
-                    if (isDark) GlassBgDark else GlassBgLight
+                    glassContainerColor()
                 }
 
                 var showRationaleDialog by remember { mutableStateOf(false) }
                 var showSettingsRedirectDialog by remember { mutableStateOf(false) }
 
                 if (showRationaleDialog) {
-                    AlertDialog(
+                    OpaqueAlertDialog(
                         onDismissRequest = { showRationaleDialog = false },
-                        containerColor = dialogContainerColor(),
-                        titleContentColor = dialogContentColor(),
-                        textContentColor = dialogContentColor(),
-                        title = { Text("Notification Permission Required", fontWeight = FontWeight.Bold) },
-                        text = { Text("To log announcements to the notification drawer, this app needs permission to post notifications. Would you like to grant it?") },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    showRationaleDialog = false
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                    }
-                                }
-                            ) {
-                                Text("Grant", fontWeight = FontWeight.Bold)
+                        title = "Notification Permission Required",
+                        text = {
+                            Text("To log announcements to the notification drawer, this app needs permission to post notifications. Would you like to grant it?")
+                        },
+                        confirmLabel = "Grant",
+                        onConfirm = {
+                            showRationaleDialog = false
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
                         },
-                        dismissButton = {
-                            TextButton(onClick = { showRationaleDialog = false }) {
-                                Text("Cancel")
-                            }
-                        }
+                        dismissLabel = stringResource(R.string.cancel)
                     )
                 }
 
                 if (showSettingsRedirectDialog) {
-                    AlertDialog(
+                    OpaqueAlertDialog(
                         onDismissRequest = { showSettingsRedirectDialog = false },
-                        containerColor = dialogContainerColor(),
-                        titleContentColor = dialogContentColor(),
-                        textContentColor = dialogContentColor(),
-                        title = { Text("Notification Permission Denied", fontWeight = FontWeight.Bold) },
-                        text = { Text("Notification permissions have been permanently denied. Please enable them in System Settings to use notification logging.") },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    showSettingsRedirectDialog = false
-                                    context.openAppNotificationSettings()
-                                }
-                            ) {
-                                Text("Open Settings", fontWeight = FontWeight.Bold)
-                            }
+                        title = "Notification Permission Denied",
+                        text = {
+                            Text("Notification permissions have been permanently denied. Please enable them in System Settings to use notification logging.")
                         },
-                        dismissButton = {
-                            TextButton(onClick = { showSettingsRedirectDialog = false }) {
-                                Text("Cancel")
-                            }
-                        }
+                        confirmLabel = "Open Settings",
+                        onConfirm = {
+                            showSettingsRedirectDialog = false
+                            context.openAppNotificationSettings()
+                        },
+                        dismissLabel = stringResource(R.string.cancel)
                     )
                 }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = GlassShapes.Section,
                     colors = CardDefaults.cardColors(containerColor = notifCardBg),
                     border = notifCardBorder
                 ) {
@@ -710,7 +657,7 @@ fun ScheduleSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(GlassShapes.Chip)
                                 .toggleable(
                                     value = notificationLogging,
                                     onValueChange = { checked ->
@@ -744,7 +691,7 @@ fun ScheduleSettingsScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .clip(GlassShapes.Chip)
                                         .background(
                                             if (showPermissionWarning)
                                                 MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
@@ -805,7 +752,7 @@ fun ScheduleSettingsScreen(
                                             }
                                         }
                                     },
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = GlassShapes.Chip,
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                                 ) {
                                     Text("Grant Permission", color = Color.White, fontWeight = FontWeight.Bold)
@@ -823,15 +770,15 @@ fun ScheduleSettingsScreen(
                 val batteryCardBorder = if (isOptimized) {
                     BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 } else {
-                    BorderStroke(1.dp, if (isDark) GlassBorderDark else GlassBorderLight)
+                    BorderStroke(1.dp, glassBorderColor())
                 }
-                val batteryCardBg = if (isDark) GlassBgDark else GlassBgLight
+                val batteryCardBg = glassContainerColor()
 
                 var oemGuidesExpanded by remember { mutableStateOf(false) }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = GlassShapes.Section,
                     colors = CardDefaults.cardColors(containerColor = batteryCardBg),
                     border = batteryCardBorder
                 ) {
@@ -845,7 +792,7 @@ fun ScheduleSettingsScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .clip(GlassShapes.Chip)
                                         .background(
                                             if (isOptimized)
                                                 MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
@@ -896,7 +843,7 @@ fun ScheduleSettingsScreen(
                                 onClick = {
                                     context.openIgnoreBatteryOptimizationSettings()
                                 },
-                                shape = RoundedCornerShape(12.dp)
+                                shape = GlassShapes.Chip
                             ) {
                                 Text("Disable Optimization", color = Color.White, fontWeight = FontWeight.Bold)
                             }
@@ -912,7 +859,7 @@ fun ScheduleSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(GlassShapes.Chip)
                                 .clickable(
                                     role = Role.Button,
                                     onClick = { oemGuidesExpanded = !oemGuidesExpanded }
@@ -969,9 +916,8 @@ fun ScheduleSettingsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(GlassSpacing.BottomSpacer))
             }
-        }
     }
 }
 
@@ -984,7 +930,7 @@ private fun ClickableRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(GlassShapes.Chip)
             .clickable { onClick() }
             .padding(vertical = 12.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
