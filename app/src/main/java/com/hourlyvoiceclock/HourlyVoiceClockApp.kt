@@ -5,12 +5,17 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
-import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.di.AppDependencies
 import com.hourlyvoiceclock.di.DependenciesProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class HourlyVoiceClockApp : Application(), DependenciesProvider {
+
+    private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override lateinit var dependencies: AppDependencies
         private set
@@ -20,6 +25,8 @@ class HourlyVoiceClockApp : Application(), DependenciesProvider {
         dependencies = AppDependencies(this)
         runBlocking {
             dependencies.settingsRepository.runMigrations()
+        }
+        startupScope.launch {
             dependencies.voiceSelectionReconciler.reconcile()
         }
         createNotificationChannel()

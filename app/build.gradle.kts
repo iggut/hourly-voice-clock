@@ -9,7 +9,7 @@ plugins {
 // the default values drifting from the source of truth in this file.
 val versionMajor: Int = (project.findProperty("version.major") as String?)?.toIntOrNull() ?: 0
 val versionMinor: Int = (project.findProperty("version.minor") as String?)?.toIntOrNull() ?: 4
-val versionPatch: Int = (project.findProperty("version.patch") as String?)?.toIntOrNull() ?: 34
+val versionPatch: Int = (project.findProperty("version.patch") as String?)?.toIntOrNull() ?: 35
 val versionPre: String = (project.findProperty("version.pre") as String?) ?: "alpha"
 // versionCode is a monotonically increasing integer; compute it from
 // the components above so we never forget to bump it.
@@ -104,6 +104,10 @@ android {
 
     lint {
         disable += "StateFlowValueCalledInComposition"
+        // AGP 8.8's bundled Compose detector only understands Kotlin metadata
+        // through 2.0 and crashes while analyzing this Kotlin 2.1 project.
+        // Keep the rest of lint active until the AGP/lint toolchain is upgraded.
+        disable += "CoroutineCreationDuringComposition"
         // Enable lint on release builds; the baseline file documents
         // the pre-existing issues we know about and intentionally
         // leave in place. New lint errors will fail the build.

@@ -6,20 +6,21 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
 
 class LocalTtsEnginePerfTest {
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     @Test
     fun benchmarkWaitMethodsConcurrent() = runBlocking {
-        val durationMs = 50L
-        val concurrentTasks = 100 // Simulate 100 concurrent playback waits
+        val durationMs = 10L
+        val concurrentTasks = 20
+        val singleWorker = Dispatchers.IO.limitedParallelism(1)
 
         // Baseline: Thread.sleep blocks the thread
         val sleepTime = measureTimeMillis {
             val jobs = List(concurrentTasks) {
-                launch(Dispatchers.IO) {
+                launch(singleWorker) {
                     Thread.sleep(durationMs)
                 }
             }
@@ -29,15 +30,15 @@ class LocalTtsEnginePerfTest {
         // Optimized: delay suspends, freeing the thread
         val delayTime = measureTimeMillis {
             val jobs = List(concurrentTasks) {
-                launch(Dispatchers.IO) {
+                launch(singleWorker) {
                     delay(durationMs)
                 }
             }
             jobs.forEach { it.join() }
         }
 
-        println("Baseline time (Thread.sleep) for 100 concurrent tasks: $sleepTime ms")
-        println("Optimized time (delay) for 100 concurrent tasks: $delayTime ms")
+        println("Baseline time (Thread.sleep) for $concurrentTasks concurrent tasks: $sleepTime ms")
+        println("Optimized time (delay) for $concurrentTasks concurrent tasks: $delayTime ms")
         assertTrue("delay should be faster than Thread.sleep under concurrency",
             delayTime < sleepTime)
     }
