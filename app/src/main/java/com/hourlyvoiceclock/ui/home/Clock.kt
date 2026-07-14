@@ -24,10 +24,12 @@ class Clock(
 
     fun now(): LocalDateTime = LocalDateTime.now(zoneId)
 
+    fun secondsText(now: LocalDateTime): String = SECONDS_CACHE[now.second]
+
     fun timeState(now: LocalDateTime): TimeDisplayState {
         return TimeDisplayState(
             hoursMinutes = now.format(hoursMinutesFormatter),
-            seconds = SECONDS_CACHE[now.second],
+            seconds = secondsText(now),
             amPm = now.format(amPmFormatter)
         )
     }

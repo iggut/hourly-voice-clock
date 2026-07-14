@@ -88,6 +88,10 @@ class HomeViewModel(
     private var startupAutoCheckDone = false
     private var cachedNextAnnouncementHash: Int? = null
 
+    // ⚡ Bolt: Cache hashes for time/date to prevent redundant DateTimeFormatter string allocation
+    private var cachedTimeHash: Int? = null
+    private var cachedDateHash: Int? = null
+
     init {
         viewModelScope.launch {
             while (isActive) {
@@ -121,8 +125,22 @@ class HomeViewModel(
     }
 
     private fun updateTime(now: LocalDateTime) {
-        _timeState.value = clock.timeState(now)
-        _currentDate.value = clock.dateText(now)
+        val timeHash = now.hour * 60 + now.minute
+        val dateHash = now.dayOfYear
+
+        // ⚡ Bolt: Only parse hours/minutes/am-pm when minute changes, otherwise just update the cheap pre-cached seconds
+        if (cachedTimeHash != timeHash) {
+            cachedTimeHash = timeHash
+            _timeState.value = clock.timeState(now)
+        } else {
+            _timeState.value = _timeState.value.copy(seconds = clock.secondsText(now))
+        }
+
+        // ⚡ Bolt: Only run expensive Date formatting if day changes
+        if (cachedDateHash != dateHash) {
+            cachedDateHash = dateHash
+            _currentDate.value = clock.dateText(now)
+        }
     }
 
     private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime) {
