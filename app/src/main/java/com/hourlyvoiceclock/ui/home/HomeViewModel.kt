@@ -88,6 +88,12 @@ class HomeViewModel(
     private var startupAutoCheckDone = false
     private var cachedNextAnnouncementHash: Int? = null
 
+    // ⚡ Bolt: Cache formatted time strings to avoid allocations on every 1s tick
+    private var cachedDateHash: Int? = null
+    private var cachedMinuteHash: Int? = null
+    private var cachedHoursMinutes = ""
+    private var cachedAmPm = ""
+
     init {
         viewModelScope.launch {
             while (isActive) {
@@ -121,8 +127,25 @@ class HomeViewModel(
     }
 
     private fun updateTime(now: LocalDateTime) {
-        _timeState.value = clock.timeState(now)
-        _currentDate.value = clock.dateText(now)
+        // ⚡ Bolt: Only reformat strings when the underlying minute or day changes
+        val dateHash = now.year * 400 + now.dayOfYear
+        if (cachedDateHash != dateHash) {
+            cachedDateHash = dateHash
+            _currentDate.value = clock.dateText(now)
+        }
+
+        val minuteHash = dateHash * 1440 + now.hour * 60 + now.minute
+        if (cachedMinuteHash != minuteHash) {
+            cachedMinuteHash = minuteHash
+            cachedHoursMinutes = clock.formatHoursMinutes(now)
+            cachedAmPm = clock.formatAmPm(now)
+        }
+
+        _timeState.value = TimeDisplayState(
+            hoursMinutes = cachedHoursMinutes,
+            seconds = clock.formatSeconds(now.second),
+            amPm = cachedAmPm
+        )
     }
 
     private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime) {
@@ -132,7 +155,8 @@ class HomeViewModel(
             return
         }
 
-        val currentHourHash = now.dayOfYear * 24 + now.hour
+        // ⚡ Bolt: Include year in hash to prevent leap-year collisions across year boundaries
+        val currentHourHash = (now.year * 400 + now.dayOfYear) * 24 + now.hour
         // Optimize: Only format next announcement when the target hour changes
         if (cachedNextAnnouncementHash != currentHourHash) {
             cachedNextAnnouncementHash = currentHourHash

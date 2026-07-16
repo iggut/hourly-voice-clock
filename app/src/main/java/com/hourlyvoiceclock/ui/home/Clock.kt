@@ -32,6 +32,13 @@ class Clock(
         )
     }
 
+    // ⚡ Bolt: Expose individual formatting functions for ViewModel caching
+    fun formatHoursMinutes(now: LocalDateTime): String = now.format(hoursMinutesFormatter)
+
+    fun formatAmPm(now: LocalDateTime): String = now.format(amPmFormatter)
+
+    fun formatSeconds(second: Int): String = SECONDS_CACHE[second]
+
     fun dateText(now: LocalDateTime): String = now.format(dateFormatter)
 
     fun nextAnnouncementText(now: LocalDateTime, enabled: Boolean): String {
