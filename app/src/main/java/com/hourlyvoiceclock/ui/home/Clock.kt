@@ -32,6 +32,12 @@ class Clock(
         )
     }
 
+    fun formatHoursMinutes(now: LocalDateTime): String = now.format(hoursMinutesFormatter)
+
+    fun formatAmPm(now: LocalDateTime): String = now.format(amPmFormatter)
+
+    fun formatSeconds(seconds: Int): String = SECONDS_CACHE[seconds]
+
     fun dateText(now: LocalDateTime): String = now.format(dateFormatter)
 
     fun nextAnnouncementText(now: LocalDateTime, enabled: Boolean): String {

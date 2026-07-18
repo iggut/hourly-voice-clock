@@ -88,6 +88,11 @@ class HomeViewModel(
     private var startupAutoCheckDone = false
     private var cachedNextAnnouncementHash: Int? = null
 
+    private var cachedTimeHash: Int? = null
+    private var cachedDateHash: Int? = null
+    private var cachedHoursMinutes: String = ""
+    private var cachedAmPm: String = ""
+
     init {
         viewModelScope.launch {
             while (isActive) {
@@ -121,8 +126,23 @@ class HomeViewModel(
     }
 
     private fun updateTime(now: LocalDateTime) {
-        _timeState.value = clock.timeState(now)
-        _currentDate.value = clock.dateText(now)
+        val minuteHash = now.hour * 60 + now.minute
+        if (cachedTimeHash != minuteHash) {
+            cachedTimeHash = minuteHash
+            cachedHoursMinutes = clock.formatHoursMinutes(now)
+            cachedAmPm = clock.formatAmPm(now)
+        }
+        _timeState.value = TimeDisplayState(
+            hoursMinutes = cachedHoursMinutes,
+            seconds = clock.formatSeconds(now.second),
+            amPm = cachedAmPm
+        )
+
+        val dateHash = now.year * 400 + now.dayOfYear
+        if (cachedDateHash != dateHash) {
+            cachedDateHash = dateHash
+            _currentDate.value = clock.dateText(now)
+        }
     }
 
     private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime) {
@@ -132,7 +152,7 @@ class HomeViewModel(
             return
         }
 
-        val currentHourHash = now.dayOfYear * 24 + now.hour
+        val currentHourHash = (now.year * 400 + now.dayOfYear) * 24 + now.hour
         // Optimize: Only format next announcement when the target hour changes
         if (cachedNextAnnouncementHash != currentHourHash) {
             cachedNextAnnouncementHash = currentHourHash
