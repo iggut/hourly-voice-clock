@@ -32,6 +32,8 @@ class Clock(
         )
     }
 
+    fun secondsText(now: LocalDateTime): String = SECONDS_CACHE[now.second]
+
     fun dateText(now: LocalDateTime): String = now.format(dateFormatter)
 
     fun nextAnnouncementText(now: LocalDateTime, enabled: Boolean): String {
