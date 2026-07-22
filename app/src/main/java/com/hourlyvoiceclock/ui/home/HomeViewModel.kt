@@ -87,6 +87,8 @@ class HomeViewModel(
 
     private var startupAutoCheckDone = false
     private var cachedNextAnnouncementHash: Int? = null
+    private var cachedMinuteHash: Int? = null
+    private var cachedDateHash: Long? = null
 
     init {
         viewModelScope.launch {
@@ -121,8 +123,19 @@ class HomeViewModel(
     }
 
     private fun updateTime(now: LocalDateTime) {
-        _timeState.value = clock.timeState(now)
-        _currentDate.value = clock.dateText(now)
+        val minuteHash = now.hour * 60 + now.minute
+        if (cachedMinuteHash != minuteHash) {
+            cachedMinuteHash = minuteHash
+            _timeState.value = clock.timeState(now)
+        } else {
+            _timeState.value = _timeState.value.copy(seconds = clock.secondsText(now))
+        }
+
+        val dateHash = now.toLocalDate().toEpochDay()
+        if (cachedDateHash != dateHash) {
+            cachedDateHash = dateHash
+            _currentDate.value = clock.dateText(now)
+        }
     }
 
     private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime) {
