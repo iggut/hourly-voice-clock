@@ -27,10 +27,11 @@ class Clock(
     fun timeState(now: LocalDateTime): TimeDisplayState {
         return TimeDisplayState(
             hoursMinutes = now.format(hoursMinutesFormatter),
-            seconds = SECONDS_CACHE[now.second],
             amPm = now.format(amPmFormatter)
         )
     }
+
+    fun secondText(now: LocalDateTime): String = SECONDS_CACHE[now.second]
 
     fun dateText(now: LocalDateTime): String = now.format(dateFormatter)
 

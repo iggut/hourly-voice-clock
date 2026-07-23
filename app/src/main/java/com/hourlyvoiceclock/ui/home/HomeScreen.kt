@@ -170,25 +170,7 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
                                 modifier = Modifier.padding(bottom = 12.dp)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .clip(CircleShape)
-                                            .graphicsLayer { alpha = pulseAlpha }
-                                            .background(MaterialTheme.colorScheme.tertiary)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = timeState.seconds,
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontFeatureSettings = "tnum"
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                SecondsDisplay(viewModel = viewModel, pulseAlpha = pulseAlpha)
                                 if (timeState.amPm.isNotEmpty()) {
                                     SoftAmPmChip(text = timeState.amPm)
                                 }
@@ -474,6 +456,30 @@ fun HomeScreen(
             onDownload = { viewModel.downloadAndInstall(it) },
             onInstall = { viewModel.installApk(it) },
             onCancelDownload = { viewModel.cancelDownload() }
+        )
+    }
+}
+
+@Composable
+private fun SecondsDisplay(viewModel: HomeViewModel, pulseAlpha: Float) {
+    val secondState by viewModel.secondState.collectAsState()
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .graphicsLayer { alpha = pulseAlpha }
+                .background(MaterialTheme.colorScheme.tertiary)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = secondState,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Monospace,
+                fontFeatureSettings = "tnum"
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

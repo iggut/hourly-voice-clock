@@ -37,3 +37,7 @@
 ## 2024-05-30 - Compose Modifier Hoisting vs Locale Memoization
 **Learning:** While Jetpack Compose guidelines occasionally advise against using `remember` for extremely lightweight modifier chains (like `.size(40.dp).clip(CircleShape)`) because the state-tracking overhead might exceed the allocation savings, utilizing `remember(locale) { ... }` to cache heavy `java.time` string formatting (e.g. `day.getDisplayName(...)`) outside of recomposition loops yields substantial and recommended performance gains.
 **Action:** Prioritize memoizing heavy operations (like string formatting or Date/Time parsing) outside of high-frequency UI generation loops. If extracting modifiers, consider simply pulling them out as standard loop-invariant constants rather than forcing them into `remember` blocks unless they contain computationally expensive derivations.
+
+## 2024-11-20 - Minute-Level Caching in Time Ticks
+**Learning:** Updating UI state objects that contain unchanged values (like hour/minute formatting) on every 1-second tick causes unnecessary UI re-rendering and processing overhead.
+**Action:** Extract high-frequency updating variables (like seconds) into their own StateFlows. Only update the less-frequent variables (like hours/minutes) when their underlying combined value (e.g., `hour * 60 + minute`) changes.

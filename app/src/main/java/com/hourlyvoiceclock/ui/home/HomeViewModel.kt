@@ -25,7 +25,6 @@ import java.time.LocalDateTime
 
 data class TimeDisplayState(
     val hoursMinutes: String = "",
-    val seconds: String = "",
     val amPm: String = ""
 )
 
@@ -49,6 +48,9 @@ class HomeViewModel(
 
     private val _timeState = MutableStateFlow(TimeDisplayState())
     val timeState: StateFlow<TimeDisplayState> = _timeState.asStateFlow()
+
+    private val _secondState = MutableStateFlow("")
+    val secondState: StateFlow<String> = _secondState.asStateFlow()
 
     private val _currentDate = MutableStateFlow("")
     val currentDate: StateFlow<String> = _currentDate.asStateFlow()
@@ -88,6 +90,8 @@ class HomeViewModel(
     private var startupAutoCheckDone = false
     private var cachedNextAnnouncementHash: Int? = null
 
+    private var lastMinuteHash = -1
+
     init {
         viewModelScope.launch {
             while (isActive) {
@@ -121,8 +125,14 @@ class HomeViewModel(
     }
 
     private fun updateTime(now: LocalDateTime) {
-        _timeState.value = clock.timeState(now)
-        _currentDate.value = clock.dateText(now)
+        val currentMinuteHash = now.hour * 60 + now.minute
+        if (lastMinuteHash != currentMinuteHash || _timeState.value.hoursMinutes.isEmpty()) {
+            lastMinuteHash = currentMinuteHash
+            _timeState.value = clock.timeState(now)
+            _currentDate.value = clock.dateText(now)
+        }
+        // Seconds update every tick
+        _secondState.value = clock.secondText(now)
     }
 
     private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime) {
