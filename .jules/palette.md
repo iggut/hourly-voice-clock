@@ -39,3 +39,6 @@
 ## 2024-10-25 - Screen reader semantics for Compose expand/collapse accordions
 **Learning:** Found an accordion element ("OEM Specific Instructions") using a `Modifier.clickable` modifier without a `role` or semantic state, meaning screen readers cannot announce its expanded/collapsed state to users. This is an accessibility gap for standard expand/collapse toggle rows.
 **Action:** Always ensure accordion-style rows use explicit roles and states via `Modifier.clickable(role = Role.Button)` and `Modifier.semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }` with localized strings.
+## 2026-07-23 - Jetpack Compose Modifiers and Accessibility Roles
+**Learning:** When assigning semantic roles in Jetpack Compose, ensure actions intended for generalized clicks (like clearing settings) use `Role.Button` rather than conceptually mis-aligned roles like `Role.RadioButton`. Also, any `contentDescription` must always use localized strings (e.g. `stringResource(R.string.back)`) rather than hardcoded text, and any new roles or modifiers require their explicit package imports (e.g., `androidx.compose.ui.semantics.Role`).
+**Action:** Always prefer `Role.Button` over `Role.RadioButton` for clearance actions, always import new Jetpack Compose semantic roles/modifiers correctly, and always use `stringResource` for screen reader fallback content.
