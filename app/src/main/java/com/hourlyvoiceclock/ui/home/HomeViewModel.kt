@@ -25,7 +25,6 @@ import java.time.LocalDateTime
 
 data class TimeDisplayState(
     val hoursMinutes: String = "",
-    val seconds: String = "",
     val amPm: String = ""
 )
 
@@ -52,6 +51,9 @@ class HomeViewModel(
 
     private val _currentDate = MutableStateFlow("")
     val currentDate: StateFlow<String> = _currentDate.asStateFlow()
+
+    private val _secondsState = MutableStateFlow("")
+    val secondsState: StateFlow<String> = _secondsState.asStateFlow()
 
     private val _nextAnnouncement = MutableStateFlow("")
     val nextAnnouncement: StateFlow<String> = _nextAnnouncement.asStateFlow()
@@ -87,6 +89,8 @@ class HomeViewModel(
 
     private var startupAutoCheckDone = false
     private var cachedNextAnnouncementHash: Int? = null
+    private var cachedMinuteHash: Int? = null
+    private var cachedDateHash: Long? = null
 
     init {
         viewModelScope.launch {
@@ -121,8 +125,22 @@ class HomeViewModel(
     }
 
     private fun updateTime(now: LocalDateTime) {
-        _timeState.value = clock.timeState(now)
-        _currentDate.value = clock.dateText(now)
+        // ⚡ Bolt: Cache primitive minute hash to prevent formatting allocations
+        val minuteHash = now.hour * 60 + now.minute
+        if (cachedMinuteHash != minuteHash) {
+            cachedMinuteHash = minuteHash
+            _timeState.value = clock.timeState(now)
+        }
+
+        // ⚡ Bolt: Cache primitive date hash
+        val dateHash = now.toLocalDate().toEpochDay()
+        if (cachedDateHash != dateHash) {
+            cachedDateHash = dateHash
+            _currentDate.value = clock.dateText(now)
+        }
+
+        // ⚡ Bolt: Update seconds on every tick without complex string formatting
+        _secondsState.value = clock.secondsText(now)
     }
 
     private fun updateNextAnnouncement(enabled: Boolean, now: LocalDateTime) {

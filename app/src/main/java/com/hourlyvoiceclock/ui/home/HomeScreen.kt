@@ -179,15 +179,7 @@ fun HomeScreen(
                                             .background(MaterialTheme.colorScheme.tertiary)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = timeState.seconds,
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontFeatureSettings = "tnum"
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    SecondsDisplay(secondsFlow = viewModel.secondsState)
                                 }
                                 if (timeState.amPm.isNotEmpty()) {
                                     SoftAmPmChip(text = timeState.amPm)
@@ -718,4 +710,18 @@ private fun formatBytes(bytes: Long): String {
         bytes < 1024 * 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024))
         else -> String.format("%.1f GB", bytes / (1024.0 * 1024 * 1024))
     }
+}
+
+@Composable
+fun SecondsDisplay(secondsFlow: kotlinx.coroutines.flow.StateFlow<String>) {
+    val seconds by secondsFlow.collectAsState()
+    Text(
+        text = seconds,
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = FontFamily.Monospace,
+            fontFeatureSettings = "tnum"
+        ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
