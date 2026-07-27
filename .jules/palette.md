@@ -1,4 +1,3 @@
-
 ## 2024-05-27 - Expanding touch targets for compose settings
 
 **Learning:** When building settings screens using Jetpack Compose components like `RadioButton` and `Switch`, the touch target of the component itself is quite small and requires precise interaction, which is bad for accessibility and UX.
@@ -39,3 +38,7 @@
 ## 2024-10-25 - Screen reader semantics for Compose expand/collapse accordions
 **Learning:** Found an accordion element ("OEM Specific Instructions") using a `Modifier.clickable` modifier without a `role` or semantic state, meaning screen readers cannot announce its expanded/collapsed state to users. This is an accessibility gap for standard expand/collapse toggle rows.
 **Action:** Always ensure accordion-style rows use explicit roles and states via `Modifier.clickable(role = Role.Button)` and `Modifier.semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }` with localized strings.
+
+## 2024-10-26 - Use localized string resources for screen reader semantics
+**Learning:** Found a hardcoded "Back" string for `contentDescription` in an `IconButton` used for navigation. Hardcoding accessibility descriptions ignores non-English users, rendering screen reader announcements unhelpful for them.
+**Action:** Always use `stringResource(R.string.[name])` for `contentDescription` or semantic tags to ensure i18n support.

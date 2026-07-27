@@ -22,6 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.ui.theme.DarkBgEnd
 import com.hourlyvoiceclock.ui.theme.DarkBgStart
 import com.hourlyvoiceclock.ui.theme.GlassTypography
@@ -80,7 +82,7 @@ fun GlassScreen(
                                 IconButton(onClick = onBack) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Back"
+                                        contentDescription = stringResource(R.string.back)
                                     )
                                 }
                             }
