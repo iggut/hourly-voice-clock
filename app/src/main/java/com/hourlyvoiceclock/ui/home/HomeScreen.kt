@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -127,17 +128,6 @@ fun HomeScreen(
         }
     }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.6f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
-
     GlassScreen {
         Column(
             modifier = Modifier
@@ -170,25 +160,7 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
                                 modifier = Modifier.padding(bottom = 12.dp)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .clip(CircleShape)
-                                            .graphicsLayer { alpha = pulseAlpha }
-                                            .background(MaterialTheme.colorScheme.tertiary)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = timeState.seconds,
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontFeatureSettings = "tnum"
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                SecondsDisplay(secondsFlow = viewModel.seconds)
                                 if (timeState.amPm.isNotEmpty()) {
                                     SoftAmPmChip(text = timeState.amPm)
                                 }
@@ -474,6 +446,42 @@ fun HomeScreen(
             onDownload = { viewModel.downloadAndInstall(it) },
             onInstall = { viewModel.installApk(it) },
             onCancelDownload = { viewModel.cancelDownload() }
+        )
+    }
+}
+
+@Composable
+fun SecondsDisplay(secondsFlow: StateFlow<String>) {
+    val seconds by secondsFlow.collectAsState()
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .graphicsLayer { alpha = pulseAlpha }
+                .background(MaterialTheme.colorScheme.tertiary)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = seconds,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Monospace,
+                fontFeatureSettings = "tnum"
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
