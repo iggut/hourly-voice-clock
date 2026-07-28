@@ -82,6 +82,7 @@ import com.hourlyvoiceclock.ui.theme.glassBorderColor
 import com.hourlyvoiceclock.ui.voicesettings.ESpeakNgVoiceVariants
 import com.hourlyvoiceclock.ui.voicesettings.SPECIAL_VOICE_PRESETS
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -179,15 +180,7 @@ fun HomeScreen(
                                             .background(MaterialTheme.colorScheme.tertiary)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = timeState.seconds,
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontFeatureSettings = "tnum"
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    SecondsDisplay(viewModel.seconds)
                                 }
                                 if (timeState.amPm.isNotEmpty()) {
                                     SoftAmPmChip(text = timeState.amPm)
@@ -718,4 +711,19 @@ private fun formatBytes(bytes: Long): String {
         bytes < 1024 * 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024))
         else -> String.format("%.1f GB", bytes / (1024.0 * 1024 * 1024))
     }
+}
+
+// ⚡ Bolt: Isolated seconds collection to restrict recomposition to just this component
+@Composable
+fun SecondsDisplay(secondsFlow: StateFlow<String>) {
+    val seconds by secondsFlow.collectAsState()
+    Text(
+        text = seconds,
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = FontFamily.Monospace,
+            fontFeatureSettings = "tnum"
+        ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }

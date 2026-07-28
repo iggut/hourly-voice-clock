@@ -25,7 +25,6 @@ import java.time.LocalDateTime
 
 data class TimeDisplayState(
     val hoursMinutes: String = "",
-    val seconds: String = "",
     val amPm: String = ""
 )
 
@@ -49,6 +48,10 @@ class HomeViewModel(
 
     private val _timeState = MutableStateFlow(TimeDisplayState())
     val timeState: StateFlow<TimeDisplayState> = _timeState.asStateFlow()
+
+    // ⚡ Bolt: Separated seconds into its own flow to prevent full screen recomposition every second
+    private val _seconds = MutableStateFlow(clock.secondsText(clock.now()))
+    val seconds: StateFlow<String> = _seconds.asStateFlow()
 
     private val _currentDate = MutableStateFlow("")
     val currentDate: StateFlow<String> = _currentDate.asStateFlow()
@@ -122,6 +125,7 @@ class HomeViewModel(
 
     private fun updateTime(now: LocalDateTime) {
         _timeState.value = clock.timeState(now)
+        _seconds.value = clock.secondsText(now)
         _currentDate.value = clock.dateText(now)
     }
 

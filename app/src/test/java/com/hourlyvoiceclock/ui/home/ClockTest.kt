@@ -16,7 +16,6 @@ class ClockTest {
         val state = clock.timeState(now)
 
         assertEquals("2:05", state.hoursMinutes)
-        assertEquals("09", state.seconds)
         assertEquals("PM", state.amPm)
     }
 
@@ -27,8 +26,13 @@ class ClockTest {
         val state = clock.timeState(now)
 
         assertEquals("12:00", state.hoursMinutes)
-        assertEquals("00", state.seconds)
         assertEquals("AM", state.amPm)
+    }
+
+    @Test
+    fun `secondsText returns padded seconds`() {
+        val now = LocalDateTime.of(2026, 6, 27, 14, 5, 9)
+        assertEquals("09", clock.secondsText(now))
     }
 
     @Test

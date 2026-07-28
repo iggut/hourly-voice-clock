@@ -37,3 +37,6 @@
 ## 2024-05-30 - Compose Modifier Hoisting vs Locale Memoization
 **Learning:** While Jetpack Compose guidelines occasionally advise against using `remember` for extremely lightweight modifier chains (like `.size(40.dp).clip(CircleShape)`) because the state-tracking overhead might exceed the allocation savings, utilizing `remember(locale) { ... }` to cache heavy `java.time` string formatting (e.g. `day.getDisplayName(...)`) outside of recomposition loops yields substantial and recommended performance gains.
 **Action:** Prioritize memoizing heavy operations (like string formatting or Date/Time parsing) outside of high-frequency UI generation loops. If extracting modifiers, consider simply pulling them out as standard loop-invariant constants rather than forcing them into `remember` blocks unless they contain computationally expensive derivations.
+## 2024-07-28 - Isolate Fast-Changing State in Compose
+**Learning:** In Jetpack Compose, state that changes frequently (like seconds ticking every 1000ms) will trigger a recomposition of the entire screen if collected at the top level of the screen composable.
+**Action:** Separate rapidly changing state into its own `StateFlow` and collect it in a dedicated, isolated leaf Composable to localize recomposition.
