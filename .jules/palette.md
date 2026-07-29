@@ -39,3 +39,6 @@
 ## 2024-10-25 - Screen reader semantics for Compose expand/collapse accordions
 **Learning:** Found an accordion element ("OEM Specific Instructions") using a `Modifier.clickable` modifier without a `role` or semantic state, meaning screen readers cannot announce its expanded/collapsed state to users. This is an accessibility gap for standard expand/collapse toggle rows.
 **Action:** Always ensure accordion-style rows use explicit roles and states via `Modifier.clickable(role = Role.Button)` and `Modifier.semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }` with localized strings.
+## 2026-10-25 - Fix missing semantic roles on generic clickable components
+**Learning:** Found custom row-based buttons (like `LocalVoiceClearRow` and `ClickableRow`) using `.clickable` without explicitly declaring their semantic role as `Role.Button`. Screen readers would not correctly announce these as interactable buttons to visually impaired users, which is an accessibility gap for standard row-based interactions.
+**Action:** Always ensure that row-based custom interactive elements, such as `Row` combined with `.clickable`, explicitly set `role = Role.Button` so screen readers appropriately announce them as buttons.
