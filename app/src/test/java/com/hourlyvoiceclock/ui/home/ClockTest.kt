@@ -16,7 +16,7 @@ class ClockTest {
         val state = clock.timeState(now)
 
         assertEquals("2:05", state.hoursMinutes)
-        assertEquals("09", state.seconds)
+        assertEquals("09", clock.secondsText(now))
         assertEquals("PM", state.amPm)
     }
 
@@ -27,7 +27,7 @@ class ClockTest {
         val state = clock.timeState(now)
 
         assertEquals("12:00", state.hoursMinutes)
-        assertEquals("00", state.seconds)
+        assertEquals("00", clock.secondsText(now))
         assertEquals("AM", state.amPm)
     }
 
