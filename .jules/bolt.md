@@ -37,3 +37,7 @@
 ## 2024-05-30 - Compose Modifier Hoisting vs Locale Memoization
 **Learning:** While Jetpack Compose guidelines occasionally advise against using `remember` for extremely lightweight modifier chains (like `.size(40.dp).clip(CircleShape)`) because the state-tracking overhead might exceed the allocation savings, utilizing `remember(locale) { ... }` to cache heavy `java.time` string formatting (e.g. `day.getDisplayName(...)`) outside of recomposition loops yields substantial and recommended performance gains.
 **Action:** Prioritize memoizing heavy operations (like string formatting or Date/Time parsing) outside of high-frequency UI generation loops. If extracting modifiers, consider simply pulling them out as standard loop-invariant constants rather than forcing them into `remember` blocks unless they contain computationally expensive derivations.
+
+## 2024-05-29 - View Model Loop Clock Update Optimization
+**Learning:** Checking whether it is time to format current Date/Time objects by comparing entire standard `LocalDateTime` properties can be inefficient inside of a 1-second view model update loop as many variables remain static 59/60 seconds.
+**Action:** Extract formatters and cache a primitive hash representation of the hour/minute inside `ViewModel` to update time formats sparingly, only updating the seconds via a separate data class copy while letting strings recompute when the minute transition hash detects a change.
