@@ -25,7 +25,6 @@ import java.time.LocalDateTime
 
 data class TimeDisplayState(
     val hoursMinutes: String = "",
-    val seconds: String = "",
     val amPm: String = ""
 )
 
@@ -49,6 +48,9 @@ class HomeViewModel(
 
     private val _timeState = MutableStateFlow(TimeDisplayState())
     val timeState: StateFlow<TimeDisplayState> = _timeState.asStateFlow()
+
+    private val _seconds = MutableStateFlow("")
+    val seconds: StateFlow<String> = _seconds.asStateFlow()
 
     private val _currentDate = MutableStateFlow("")
     val currentDate: StateFlow<String> = _currentDate.asStateFlow()
@@ -86,9 +88,9 @@ class HomeViewModel(
     )
 
     private var startupAutoCheckDone = false
-    private var cachedNextAnnouncementHash: Int? = null
+    private var cachedNextAnnouncementHash: Long? = null
 
-    private var cachedMinuteHash: Int? = null
+    private var cachedMinuteHash: Long? = null
 
     init {
         viewModelScope.launch {
@@ -123,16 +125,13 @@ class HomeViewModel(
     }
 
     private fun updateTime(now: LocalDateTime) {
-        val currentMinuteHash = now.dayOfYear * 24 * 60 + now.hour * 60 + now.minute
+        _seconds.value = clock.secondsText(now)
+        val currentMinuteHash = now.toLocalDate().toEpochDay() * 24 * 60 + now.hour * 60 + now.minute
 
         if (cachedMinuteHash != currentMinuteHash) {
             cachedMinuteHash = currentMinuteHash
             _timeState.value = clock.timeState(now)
             _currentDate.value = clock.dateText(now)
-        } else {
-            _timeState.value = _timeState.value.copy(
-                seconds = clock.secondsText(now)
-            )
         }
     }
 
@@ -143,7 +142,7 @@ class HomeViewModel(
             return
         }
 
-        val currentHourHash = now.dayOfYear * 24 + now.hour
+        val currentHourHash = now.toLocalDate().toEpochDay() * 24 + now.hour
         // Optimize: Only format next announcement when the target hour changes
         if (cachedNextAnnouncementHash != currentHourHash) {
             cachedNextAnnouncementHash = currentHourHash

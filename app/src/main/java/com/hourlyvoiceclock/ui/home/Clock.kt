@@ -29,7 +29,6 @@ class Clock(
     fun timeState(now: LocalDateTime): TimeDisplayState {
         return TimeDisplayState(
             hoursMinutes = now.format(hoursMinutesFormatter),
-            seconds = SECONDS_CACHE[now.second],
             amPm = now.format(amPmFormatter)
         )
     }
