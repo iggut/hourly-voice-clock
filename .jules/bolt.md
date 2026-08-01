@@ -41,3 +41,6 @@
 ## 2024-05-29 - View Model Loop Clock Update Optimization
 **Learning:** Checking whether it is time to format current Date/Time objects by comparing entire standard `LocalDateTime` properties can be inefficient inside of a 1-second view model update loop as many variables remain static 59/60 seconds.
 **Action:** Extract formatters and cache a primitive hash representation of the hour/minute inside `ViewModel` to update time formats sparingly, only updating the seconds via a separate data class copy while letting strings recompute when the minute transition hash detects a change.
+## 2024-08-01 - View Model Combine Throttle Optimization
+**Learning:** In Android ViewModels, passing high-frequency variables (like a 1-second `_now` StateFlow tick) into `combine` operators causes the combiners and their downstream logic to execute redundantly. For instance, logic checking quiet hour transitions or boolean flags that only change per-minute wastes CPU cycles 59/60 times.
+**Action:** Extract a separate, lower-frequency `StateFlow` (e.g. `_nowMinute`) that only emits when the necessary boundary is crossed (like the minute changing), and pipe *that* into the `combine` logic instead of the raw high-frequency tick.

@@ -58,7 +58,8 @@ class HomeViewModel(
     private val _nextAnnouncement = MutableStateFlow("")
     val nextAnnouncement: StateFlow<String> = _nextAnnouncement.asStateFlow()
 
-    private val _now = MutableStateFlow(clock.now())
+    // ⚡ Bolt: Update time combiners once per minute instead of every second to reduce CPU overhead
+    private val _nowMinute = MutableStateFlow(clock.now())
 
     /** Derived directly from settings so it can never drift from the source of truth. */
     val hourlyEnabled: StateFlow<Boolean> = appSettings
@@ -69,8 +70,8 @@ class HomeViewModel(
             initialValue = false
         )
 
-    /** Recomputed every second from the current time and settings. */
-    val quietHoursActive: StateFlow<Boolean> = combine(appSettings, _now) { settings, now ->
+    /** Recomputed every minute from the current time and settings. */
+    val quietHoursActive: StateFlow<Boolean> = combine(appSettings, _nowMinute) { settings, now ->
         computeQuietHoursActive(settings, now)
     }.stateIn(
         scope = viewModelScope,
@@ -78,8 +79,8 @@ class HomeViewModel(
         initialValue = false
     )
 
-    /** Recomputed every second from the current time and settings. */
-    val canSpeakNow: StateFlow<Boolean> = combine(appSettings, _now) { settings, now ->
+    /** Recomputed every minute from the current time and settings. */
+    val canSpeakNow: StateFlow<Boolean> = combine(appSettings, _nowMinute) { settings, now ->
         computeCanSpeakNow(settings, now)
     }.stateIn(
         scope = viewModelScope,
@@ -96,7 +97,6 @@ class HomeViewModel(
         viewModelScope.launch {
             while (isActive) {
                 val now = clock.now()
-                _now.value = now
                 updateTime(now)
                 if (hourlyEnabled.value) {
                     updateNextAnnouncement(true, now)
@@ -130,6 +130,7 @@ class HomeViewModel(
 
         if (cachedMinuteHash != currentMinuteHash) {
             cachedMinuteHash = currentMinuteHash
+            _nowMinute.value = now
             _timeState.value = clock.timeState(now)
             _currentDate.value = clock.dateText(now)
         }
