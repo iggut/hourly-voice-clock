@@ -59,6 +59,8 @@ class HomeViewModel(
     val nextAnnouncement: StateFlow<String> = _nextAnnouncement.asStateFlow()
 
     private val _now = MutableStateFlow(clock.now())
+    // ⚡ Bolt: Throttled StateFlow for minute-level resolution to avoid high-frequency combine operations
+    private val _nowMinute = MutableStateFlow(clock.now())
 
     /** Derived directly from settings so it can never drift from the source of truth. */
     val hourlyEnabled: StateFlow<Boolean> = appSettings
@@ -69,8 +71,8 @@ class HomeViewModel(
             initialValue = false
         )
 
-    /** Recomputed every second from the current time and settings. */
-    val quietHoursActive: StateFlow<Boolean> = combine(appSettings, _now) { settings, now ->
+    /** Recomputed every minute from the current time and settings. */
+    val quietHoursActive: StateFlow<Boolean> = combine(appSettings, _nowMinute) { settings, now ->
         computeQuietHoursActive(settings, now)
     }.stateIn(
         scope = viewModelScope,
@@ -78,8 +80,8 @@ class HomeViewModel(
         initialValue = false
     )
 
-    /** Recomputed every second from the current time and settings. */
-    val canSpeakNow: StateFlow<Boolean> = combine(appSettings, _now) { settings, now ->
+    /** Recomputed every minute from the current time and settings. */
+    val canSpeakNow: StateFlow<Boolean> = combine(appSettings, _nowMinute) { settings, now ->
         computeCanSpeakNow(settings, now)
     }.stateIn(
         scope = viewModelScope,
@@ -132,6 +134,7 @@ class HomeViewModel(
             cachedMinuteHash = currentMinuteHash
             _timeState.value = clock.timeState(now)
             _currentDate.value = clock.dateText(now)
+            _nowMinute.value = now
         }
     }
 

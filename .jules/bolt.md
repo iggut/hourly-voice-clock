@@ -41,3 +41,7 @@
 ## 2024-05-29 - View Model Loop Clock Update Optimization
 **Learning:** Checking whether it is time to format current Date/Time objects by comparing entire standard `LocalDateTime` properties can be inefficient inside of a 1-second view model update loop as many variables remain static 59/60 seconds.
 **Action:** Extract formatters and cache a primitive hash representation of the hour/minute inside `ViewModel` to update time formats sparingly, only updating the seconds via a separate data class copy while letting strings recompute when the minute transition hash detects a change.
+
+## 2024-11-20 - Throttle High-Frequency State in ViewModels
+**Learning:** Feeding high-frequency state sources (like a 1-second UI tick) directly into `combine` operators causes unnecessary CPU and garbage collection overhead if the derived state (e.g., quiet hours status) only requires minute-level resolution.
+**Action:** Create a separate, throttled `StateFlow` (e.g., `_nowMinute`) that only emits when the necessary time threshold (the minute) actually changes, and use that as the source for the derived state.
