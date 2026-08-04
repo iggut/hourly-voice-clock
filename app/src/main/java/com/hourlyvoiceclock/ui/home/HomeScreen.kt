@@ -705,7 +705,15 @@ private fun UpdatesDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onCheckNow) {
+            val isBusy = updateStatus is UpdateStatus.Checking ||
+                updateStatus is UpdateStatus.Downloading ||
+                updateStatus is UpdateStatus.InstallReady ||
+                updateStatus is UpdateStatus.Installing
+
+            TextButton(
+                onClick = onCheckNow,
+                enabled = !isBusy
+            ) {
                 Text(stringResource(R.string.check_now), fontWeight = FontWeight.Bold)
             }
         },
