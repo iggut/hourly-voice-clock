@@ -876,7 +876,12 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(GlassShapes.Chip)
-            .selectable(selected = false, onClick = onClear, role = Role.RadioButton)
+            .selectable(
+                selected = false,
+                onClick = onClear,
+                role = Role.RadioButton,
+                onClickLabel = stringResource(R.string.use_system_voice),
+            )
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
