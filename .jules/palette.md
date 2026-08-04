@@ -45,3 +45,7 @@
 ## 2024-05-23 - Add Clear Button to OutlinedTextFields
 **Learning:** Adding a clear button to custom phrase input fields makes it significantly easier to reset them, rather than repeatedly pressing backspace.
 **Action:** Always include a trailing clear icon button for non-empty text fields that are meant to be customized or frequently reset.
+
+## 2024-08-03 - Toggleable Touch Target Semantics Fix in Compose
+**Learning:** Using `Modifier.clickable(role = Role.Button)` on a container (like `Row`) that wraps a `RadioButton` causes screen readers to incorrectly announce the container as a standard button rather than a radio button, violating expected accessibility semantics for settings screens.
+**Action:** When wrapping a `RadioButton` (or `Switch`) and its label inside a `Row` to increase the accessible touch target, always apply `Modifier.selectable(..., role = Role.RadioButton)` (or `Modifier.toggleable(..., role = Role.Switch)`) to the parent container instead of `.clickable()`, and ensure the inner component's `onClick` / `onCheckedChange` is set to null.
