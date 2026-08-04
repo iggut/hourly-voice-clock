@@ -42,3 +42,6 @@
 ## 2026-10-25 - Fix missing semantic roles on generic clickable components
 **Learning:** Found custom row-based buttons (like `LocalVoiceClearRow` and `ClickableRow`) using `.clickable` without explicitly declaring their semantic role as `Role.Button`. Screen readers would not correctly announce these as interactable buttons to visually impaired users, which is an accessibility gap for standard row-based interactions.
 **Action:** Always ensure that row-based custom interactive elements, such as `Row` combined with `.clickable`, explicitly set `role = Role.Button` so screen readers appropriately announce them as buttons.
+## 2024-05-23 - Add Clear Button to OutlinedTextFields
+**Learning:** Adding a clear button to custom phrase input fields makes it significantly easier to reset them, rather than repeatedly pressing backspace.
+**Action:** Always include a trailing clear icon button for non-empty text fields that are meant to be customized or frequently reset.
