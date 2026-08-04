@@ -18,8 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material3.IconButton
-import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material3.IconButtonimport androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Palette
@@ -28,6 +27,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -145,7 +145,10 @@ fun FormatSettingsScreen(
                                 trailingIcon = {
                                     if (customPrefix.isNotEmpty()) {
                                         IconButton(onClick = { viewModel.setCustomPrefix("") }) {
-                                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear_text))
+                                            Icon(
+                                                imageVector = Icons.Default.Clear,
+                                                contentDescription = stringResource(R.string.clear_text)
+                                            )
                                         }
                                     }
                                 }
@@ -161,7 +164,10 @@ fun FormatSettingsScreen(
                                 trailingIcon = {
                                     if (customSuffix.isNotEmpty()) {
                                         IconButton(onClick = { viewModel.setCustomSuffix("") }) {
-                                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear_text))
+                                            Icon(
+                                                imageVector = Icons.Default.Clear,
+                                                contentDescription = stringResource(R.string.clear_text)
+                                            )
                                         }
                                     }
                                 }
