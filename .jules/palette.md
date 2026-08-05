@@ -52,3 +52,6 @@
 ## 2026-08-04 - Add clear buttons to text fields
 **Learning:** Text inputs with potentially long custom values (like prefix/suffix fields) can be annoying to clear repeatedly via backspace, particularly on mobile keyboards, degrading UX.
 **Action:** Add trailing clear icons (`IconButton` with `Icons.Default.Clear`) to text fields when they are not empty, allowing users to reset custom strings instantly. Ensure the button has a localized `contentDescription`.
+## 2024-11-20 - Disable action buttons during active dialog states
+**Learning:** Found a "Check Now" button in an update dialog that remained fully enabled while the app was actively downloading/installing an update, which allowed users to redundant trigger background tasks and caused confusion.
+**Action:** Always provide contextual feedback or dynamically disable action buttons in dialogs (e.g., setting `enabled = !isBusy`) when an active task like checking or downloading is ongoing.
