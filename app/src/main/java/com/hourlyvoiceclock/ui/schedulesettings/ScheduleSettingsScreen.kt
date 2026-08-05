@@ -931,7 +931,10 @@ private fun ClickableRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(GlassShapes.Chip)
-            .clickable(role = Role.Button) { onClick() }
+            .clickable(
+                role = Role.Button,
+                onClickLabel = label
+            ) { onClick() }
             .padding(vertical = 12.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

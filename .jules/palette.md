@@ -55,3 +55,7 @@
 ## 2024-11-20 - Disable action buttons during active dialog states
 **Learning:** Found a "Check Now" button in an update dialog that remained fully enabled while the app was actively downloading/installing an update, which allowed users to redundant trigger background tasks and caused confusion.
 **Action:** Always provide contextual feedback or dynamically disable action buttons in dialogs (e.g., setting `enabled = !isBusy`) when an active task like checking or downloading is ongoing.
+
+## 2026-10-25 - Provide explicit click actions for screen readers
+**Learning:** Found custom row-based buttons (like `LocalVoiceClearRow` and `ClickableRow`) using `.clickable` with `role = Role.Button` but lacking a specific description of the action. While the role is announced, screen readers would simply announce "Button, double tap to activate" without context of what activating does, especially if the row contains complex text.
+**Action:** Always ensure that custom interactive elements using `Modifier.clickable` explicitly set an `onClickLabel` with localized strings (e.g., `onClickLabel = stringResource(R.string.use_system_voice)`) alongside the role, so screen readers can clearly announce "double tap to [Action Name]".
