@@ -460,7 +460,7 @@ fun ScheduleSettingsScreen(
                                 val showFullText = isLandscape || maxWidth >= 600.dp
 
                                 val layoutModifier = Modifier.fillMaxWidth()
-                                val locale = java.util.Locale.getDefault()
+                                val locale = configuration.locales[0]
                                 val errorColor = MaterialTheme.colorScheme.error
                                 val errorBgColor = errorColor.copy(alpha = 0.2f)
 
