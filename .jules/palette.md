@@ -59,3 +59,6 @@
 ## 2026-10-25 - Provide explicit click actions for screen readers
 **Learning:** Found custom row-based buttons (like `LocalVoiceClearRow` and `ClickableRow`) using `.clickable` with `role = Role.Button` but lacking a specific description of the action. While the role is announced, screen readers would simply announce "Button, double tap to activate" without context of what activating does, especially if the row contains complex text.
 **Action:** Always ensure that custom interactive elements using `Modifier.clickable` explicitly set an `onClickLabel` with localized strings (e.g., `onClickLabel = stringResource(R.string.use_system_voice)`) alongside the role, so screen readers can clearly announce "double tap to [Action Name]".
+## 2026-10-25 - Bounded Touch Ripples for Selectable Rows
+**Learning:** When applying the `.selectable` modifier to a `Row` or container in Jetpack Compose, failing to add a clipping modifier (e.g., `.clip(GlassShapes.Item)`) immediately *before* `.selectable` causes the ripple effect to awkwardly spill outside the container's visual bounds.
+**Action:** Always ensure the ripple effect is properly bounded by applying a `.clip(...)` modifier immediately *before* interactive modifiers like `.selectable` for Jetpack Compose list items or rows.
