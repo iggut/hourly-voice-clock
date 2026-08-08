@@ -613,7 +613,7 @@ fun SpecialPresetItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(GlassShapes.Chip)
+            .clip(GlassShapes.Item)
             .selectable(selected = isSelected, onClick = onSelectPreset, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 10.dp),
@@ -705,7 +705,7 @@ fun VoiceItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(GlassShapes.Chip)
+            .clip(GlassShapes.Item)
             .selectable(selected = isSelected, onClick = { onSelectVoice(voice.name, voice.localeTag) }, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -796,7 +796,7 @@ fun LocalVoiceItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(GlassShapes.Chip)
+            .clip(GlassShapes.Item)
             .selectable(selected = isSelected, onClick = onSelect, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -880,7 +880,7 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
                 selected = false,
                 onClick = onClear,
                 role = Role.RadioButton,
-                onClickLabel = stringResource(R.string.use_system_voice),
+
             )
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically

@@ -59,7 +59,8 @@ class HomeViewModel(
     val nextAnnouncement: StateFlow<String> = _nextAnnouncement.asStateFlow()
 
 // ⚡ Bolt: Throttled state flow that only updates once per minute to reduce CPU/GC overhead in derived states.
-    // ⚡ Bolt: Throttled now flow that only updates once per minute to prevent high-frequency combine evaluations    private val _nowMinute = MutableStateFlow(clock.now())
+    // ⚡ Bolt: Throttled now flow that only updates once per minute to prevent high-frequency combine evaluations
+    private val _nowMinute = MutableStateFlow(clock.now())
 
     /** Derived directly from settings so it can never drift from the source of truth. */
     val hourlyEnabled: StateFlow<Boolean> = appSettings
@@ -130,8 +131,8 @@ class HomeViewModel(
 
         if (cachedMinuteHash != currentMinuteHash) {
             cachedMinuteHash = currentMinuteHash
-_nowMinute.value = now
-    _nowMinute.value = now // ⚡ Bolt: Emit throttled time change            _timeState.value = clock.timeState(now)
+    _nowMinute.value = now // ⚡ Bolt: Emit throttled time change
+            _timeState.value = clock.timeState(now)
             _currentDate.value = clock.dateText(now)
         }
     }

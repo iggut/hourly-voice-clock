@@ -18,7 +18,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material3.IconButtonimport androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Palette
@@ -94,7 +95,7 @@ fun FormatSettingsScreen(
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
 
-                SectionHeader(title = stringResource(R.string.time_format), icon = Icons.Default.HourglassEmpty)
+                SectionHeader(title = stringResource(R.string.time_format), icon = Icons.Default.Timer)
                 GlassCard {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).selectable(selected = timeFormat == TimeFormat.HOUR_12, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }, role = Role.RadioButton)) {
                             RadioButton(
