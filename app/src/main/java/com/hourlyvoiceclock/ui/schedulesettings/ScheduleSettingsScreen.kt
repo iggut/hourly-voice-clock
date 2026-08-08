@@ -955,9 +955,13 @@ private fun ClickableRow(
     }
 }
 
+// ⚡ Bolt: Precomputed minute strings to prevent allocations from padStart during recomposition
+private val MINUTES_CACHE = Array(60) { it.toString().padStart(2, '0') }
+
 private fun formatTime(time: java.time.LocalTime): String {
     val hour = time.hour % 12
     val displayHour = if (hour == 0) 12 else hour
     val amPm = if (time.hour < 12) "AM" else "PM"
-    return String.format("%d:%02d %s", displayHour, time.minute, amPm)
+    // ⚡ Bolt: Replaced String.format with string interpolation and cached minutes to prevent format parsing overhead
+    return "$displayHour:${MINUTES_CACHE[time.minute]} $amPm"
 }
