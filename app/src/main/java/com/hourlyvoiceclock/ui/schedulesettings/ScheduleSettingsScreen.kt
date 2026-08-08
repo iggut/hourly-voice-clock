@@ -931,6 +931,7 @@ private fun ClickableRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(GlassShapes.Chip)
+            .semantics(mergeDescendants = true) {}
             .clickable(
                 role = Role.Button,
                 onClickLabel = label
