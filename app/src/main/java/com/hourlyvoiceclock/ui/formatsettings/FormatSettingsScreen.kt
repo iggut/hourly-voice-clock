@@ -115,7 +115,7 @@ fun FormatSettingsScreen(
                 SectionHeader(title = stringResource(R.string.phrase_style), icon = Icons.Default.Style)
                 GlassCard {
                         val optionShape = GlassShapes.Chip
-                        PhraseStyle.values().forEach { style ->
+                        PhraseStyle.entries.forEach { style ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).selectable(selected = phraseStyle == style, onClick = { viewModel.setPhraseStyle(style) }, role = Role.RadioButton)) {
                                 RadioButton(
                                     selected = phraseStyle == style,
@@ -222,7 +222,7 @@ fun FormatSettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         val optionShape = GlassShapes.Chip
-                        AudioChannel.values().forEach { channel ->
+                        AudioChannel.entries.forEach { channel ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).selectable(selected = audioChannel == channel, onClick = { viewModel.setAudioChannel(channel) }, role = Role.RadioButton)) {
                                 RadioButton(
                                     selected = audioChannel == channel,
