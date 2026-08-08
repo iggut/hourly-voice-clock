@@ -62,3 +62,7 @@
 ## 2026-10-25 - Bounded Touch Ripples for Selectable Rows
 **Learning:** When applying the `.selectable` modifier to a `Row` or container in Jetpack Compose, failing to add a clipping modifier (e.g., `.clip(GlassShapes.Item)`) immediately *before* `.selectable` causes the ripple effect to awkwardly spill outside the container's visual bounds.
 **Action:** Always ensure the ripple effect is properly bounded by applying a `.clip(...)` modifier immediately *before* interactive modifiers like `.selectable` for Jetpack Compose list items or rows.
+
+## 2026-08-07 - Screen Reader Grouping for Cards & Rows
+**Learning:** In Compose, generic container elements with click handlers (`GlassCard`, `ClickableRow`) do not automatically group child semantics, causing screen readers to announce textual children disjointedly.
+**Action:** Always append `.semantics(mergeDescendants = true) {}` to parent containers that act as interactive touch targets containing multiple child text nodes.
