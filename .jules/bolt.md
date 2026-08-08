@@ -45,3 +45,7 @@
 ## 2024-08-01 - Throttling High-Frequency State in ViewModels
 **Learning:** In Android ViewModels with high-frequency timers (e.g., 1-second ticks), feeding the high-frequency state directly into `combine` operators causes unnecessary CPU and GC overhead if the derived state only requires minute-level resolution (e.g., checking if quiet hours are active).
 **Action:** Create a separate, throttled `StateFlow` (e.g., `_nowMinute`) that only emits when the minute actually changes. Use this throttled flow for derived states that don't need second-by-second updates.
+
+## 2024-05-30 - Compose Array Allocation Optimization
+**Learning:** In Kotlin 1.9+, using `Enum.values()` creates a new array allocation on every call. When used inside a Jetpack Compose `@Composable` function (e.g., looping through `entries.forEach`), this array allocation happens on every single recomposition, putting unnecessary pressure on the garbage collector.
+**Action:** Always use the `Enum.entries` property instead of `Enum.values()` to iterate over enums in Compose. `entries` returns a pre-allocated, unmodifiable list, eliminating per-frame array allocations.
