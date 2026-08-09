@@ -17,8 +17,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material3.IconButtonimport androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Palette
@@ -27,7 +26,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -141,17 +139,7 @@ fun FormatSettingsScreen(
                                 label = { Text("Prefix") },
                                 placeholder = { Text("e.g., 'Hello, it is now '") },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = GlassShapes.Item,
-                                trailingIcon = {
-                                    if (customPrefix.isNotEmpty()) {
-                                        IconButton(onClick = { viewModel.setCustomPrefix("") }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Clear,
-                                                contentDescription = stringResource(R.string.clear_text)
-                                            )
-                                        }
-                                    }
-                                }
+                                shape = GlassShapes.Item
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
@@ -160,17 +148,7 @@ fun FormatSettingsScreen(
                                 label = { Text("Suffix") },
                                 placeholder = { Text("e.g., ' master.'") },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = GlassShapes.Item,
-                                trailingIcon = {
-                                    if (customSuffix.isNotEmpty()) {
-                                        IconButton(onClick = { viewModel.setCustomSuffix("") }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Clear,
-                                                contentDescription = stringResource(R.string.clear_text)
-                                            )
-                                        }
-                                    }
-                                }
+                                shape = GlassShapes.Item
                             )
                         }
                 }

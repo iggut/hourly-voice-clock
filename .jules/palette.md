@@ -42,20 +42,3 @@
 ## 2026-10-25 - Fix missing semantic roles on generic clickable components
 **Learning:** Found custom row-based buttons (like `LocalVoiceClearRow` and `ClickableRow`) using `.clickable` without explicitly declaring their semantic role as `Role.Button`. Screen readers would not correctly announce these as interactable buttons to visually impaired users, which is an accessibility gap for standard row-based interactions.
 **Action:** Always ensure that row-based custom interactive elements, such as `Row` combined with `.clickable`, explicitly set `role = Role.Button` so screen readers appropriately announce them as buttons.
-## 2024-05-23 - Add Clear Button to OutlinedTextFields
-**Learning:** Adding a clear button to custom phrase input fields makes it significantly easier to reset them, rather than repeatedly pressing backspace.
-**Action:** Always include a trailing clear icon button for non-empty text fields that are meant to be customized or frequently reset.
-
-## 2024-08-03 - Toggleable Touch Target Semantics Fix in Compose
-**Learning:** Using `Modifier.clickable(role = Role.Button)` on a container (like `Row`) that wraps a `RadioButton` causes screen readers to incorrectly announce the container as a standard button rather than a radio button, violating expected accessibility semantics for settings screens.
-**Action:** When wrapping a `RadioButton` (or `Switch`) and its label inside a `Row` to increase the accessible touch target, always apply `Modifier.selectable(..., role = Role.RadioButton)` (or `Modifier.toggleable(..., role = Role.Switch)`) to the parent container instead of `.clickable()`, and ensure the inner component's `onClick` / `onCheckedChange` is set to null.
-## 2026-08-04 - Add clear buttons to text fields
-**Learning:** Text inputs with potentially long custom values (like prefix/suffix fields) can be annoying to clear repeatedly via backspace, particularly on mobile keyboards, degrading UX.
-**Action:** Add trailing clear icons (`IconButton` with `Icons.Default.Clear`) to text fields when they are not empty, allowing users to reset custom strings instantly. Ensure the button has a localized `contentDescription`.
-## 2024-11-20 - Disable action buttons during active dialog states
-**Learning:** Found a "Check Now" button in an update dialog that remained fully enabled while the app was actively downloading/installing an update, which allowed users to redundant trigger background tasks and caused confusion.
-**Action:** Always provide contextual feedback or dynamically disable action buttons in dialogs (e.g., setting `enabled = !isBusy`) when an active task like checking or downloading is ongoing.
-
-## 2026-10-25 - Provide explicit click actions for screen readers
-**Learning:** Found custom row-based buttons (like `LocalVoiceClearRow` and `ClickableRow`) using `.clickable` with `role = Role.Button` but lacking a specific description of the action. While the role is announced, screen readers would simply announce "Button, double tap to activate" without context of what activating does, especially if the row contains complex text.
-**Action:** Always ensure that custom interactive elements using `Modifier.clickable` explicitly set an `onClickLabel` with localized strings (e.g., `onClickLabel = stringResource(R.string.use_system_voice)`) alongside the role, so screen readers can clearly announce "double tap to [Action Name]".

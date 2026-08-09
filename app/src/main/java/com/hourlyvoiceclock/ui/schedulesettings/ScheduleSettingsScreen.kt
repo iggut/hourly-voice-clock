@@ -460,7 +460,7 @@ fun ScheduleSettingsScreen(
                                 val showFullText = isLandscape || maxWidth >= 600.dp
 
                                 val layoutModifier = Modifier.fillMaxWidth()
-                                val locale = configuration.locales[0]
+                                val locale = java.util.Locale.getDefault()
                                 val errorColor = MaterialTheme.colorScheme.error
                                 val errorBgColor = errorColor.copy(alpha = 0.2f)
 
@@ -862,6 +862,7 @@ fun ScheduleSettingsScreen(
                                 .clip(GlassShapes.Chip)
                                 .clickable(
                                     role = Role.Button,
+                                    onClickLabel = stringResource(R.string.toggle_oem_guides),
                                     onClick = { oemGuidesExpanded = !oemGuidesExpanded }
                                 )
                                 .semantics {
@@ -931,10 +932,7 @@ private fun ClickableRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(GlassShapes.Chip)
-            .clickable(
-                role = Role.Button,
-                onClickLabel = label
-            ) { onClick() }
+            .clickable(role = Role.Button) { onClick() }
             .padding(vertical = 12.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

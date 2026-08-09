@@ -58,8 +58,7 @@ class HomeViewModel(
     private val _nextAnnouncement = MutableStateFlow("")
     val nextAnnouncement: StateFlow<String> = _nextAnnouncement.asStateFlow()
 
-// ⚡ Bolt: Throttled state flow that only updates once per minute to reduce CPU/GC overhead in derived states.
-    // ⚡ Bolt: Throttled now flow that only updates once per minute to prevent high-frequency combine evaluations    private val _nowMinute = MutableStateFlow(clock.now())
+    private val _now = MutableStateFlow(clock.now())
 
     /** Derived directly from settings so it can never drift from the source of truth. */
     val hourlyEnabled: StateFlow<Boolean> = appSettings
@@ -70,8 +69,8 @@ class HomeViewModel(
             initialValue = false
         )
 
-    /** Recomputed every minute from the current time and settings. */
-    val quietHoursActive: StateFlow<Boolean> = combine(appSettings, _nowMinute) { settings, now ->
+    /** Recomputed every second from the current time and settings. */
+    val quietHoursActive: StateFlow<Boolean> = combine(appSettings, _now) { settings, now ->
         computeQuietHoursActive(settings, now)
     }.stateIn(
         scope = viewModelScope,
@@ -79,8 +78,8 @@ class HomeViewModel(
         initialValue = false
     )
 
-    /** Recomputed every minute from the current time and settings. */
-    val canSpeakNow: StateFlow<Boolean> = combine(appSettings, _nowMinute) { settings, now ->
+    /** Recomputed every second from the current time and settings. */
+    val canSpeakNow: StateFlow<Boolean> = combine(appSettings, _now) { settings, now ->
         computeCanSpeakNow(settings, now)
     }.stateIn(
         scope = viewModelScope,
@@ -97,6 +96,7 @@ class HomeViewModel(
         viewModelScope.launch {
             while (isActive) {
                 val now = clock.now()
+                _now.value = now
                 updateTime(now)
                 if (hourlyEnabled.value) {
                     updateNextAnnouncement(true, now)
@@ -130,8 +130,7 @@ class HomeViewModel(
 
         if (cachedMinuteHash != currentMinuteHash) {
             cachedMinuteHash = currentMinuteHash
-_nowMinute.value = now
-    _nowMinute.value = now // ⚡ Bolt: Emit throttled time change            _timeState.value = clock.timeState(now)
+            _timeState.value = clock.timeState(now)
             _currentDate.value = clock.dateText(now)
         }
     }
