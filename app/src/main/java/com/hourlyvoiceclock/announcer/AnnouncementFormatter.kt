@@ -48,12 +48,15 @@ object AnnouncementFormatter {
         return if (minute == 0 && !alwaysShowMinutes) {
             "$displayHour $amPm"
         } else {
-            String.format("%d:%02d %s", displayHour, minute, amPm)
+            "$displayHour:${minute.toString().padStart(2, '0')} $amPm"
         }
     }
 
     private fun format24Hour(dateTime: LocalDateTime, alwaysShowMinutes: Boolean): String {
-        return String.format("%02d:%02d", dateTime.hour, dateTime.minute)
+        // ⚡ Bolt: Replace String.format with string template and padStart to prevent format parsing overhead
+        val hourStr = dateTime.hour.toString().padStart(2, '0')
+        val minuteStr = dateTime.minute.toString().padStart(2, '0')
+        return "$hourStr:$minuteStr"
     }
 
     private fun getGreeting(hour: Int): String {
