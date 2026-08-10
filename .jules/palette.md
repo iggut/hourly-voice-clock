@@ -66,3 +66,6 @@
 ## 2026-08-07 - Screen Reader Grouping for Cards & Rows
 **Learning:** In Compose, generic container elements with click handlers (`GlassCard`, `ClickableRow`) do not automatically group child semantics, causing screen readers to announce textual children disjointedly.
 **Action:** Always append `.semantics(mergeDescendants = true) {}` to parent containers that act as interactive touch targets containing multiple child text nodes.
+## 2026-08-10 - DashboardCard Accessibility Semantics
+**Learning:** When creating custom touch targets that wrap a clickable Card and merge descendants (`mergeDescendants = true`), screen readers may not automatically announce the component as a "Button" despite it being clickable. Explicitly setting `role = Role.Button` is necessary for proper semantics.
+**Action:** Always apply `role = Role.Button` within the `.semantics(mergeDescendants = true) { role = Role.Button }` block for custom, composed clickable cards to ensure correct screen reader announcements.
