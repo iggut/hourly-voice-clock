@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Hourly Voice Clock</string>
     <!--
@@ -82,4 +83,5 @@
     <string name="toggle_oem_instructions">Toggle OEM instructions</string>
     <string name="collapsed">Collapsed</string>
     <string name="clear_text">Clear text</string>
+    <string name="oem_specific_instructions">OEM Specific Instructions</string>
 </resources>
