@@ -856,12 +856,14 @@ fun ScheduleSettingsScreen(
 
                         val expandedText = stringResource(R.string.expanded)
                         val collapsedText = stringResource(R.string.collapsed)
+                        val toggleOemText = stringResource(R.string.toggle_oem_instructions)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(GlassShapes.Chip)
                                 .clickable(
                                     role = Role.Button,
+                                    onClickLabel = toggleOemText,
                                     onClick = { oemGuidesExpanded = !oemGuidesExpanded }
                                 )
                                 .semantics {
