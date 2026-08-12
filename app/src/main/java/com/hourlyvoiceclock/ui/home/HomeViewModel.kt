@@ -93,6 +93,9 @@ class HomeViewModel(
     private var cachedNextAnnouncementHash: Long? = null
 
     private var cachedMinuteHash: Long? = null
+    private var cachedYear = -1
+    private var cachedDayOfYear = -1
+    private var cachedEpochDay = 0L
 
     init {
         viewModelScope.launch {
@@ -125,9 +128,20 @@ class HomeViewModel(
         }
     }
 
+    // ⚡ Bolt: Cache epoch day calculation. Calculates epoch day only when the year or day of the year changes,
+    // avoiding redundant `now.toLocalDate().toEpochDay()` allocations and math-heavy calculations on every single 1-second tick.
+    private fun getEpochDay(now: LocalDateTime): Long {
+        if (now.year != cachedYear || now.dayOfYear != cachedDayOfYear) {
+            cachedYear = now.year
+            cachedDayOfYear = now.dayOfYear
+            cachedEpochDay = now.toLocalDate().toEpochDay()
+        }
+        return cachedEpochDay
+    }
+
     private fun updateTime(now: LocalDateTime) {
         _seconds.value = clock.secondsText(now)
-        val currentMinuteHash = now.toLocalDate().toEpochDay() * 24 * 60 + now.hour * 60 + now.minute
+        val currentMinuteHash = getEpochDay(now) * 24 * 60 + now.hour * 60 + now.minute
 
         if (cachedMinuteHash != currentMinuteHash) {
             cachedMinuteHash = currentMinuteHash
@@ -144,7 +158,7 @@ class HomeViewModel(
             return
         }
 
-        val currentHourHash = now.toLocalDate().toEpochDay() * 24 + now.hour
+        val currentHourHash = getEpochDay(now) * 24 + now.hour
         // Optimize: Only format next announcement when the target hour changes
         if (cachedNextAnnouncementHash != currentHourHash) {
             cachedNextAnnouncementHash = currentHourHash

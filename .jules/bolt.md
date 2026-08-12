@@ -53,3 +53,7 @@
 ## 2024-05-30 - Prevent Format Parsing Overhead
 **Learning:** Checking conditional variables and executing string formatting methods (such as `String.format()`) within moderately frequent generation functions (like generating the current time announcement) incurs a small but measurable CPU overhead due to parsing the format string at runtime.
 **Action:** Replace `String.format` with manual string interpolation combined with `padStart` (e.g. `minute.toString().padStart(2, '0')`) to completely avoid the format parsing overhead while maintaining code readability.
+
+## 2024-05-30 - View Model Date/Time Epoch Day Hash Optimization
+**Learning:** In high-frequency loops (e.g. 1-second view model update loops), repeatedly computing `now.toLocalDate().toEpochDay()` for hash comparisons evaluates math-heavy calculations on every single tick, causing unnecessary overhead.
+**Action:** Extract loop-invariant operations by comparing cheap primitives like `now.year` and `now.dayOfYear`. Only recalculate the `epochDay` hash when the date has actually changed.
