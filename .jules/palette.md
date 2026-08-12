@@ -66,3 +66,6 @@
 ## 2026-08-07 - Screen Reader Grouping for Cards & Rows
 **Learning:** In Compose, generic container elements with click handlers (`GlassCard`, `ClickableRow`) do not automatically group child semantics, causing screen readers to announce textual children disjointedly.
 **Action:** Always append `.semantics(mergeDescendants = true) {}` to parent containers that act as interactive touch targets containing multiple child text nodes.
+## 2026-10-25 - Provide explicit click actions for screen readers
+**Learning:** Found an accordion element ("OEM Specific Instructions") using a `Modifier.clickable` block but lacking an explicit `onClickLabel` with a localized string to describe the toggle action to screen readers.
+**Action:** Always ensure accordion-style rows use explicit roles and states via `Modifier.clickable(role = Role.Button, onClickLabel = ...)` with localized strings.

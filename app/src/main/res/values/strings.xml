@@ -79,6 +79,7 @@
     <string name="day_sat">Sat</string>
     <string name="day_sun">Sun</string>
     <string name="expanded">Expanded</string>
+    <string name="toggle_oem_instructions">Toggle OEM instructions</string>
     <string name="collapsed">Collapsed</string>
     <string name="clear_text">Clear text</string>
 </resources>
