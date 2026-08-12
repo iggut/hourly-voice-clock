@@ -876,6 +876,7 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(GlassShapes.Chip)
+            .semantics(mergeDescendants = true) {}
             .selectable(
                 selected = false,
                 onClick = onClear,

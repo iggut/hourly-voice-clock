@@ -861,20 +861,20 @@ fun ScheduleSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(GlassShapes.Chip)
+                                .semantics(mergeDescendants = true) {
+                                    stateDescription = if (oemGuidesExpanded) expandedText else collapsedText
+                                }
                                 .clickable(
                                     role = Role.Button,
                                     onClickLabel = toggleOemText,
                                     onClick = { oemGuidesExpanded = !oemGuidesExpanded }
                                 )
-                                .semantics {
-                                    stateDescription = if (oemGuidesExpanded) expandedText else collapsedText
-                                }
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "OEM Specific Instructions",
+                                stringResource(R.string.oem_specific_instructions),
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
