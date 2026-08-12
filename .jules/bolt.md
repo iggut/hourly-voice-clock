@@ -49,3 +49,7 @@
 ## 2024-05-30 - Compose Array Allocation Optimization
 **Learning:** In Kotlin 1.9+, using `Enum.values()` creates a new array allocation on every call. When used inside a Jetpack Compose `@Composable` function (e.g., looping through `entries.forEach`), this array allocation happens on every single recomposition, putting unnecessary pressure on the garbage collector.
 **Action:** Always use the `Enum.entries` property instead of `Enum.values()` to iterate over enums in Compose. `entries` returns a pre-allocated, unmodifiable list, eliminating per-frame array allocations.
+
+## 2024-05-30 - Prevent Format Parsing Overhead
+**Learning:** Checking conditional variables and executing string formatting methods (such as `String.format()`) within moderately frequent generation functions (like generating the current time announcement) incurs a small but measurable CPU overhead due to parsing the format string at runtime.
+**Action:** Replace `String.format` with manual string interpolation combined with `padStart` (e.g. `minute.toString().padStart(2, '0')`) to completely avoid the format parsing overhead while maintaining code readability.
