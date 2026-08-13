@@ -69,3 +69,7 @@
 ## 2026-10-25 - Provide explicit click actions for screen readers
 **Learning:** Found an accordion element ("OEM Specific Instructions") using a `Modifier.clickable` block but lacking an explicit `onClickLabel` with a localized string to describe the toggle action to screen readers.
 **Action:** Always ensure accordion-style rows use explicit roles and states via `Modifier.clickable(role = Role.Button, onClickLabel = ...)` with localized strings.
+
+## 2026-08-12 - Provide content descriptions for decorative icons in custom components
+**Learning:** Found custom Jetpack Compose components (`GlassInfoBanner`, `SectionHeader`) containing decorative icons where the `contentDescription` was hardcoded to `null`. While okay for purely decorative graphics, it prevented callers from providing a description if the icon was used to convey actual state or meaning (like an alert icon), creating an accessibility barrier.
+**Action:** Always expose an optional `iconContentDescription: String? = null` parameter in custom components and pass it down to the `Icon`, rather than hardcoding `null`, to empower developers to provide context when necessary.

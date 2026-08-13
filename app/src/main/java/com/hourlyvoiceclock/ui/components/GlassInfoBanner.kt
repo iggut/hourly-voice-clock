@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -29,6 +30,7 @@ fun GlassInfoBanner(
     text: String,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
+    iconContentDescription: String? = null,
     containerColor: Color = glassContainerColor(),
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     accentColor: Color? = null,
@@ -36,7 +38,7 @@ fun GlassInfoBanner(
 ) {
     val borderColor = accentColor?.copy(alpha = 0.25f) ?: glassBorderColor()
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
         shape = GlassShapes.Item,
         colors = CardDefaults.cardColors(containerColor = containerColor),
         border = BorderStroke(1.dp, borderColor)
@@ -49,7 +51,7 @@ fun GlassInfoBanner(
             if (icon != null) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = iconContentDescription,
                     tint = accentColor ?: MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
@@ -69,13 +71,14 @@ fun GlassInfoBanner(
 fun GlassInfoBannerColumn(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
+    iconContentDescription: String? = null,
     containerColor: Color = glassContainerColor(),
     accentColor: Color? = null,
     content: @Composable () -> Unit
 ) {
     val borderColor = accentColor?.copy(alpha = 0.25f) ?: glassBorderColor()
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
         shape = GlassShapes.Item,
         colors = CardDefaults.cardColors(containerColor = containerColor),
         border = BorderStroke(1.dp, borderColor)
@@ -87,7 +90,7 @@ fun GlassInfoBannerColumn(
             if (icon != null) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = iconContentDescription,
                     tint = accentColor ?: MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
