@@ -18,6 +18,7 @@
     <string name="hourly_announcements">Hourly announcements</string>
     <string name="next_announcement">Next announcement: %1$s</string>
     <string name="quiet_hours_active">Quiet hours active</string>
+    <string name="quiet_hours_inactive">Quiet hours inactive</string>
     <string name="no_voices_found">Your Android TTS engine only exposes one voice. Install more voices in Android Text-to-speech settings.</string>
     <string name="open_tts_settings">Open Android TTS settings</string>
     <string name="open_alarm_permission">Open Alarms \&amp; reminders permission</string>

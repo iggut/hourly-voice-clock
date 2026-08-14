@@ -73,3 +73,7 @@
 ## 2026-08-12 - Provide content descriptions for decorative icons in custom components
 **Learning:** Found custom Jetpack Compose components (`GlassInfoBanner`, `SectionHeader`) containing decorative icons where the `contentDescription` was hardcoded to `null`. While okay for purely decorative graphics, it prevented callers from providing a description if the icon was used to convey actual state or meaning (like an alert icon), creating an accessibility barrier.
 **Action:** Always expose an optional `iconContentDescription: String? = null` parameter in custom components and pass it down to the `Icon`, rather than hardcoding `null`, to empower developers to provide context when necessary.
+
+## 2026-08-14 - Extract Hardcoded Strings in Jetpack Compose
+**Learning:** Hardcoded strings in conditionals (e.g., `text = if (condition) "Active" else "Inactive"`) bypass Android's localization system and screen readers may not read them appropriately if translated versions aren't provided.
+**Action:** Always extract text to `strings.xml` and use `stringResource(R.string.*)` even for small dynamic labels inside Jetpack Compose UI components.
