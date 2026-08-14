@@ -126,7 +126,9 @@ class SettingsMapper {
         }
 
         fun formatTime(time: LocalTime): String {
-            return String.format("%02d:%02d", time.hour, time.minute)
+            val h = time.hour.toString().padStart(2, '0')
+            val m = time.minute.toString().padStart(2, '0')
+            return "$h:$m"
         }
 
         fun parseDayOfWeekSet(value: String?): Set<DayOfWeek> {
