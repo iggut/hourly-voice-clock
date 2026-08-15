@@ -52,6 +52,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlin.math.roundToLong
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -728,8 +729,17 @@ private fun UpdatesDialog(
 private fun formatBytes(bytes: Long): String {
     return when {
         bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> String.format("%.1f KB", bytes / 1024.0)
-        bytes < 1024 * 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024))
-        else -> String.format("%.1f GB", bytes / (1024.0 * 1024 * 1024))
+        bytes < 1024 * 1024 -> {
+            val v = ((bytes / 1024.0) * 10).roundToLong() / 10.0
+            "$v KB"
+        }
+        bytes < 1024 * 1024 * 1024 -> {
+            val v = ((bytes / (1024.0 * 1024)) * 10).roundToLong() / 10.0
+            "$v MB"
+        }
+        else -> {
+            val v = ((bytes / (1024.0 * 1024 * 1024)) * 10).roundToLong() / 10.0
+            "$v GB"
+        }
     }
 }
