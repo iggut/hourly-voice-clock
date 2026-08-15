@@ -361,7 +361,7 @@ fun ScheduleSettingsScreen(
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = if (quietEnabled) "Quiet hours active" else "Quiet hours inactive",
+                                        text = if (quietEnabled) stringResource(R.string.quiet_hours_active) else stringResource(R.string.quiet_hours_inactive),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
