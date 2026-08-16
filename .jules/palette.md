@@ -77,3 +77,7 @@
 ## 2026-08-14 - Extract Hardcoded Strings in Jetpack Compose
 **Learning:** Hardcoded strings in conditionals (e.g., `text = if (condition) "Active" else "Inactive"`) bypass Android's localization system and screen readers may not read them appropriately if translated versions aren't provided.
 **Action:** Always extract text to `strings.xml` and use `stringResource(R.string.*)` even for small dynamic labels inside Jetpack Compose UI components.
+
+## 2024-11-20 - Redundant screen reader announcements on Buttons
+**Learning:** Found `Icon`s inside `Button`s alongside descriptive `Text` labels (like the Play arrow inside the "Announce now" button). If these icons have their own `contentDescription`, screen readers will redundantly read both the icon and the text, causing a poor accessibility experience.
+**Action:** Always ensure that when a `Button` contains both an `Icon` and a `Text` element, the `contentDescription` on the `Icon` is explicitly set to `null` to avoid double-announcing the button's action.
