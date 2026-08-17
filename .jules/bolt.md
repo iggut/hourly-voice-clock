@@ -57,3 +57,7 @@
 ## 2024-05-30 - View Model Date/Time Epoch Day Hash Optimization
 **Learning:** In high-frequency loops (e.g. 1-second view model update loops), repeatedly computing `now.toLocalDate().toEpochDay()` for hash comparisons evaluates math-heavy calculations on every single tick, causing unnecessary overhead.
 **Action:** Extract loop-invariant operations by comparing cheap primitives like `now.year` and `now.dayOfYear`. Only recalculate the `epochDay` hash when the date has actually changed.
+
+## 2024-08-01 - Compose drawWithContent vs drawWithCache Optimization
+**Learning:** In Jetpack Compose, directly reading scroll states and performing object allocations (like instantiating `Brush.horizontalGradient` objects for edge fading) inside `Modifier.drawWithContent` causes those allocations to run on every single frame during scrolling, putting unnecessary pressure on the garbage collector.
+**Action:** Replace `Modifier.drawWithContent` with `Modifier.drawWithCache`. Pre-calculate layout-size-dependent drawing objects (like `Brush`) in the cache block, and only perform state reads (like `scrollState.canScrollForward`) and standard primitive drawing commands inside the returned `onDrawWithContent` lambda. This ensures objects are allocated only when layout bounds change, while still reacting accurately to state changes frame-by-frame.

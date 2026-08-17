@@ -13,7 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -29,26 +29,28 @@ fun GlassFilterChipRow(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .drawWithContent {
-                drawContent()
+            // ⚡ Bolt: Use drawWithCache instead of drawWithContent to pre-allocate
+            // Brush objects (gradients), avoiding re-allocation on every single scroll frame
+            .drawWithCache {
                 val fadeWidth = 24.dp.toPx()
-                if (scrollState.canScrollForward) {
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(Color.Transparent, fadeColor),
-                            startX = size.width - fadeWidth,
-                            endX = size.width
-                        )
-                    )
-                }
-                if (scrollState.canScrollBackward) {
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(fadeColor, Color.Transparent),
-                            startX = 0f,
-                            endX = fadeWidth
-                        )
-                    )
+                val forwardBrush = Brush.horizontalGradient(
+                    colors = listOf(Color.Transparent, fadeColor),
+                    startX = size.width - fadeWidth,
+                    endX = size.width
+                )
+                val backwardBrush = Brush.horizontalGradient(
+                    colors = listOf(fadeColor, Color.Transparent),
+                    startX = 0f,
+                    endX = fadeWidth
+                )
+                onDrawWithContent {
+                    drawContent()
+                    if (scrollState.canScrollForward) {
+                        drawRect(brush = forwardBrush)
+                    }
+                    if (scrollState.canScrollBackward) {
+                        drawRect(brush = backwardBrush)
+                    }
                 }
             }
     ) {
