@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -341,7 +342,9 @@ fun HomeScreen(
                     text = stringResource(R.string.quiet_hours_active),
                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f),
                     contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    accentColor = MaterialTheme.colorScheme.error
+                    accentColor = MaterialTheme.colorScheme.error,
+                    icon = Icons.Default.Info,
+                    iconContentDescription = stringResource(R.string.a11y_info_icon)
                 )
             }
 

@@ -81,3 +81,7 @@
 ## 2024-11-20 - Redundant screen reader announcements on Buttons
 **Learning:** Found `Icon`s inside `Button`s alongside descriptive `Text` labels (like the Play arrow inside the "Announce now" button). If these icons have their own `contentDescription`, screen readers will redundantly read both the icon and the text, causing a poor accessibility experience.
 **Action:** Always ensure that when a `Button` contains both an `Icon` and a `Text` element, the `contentDescription` on the `Icon` is explicitly set to `null` to avoid double-announcing the button's action.
+
+## 2026-08-15 - Broken tests and workflow cleanup
+**Learning:** Occasionally a codebase has broken test files that block full CI/CD validation. Fixing unrelated issues can be outside the scope of a micro-UX PR, but the workspace needs to be clean.
+**Action:** When a test file is broken entirely unrelated to your changes and blocks progress, do not modify or delete it permanently in your commit. Rely on debug compilation and revert changes to any unrelated files to keep the PR focused.

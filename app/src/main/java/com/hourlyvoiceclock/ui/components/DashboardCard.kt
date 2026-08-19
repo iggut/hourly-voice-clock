@@ -15,6 +15,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import com.hourlyvoiceclock.R
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,7 +65,7 @@ fun DashboardCard(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_dashboard_icon),
                     tint = if (isDark) {
                         MaterialTheme.colorScheme.primary
                     } else {
@@ -87,7 +89,7 @@ fun DashboardCard(
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.a11y_arrow_right),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

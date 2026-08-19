@@ -119,7 +119,8 @@ fun LocalVoiceSettingsScreen(
             item {
                 GlassInfoBanner(
                     text = stringResource(R.string.local_voices_preview_banner),
-                    icon = Icons.Default.Info
+                    icon = Icons.Default.Info,
+                    iconContentDescription = stringResource(R.string.a11y_info_icon)
                 )
             }
 
