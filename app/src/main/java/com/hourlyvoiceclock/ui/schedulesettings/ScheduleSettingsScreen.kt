@@ -811,15 +811,15 @@ fun ScheduleSettingsScreen(
                                 }
                                 Column(modifier = Modifier.widthIn(max = 240.dp)) {
                                     Text(
-                                        "Battery Optimization",
+                                        stringResource(R.string.battery_optimization),
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         when (batteryStatus) {
-                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.UNRESTRICTED -> "Unrestricted - High Reliability"
-                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.OPTIMIZED -> "Optimized - Delayed Announcements Possible"
-                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.UNKNOWN -> "Checking status..."
+                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.UNRESTRICTED -> stringResource(R.string.battery_optimization_unrestricted)
+                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.OPTIMIZED -> stringResource(R.string.battery_optimization_optimized)
+                                            ScheduleSettingsViewModel.BatteryOptimizationStatus.UNKNOWN -> stringResource(R.string.battery_optimization_unknown)
                                         },
                                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                         color = when (batteryStatus) {
@@ -891,27 +891,27 @@ fun ScheduleSettingsScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
-                                    "• Samsung: Settings -> Apps -> Hourly Voice Clock -> Battery -> Choose \"Unrestricted\".",
+                                    stringResource(R.string.battery_optimization_samsung),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    "• Xiaomi / MIUI: Settings -> Apps -> Manage Apps -> Hourly Voice Clock -> Battery saver -> Choose \"No restrictions\".",
+                                    stringResource(R.string.battery_optimization_xiaomi),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    "• OnePlus: Settings -> Apps -> App management -> Hourly Voice Clock -> Battery usage -> Choose \"Allow background activity\".",
+                                    stringResource(R.string.battery_optimization_oneplus),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    "• Huawei: Settings -> Apps -> Apps -> Hourly Voice Clock -> Power usage details -> Launch -> Switch to \"Manage manually\" and enable \"Run in background\".",
+                                    stringResource(R.string.battery_optimization_huawei),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    "• Vivo: Settings -> Battery -> High background power consumption -> Enable \"Hourly Voice Clock\".",
+                                    stringResource(R.string.battery_optimization_vivo),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -953,7 +953,7 @@ private fun ClickableRow(
             )
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.cd_navigate),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
