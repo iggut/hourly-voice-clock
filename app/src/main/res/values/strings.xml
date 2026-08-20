@@ -85,4 +85,8 @@
     <string name="collapsed">Collapsed</string>
     <string name="clear_text">Clear text</string>
     <string name="oem_specific_instructions">OEM Specific Instructions</string>
+    <!-- Accessibility -->
+    <string name="a11y_info_icon">Information</string>
+    <string name="a11y_dashboard_icon">Dashboard card icon</string>
+    <string name="a11y_arrow_right">Navigate forward</string>
 </resources>
