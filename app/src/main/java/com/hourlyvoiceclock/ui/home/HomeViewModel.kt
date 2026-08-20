@@ -99,11 +99,20 @@ class HomeViewModel(
 
     init {
         viewModelScope.launch {
+            // ⚡ Bolt: Cache LocalDateTime.now() and reuse it if the current second hasn't changed.
+            // This prevents allocating a new LocalDateTime object on every single 1-second tick
+            // when the loop drifts or wakes up multiple times in the same second.
+            var lastSecond = -1
+            var cachedNow = clock.now()
             while (isActive) {
-                val now = clock.now()
-                updateTime(now)
+                val currentSecond = (clock.currentTimeMillis() / 1000).toInt()
+                if (currentSecond != lastSecond) {
+                    lastSecond = currentSecond
+                    cachedNow = clock.now()
+                }
+                updateTime(cachedNow)
                 if (hourlyEnabled.value) {
-                    updateNextAnnouncement(true, now)
+                    updateNextAnnouncement(true, cachedNow)
                 }
                 delay(1000)
             }
