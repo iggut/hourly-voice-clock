@@ -72,6 +72,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -147,7 +148,8 @@ fun ScheduleSettingsScreen(
     }
 
     // Permission explanation dialog with device-specific guidance
-    var showExactAlarmDialog by remember { mutableStateOf(false) }
+    // ⚡ Bolt: Use rememberSaveable to prevent UI state loss on configuration changes.
+    var showExactAlarmDialog by rememberSaveable { mutableStateOf(false) }
     val deviceGuidance = viewModel.deviceGuidance()
 
     if (showExactAlarmDialog) {
@@ -610,8 +612,8 @@ fun ScheduleSettingsScreen(
                     glassContainerColor()
                 }
 
-                var showRationaleDialog by remember { mutableStateOf(false) }
-                var showSettingsRedirectDialog by remember { mutableStateOf(false) }
+                var showRationaleDialog by rememberSaveable { mutableStateOf(false) }
+                var showSettingsRedirectDialog by rememberSaveable { mutableStateOf(false) }
 
                 if (showRationaleDialog) {
                     OpaqueAlertDialog(
@@ -774,7 +776,7 @@ fun ScheduleSettingsScreen(
                 }
                 val batteryCardBg = glassContainerColor()
 
-                var oemGuidesExpanded by remember { mutableStateOf(false) }
+                var oemGuidesExpanded by rememberSaveable { mutableStateOf(false) }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),

@@ -61,3 +61,7 @@
 ## 2024-08-01 - Compose drawWithContent vs drawWithCache Optimization
 **Learning:** In Jetpack Compose, directly reading scroll states and performing object allocations (like instantiating `Brush.horizontalGradient` objects for edge fading) inside `Modifier.drawWithContent` causes those allocations to run on every single frame during scrolling, putting unnecessary pressure on the garbage collector.
 **Action:** Replace `Modifier.drawWithContent` with `Modifier.drawWithCache`. Pre-calculate layout-size-dependent drawing objects (like `Brush`) in the cache block, and only perform state reads (like `scrollState.canScrollForward`) and standard primitive drawing commands inside the returned `onDrawWithContent` lambda. This ensures objects are allocated only when layout bounds change, while still reacting accurately to state changes frame-by-frame.
+
+## 2024-08-19 - Compose remember vs rememberSaveable Optimization
+**Learning:** Using `remember { mutableStateOf(false) }` for simple boolean UI states (like dialog visibility or expansion toggles) causes state loss and unintended UI resets (e.g., dialogs closing) during configuration changes like screen rotations.
+**Action:** Use `rememberSaveable { mutableStateOf(...) }` instead of `remember` for these simple UI states to gracefully preserve them across configuration changes.
