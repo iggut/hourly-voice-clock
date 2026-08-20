@@ -89,4 +89,16 @@
     <string name="a11y_info_icon">Information</string>
     <string name="a11y_dashboard_icon">Dashboard card icon</string>
     <string name="a11y_arrow_right">Navigate forward</string>
+    <string name="battery_optimization">Battery Optimization</string>
+    <string name="battery_optimization_unrestricted">Unrestricted - High Reliability</string>
+    <string name="battery_optimization_optimized">Optimized - Delayed Announcements Possible</string>
+    <string name="battery_optimization_unknown">Checking status...</string>
+    <string name="battery_optimization_desc">Android aggressive battery savers suspend background processes. To ensure voice announcements fire exactly at the top of the hour, please set the app\'s battery usage settings to Unrestricted.</string>
+    <string name="battery_optimization_disable">Disable Optimization</string>
+    <string name="battery_optimization_samsung">• Samsung: Settings -&gt; Apps -&gt; Hourly Voice Clock -&gt; Battery -&gt; Choose "Unrestricted".</string>
+    <string name="battery_optimization_xiaomi">• Xiaomi / MIUI: Settings -&gt; Apps -&gt; Manage Apps -&gt; Hourly Voice Clock -&gt; Battery saver -&gt; Choose "No restrictions".</string>
+    <string name="battery_optimization_oneplus">• OnePlus: Settings -&gt; Apps -&gt; App management -&gt; Hourly Voice Clock -&gt; Battery usage -&gt; Choose "Allow background activity".</string>
+    <string name="battery_optimization_huawei">• Huawei: Settings -&gt; Apps -&gt; Apps -&gt; Hourly Voice Clock -&gt; Power usage details -&gt; Launch -&gt; Switch to "Manage manually" and enable "Run in background".</string>
+    <string name="battery_optimization_vivo">• Vivo: Settings -&gt; Battery -&gt; High background power consumption -&gt; Enable "Hourly Voice Clock".</string>
+</resources>
 </resources>
