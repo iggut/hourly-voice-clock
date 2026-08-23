@@ -65,3 +65,8 @@
 ## 2024-08-19 - Compose remember vs rememberSaveable Optimization
 **Learning:** Using `remember { mutableStateOf(false) }` for simple boolean UI states (like dialog visibility or expansion toggles) causes state loss and unintended UI resets (e.g., dialogs closing) during configuration changes like screen rotations.
 **Action:** Use `rememberSaveable { mutableStateOf(...) }` instead of `remember` for these simple UI states to gracefully preserve them across configuration changes.
+
+## 2024-08-20 - View Model Clock Tick Allocation Optimization
+**Learning:** In 1-second timer loops (e.g. updating the UI clock), allocating a new Date/Time object (like `LocalDateTime.now()`) on every tick causes unnecessary garbage collection pressure when the loop inevitably drifts and ticks multiple times in the same physical second.
+**Action:** Expose `System.currentTimeMillis()` from the `Clock` interface instead of bypassing it, and use it to quickly check if the actual epoch second has changed before allocating a new immutable Date/Time object, caching and reusing the previous instance if the second is identical.
+
