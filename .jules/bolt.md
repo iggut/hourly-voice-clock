@@ -70,3 +70,7 @@
 **Learning:** In 1-second timer loops (e.g. updating the UI clock), allocating a new Date/Time object (like `LocalDateTime.now()`) on every tick causes unnecessary garbage collection pressure when the loop inevitably drifts and ticks multiple times in the same physical second.
 **Action:** Expose `System.currentTimeMillis()` from the `Clock` interface instead of bypassing it, and use it to quickly check if the actual epoch second has changed before allocating a new immutable Date/Time object, caching and reusing the previous instance if the second is identical.
 
+
+## 2024-08-27 - Format Pattern Garbage Collection Optimization
+**Learning:** Calling `padStart(2, '0')` on integer properties like `minute` within a `DateTimeFormatter` context or an announcement text formatter creates string allocations repeatedly in high-frequency rendering or formatting paths, causing unnecessary garbage collection pressure.
+**Action:** Extract padded string lookups (e.g., zero-padded numbers 0-59) into a statically allocated precomputed array (e.g. `PADDED_NUMBERS`), replacing `toString().padStart()` with a fast array indexing lookup.
