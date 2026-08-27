@@ -953,7 +953,7 @@ private fun ClickableRow(
             )
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.cd_navigate),
+                contentDescription = stringResource(R.string.a11y_arrow_right),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

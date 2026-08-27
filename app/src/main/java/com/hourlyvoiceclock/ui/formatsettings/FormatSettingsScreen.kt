@@ -293,7 +293,7 @@ fun ChimeSoundSelector(
     onSoundSelected: (ChimeSound) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var expanded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
 
     Box(modifier = modifier) {
         OutlinedButton(

@@ -65,3 +65,11 @@
 ## 2024-08-19 - Compose remember vs rememberSaveable Optimization
 **Learning:** Using `remember { mutableStateOf(false) }` for simple boolean UI states (like dialog visibility or expansion toggles) causes state loss and unintended UI resets (e.g., dialogs closing) during configuration changes like screen rotations.
 **Action:** Use `rememberSaveable { mutableStateOf(...) }` instead of `remember` for these simple UI states to gracefully preserve them across configuration changes.
+
+## 2024-08-19 - Compose remember vs rememberSaveable Optimization
+**Learning:** Using `remember { mutableStateOf(false) }` for simple boolean UI states (like dropdown expanded state or delete confirmation dialogs) causes state loss and unintended UI resets (e.g., dialogs closing) during configuration changes like screen rotations.
+**Action:** Use `rememberSaveable { mutableStateOf(...) }` instead of `remember` for these simple UI states to gracefully preserve them across configuration changes.
+
+## 2024-08-19 - Compose remember vs rememberSaveable Optimization
+**Learning:** Using `remember { mutableStateOf(false) }` for simple boolean UI states (like dropdown expanded state or delete confirmation dialogs) causes state loss and unintended UI resets (e.g., dialogs closing) during configuration changes like screen rotations.
+**Action:** Use `rememberSaveable { mutableStateOf(...) }` instead of `remember` for these simple UI states to gracefully preserve them across configuration changes.
