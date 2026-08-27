@@ -199,7 +199,7 @@ private fun ErrorChip(message: String, onClear: () -> Unit) {
     ) {
         Icon(
             Icons.Default.ErrorOutline,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.a11y_error_generic),
             tint = MaterialTheme.colorScheme.onErrorContainer,
             modifier = Modifier.size(18.dp)
         )
@@ -346,6 +346,7 @@ private fun VoiceModelCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = GlassShapes.Chip
             ) {
+                // contentDescription is null because there is text next to it in the button
                 Icon(Icons.Default.CloudDownload, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(

@@ -260,7 +260,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = if (needsExactPermission) Icons.Default.Warning else Icons.Default.Alarm,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.exact_alarms),
                                         tint = if (needsExactPermission) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -352,7 +352,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.LockClock,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.quiet_hours),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -525,6 +525,7 @@ fun ScheduleSettingsScreen(
                                             val textColor = if (isDisabled) errorColor else onSurfaceColor
                                             Box(
                                                 modifier = baseBoxModifier
+                                                    .clip(CircleShape)
                                                     .background(bgColor)
                                                     .border(
                                                         width = 1.dp,
@@ -704,7 +705,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = if (showPermissionWarning) Icons.Default.Warning else Icons.Default.Notifications,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.notification_logging),
                                         tint = if (showPermissionWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -805,7 +806,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.LockClock,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.battery_optimization),
                                         tint = if (isOptimized) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -880,6 +881,7 @@ fun ScheduleSettingsScreen(
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                            // contentDescription is null because it is decorative (the row has an onClickLabel)
                             Icon(
                                 imageVector = if (oemGuidesExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = null,
@@ -953,7 +955,7 @@ private fun ClickableRow(
             )
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.cd_navigate),
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

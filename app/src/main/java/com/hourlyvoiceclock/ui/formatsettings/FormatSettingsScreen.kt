@@ -313,6 +313,7 @@ fun ChimeSoundSelector(
                 },
                 style = MaterialTheme.typography.bodyMedium
             )
+            // decorative icon
             Icon(
                 imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                 contentDescription = null,

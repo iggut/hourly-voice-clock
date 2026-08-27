@@ -263,7 +263,7 @@ fun VoiceSettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                                Icon(Icons.Default.Info, contentDescription = stringResource(R.string.a11y_info_icon), tint = MaterialTheme.colorScheme.onErrorContainer)
                                 Text(
                                     text = stringResource(R.string.single_voice_engine_detected),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -393,7 +393,7 @@ fun VoiceSettingsScreen(
                             ) {
                                 Icon(
                                     Icons.Filled.Star,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.special_voices),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -461,7 +461,7 @@ fun VoiceSettingsScreen(
                             ) {
                                 Icon(
                                     Icons.Filled.OfflineBolt,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.local_ai_voices),
                                     tint = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -545,7 +545,7 @@ fun VoiceSettingsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Info,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.a11y_info_icon),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
