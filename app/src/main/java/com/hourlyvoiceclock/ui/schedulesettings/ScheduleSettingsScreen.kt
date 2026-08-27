@@ -260,7 +260,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = if (needsExactPermission) Icons.Default.Warning else Icons.Default.Alarm,
-                                        contentDescription = null,
+                                        contentDescription = if (needsExactPermission) stringResource(R.string.a11y_warning) else stringResource(R.string.a11y_clock),
                                         tint = if (needsExactPermission) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -352,7 +352,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.LockClock,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.a11y_clock),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -525,6 +525,7 @@ fun ScheduleSettingsScreen(
                                             val textColor = if (isDisabled) errorColor else onSurfaceColor
                                             Box(
                                                 modifier = baseBoxModifier
+                                                    .clip(CircleShape)
                                                     .background(bgColor)
                                                     .border(
                                                         width = 1.dp,
@@ -704,7 +705,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = if (showPermissionWarning) Icons.Default.Warning else Icons.Default.Notifications,
-                                        contentDescription = null,
+                                        contentDescription = if (showPermissionWarning) stringResource(R.string.a11y_warning) else stringResource(R.string.notification_logging),
                                         tint = if (showPermissionWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -805,7 +806,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.LockClock,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.a11y_clock),
                                         tint = if (isOptimized) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -882,7 +883,7 @@ fun ScheduleSettingsScreen(
                             )
                             Icon(
                                 imageVector = if (oemGuidesExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
+                                contentDescription = if (oemGuidesExpanded) stringResource(R.string.a11y_collapse) else stringResource(R.string.a11y_expand),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

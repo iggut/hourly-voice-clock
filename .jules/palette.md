@@ -85,3 +85,10 @@
 ## 2026-08-15 - Broken tests and workflow cleanup
 **Learning:** Occasionally a codebase has broken test files that block full CI/CD validation. Fixing unrelated issues can be outside the scope of a micro-UX PR, but the workspace needs to be clean.
 **Action:** When a test file is broken entirely unrelated to your changes and blocks progress, do not modify or delete it permanently in your commit. Rely on debug compilation and revert changes to any unrelated files to keep the PR focused.
+## 2026-10-25 - Bounded Touch Ripples for Selectable Rows
+**Learning:** When applying the `.selectable` modifier to a `Row` or container in Jetpack Compose, failing to add a clipping modifier (e.g., `.clip(GlassShapes.Item)`) immediately *before* `.selectable` causes the ripple effect to awkwardly spill outside the container's visual bounds.
+**Action:** Always ensure the ripple effect is properly bounded by applying a `.clip(...)` modifier immediately *before* interactive modifiers like `.selectable` for Jetpack Compose list items or rows.
+
+## 2026-10-25 - Meaningful Screen Reader Semantics for Informational Icons
+**Learning:** Found informational icons acting as context (e.g., a "Clock" or "Warning" icon alongside settings text) which had `contentDescription = null`. This meant screen reader users were missing the semantic hints that sighted users were receiving about the type of content (like a warning).
+**Action:** Always ensure that informational icons, especially those conditionally displaying warning or status information, have explicit, localized `contentDescription` strings (e.g., `stringResource(R.string.a11y_warning)`) instead of `null`.

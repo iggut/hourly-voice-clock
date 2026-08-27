@@ -288,7 +288,7 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.NotificationsActive,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.hourly_announcements),
                                 tint = if (hourlyEnabled) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
@@ -326,7 +326,7 @@ fun HomeScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Schedule,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.a11y_clock),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
