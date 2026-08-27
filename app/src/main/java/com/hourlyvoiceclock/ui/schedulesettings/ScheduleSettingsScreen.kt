@@ -456,6 +456,10 @@ fun ScheduleSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(8.dp))
+                            val transparentColor = Color.Transparent
+                            val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                            val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
                             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                                 val configuration = LocalConfiguration.current
                                 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -507,9 +511,7 @@ fun ScheduleSettingsScreen(
                                         }
                                     }
                                 } else {
-                                    val transparentColor = Color.Transparent
-                                    val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
 
                                     Row(
                                         modifier = layoutModifier,
@@ -953,7 +955,7 @@ private fun ClickableRow(
             )
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.cd_navigate),
+                contentDescription = stringResource(R.string.a11y_arrow_right),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

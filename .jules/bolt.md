@@ -70,3 +70,6 @@
 **Learning:** In 1-second timer loops (e.g. updating the UI clock), allocating a new Date/Time object (like `LocalDateTime.now()`) on every tick causes unnecessary garbage collection pressure when the loop inevitably drifts and ticks multiple times in the same physical second.
 **Action:** Expose `System.currentTimeMillis()` from the `Clock` interface instead of bypassing it, and use it to quickly check if the actual epoch second has changed before allocating a new immutable Date/Time object, caching and reusing the previous instance if the second is identical.
 
+## 2024-10-24 - Hoist loop-invariant object allocations
+**Learning:** Hoisting object allocations and lookups (like MaterialTheme colors) out of high-frequency recomposition loops or conditionals inside Compose improves memory footprint and GC pressure.
+**Action:** Extract shared instantiations out of high-frequency recomposition areas, but avoid using `remember` for lightweight `Color` instances as they are value classes.
