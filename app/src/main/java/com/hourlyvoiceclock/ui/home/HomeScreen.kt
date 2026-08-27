@@ -358,8 +358,8 @@ fun HomeScreen(
             ) {
                 val voiceSubtitle = when {
                     settings.selectedLocalModelId != null -> {
-                        val localModel = VoiceModelRegistry.availableVoices
-                            .firstOrNull { it.id == settings.selectedLocalModelId }
+                        val localModelId = settings.selectedLocalModelId
+                        val localModel = if (localModelId != null) VoiceModelRegistry.getVoiceById(localModelId) else null
                         if (localModel != null) {
                             stringResource(
                                 R.string.home_voice_subtitle_local,
@@ -370,9 +370,8 @@ fun HomeScreen(
                         }
                     }
                     settings.selectedVoicePresetId != null -> {
-                        val preset = SPECIAL_VOICE_PRESETS
-                            .plus(ESpeakNgVoiceVariants)
-                            .firstOrNull { it.id == settings.selectedVoicePresetId }
+                        val preset = SPECIAL_VOICE_PRESETS.firstOrNull { it.id == settings.selectedVoicePresetId }
+                            ?: ESpeakNgVoiceVariants.firstOrNull { it.id == settings.selectedVoicePresetId }
                         when {
                             preset != null -> stringResource(
                                 R.string.home_voice_subtitle_special,
