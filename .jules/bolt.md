@@ -70,3 +70,7 @@
 **Learning:** In 1-second timer loops (e.g. updating the UI clock), allocating a new Date/Time object (like `LocalDateTime.now()`) on every tick causes unnecessary garbage collection pressure when the loop inevitably drifts and ticks multiple times in the same physical second.
 **Action:** Expose `System.currentTimeMillis()` from the `Clock` interface instead of bypassing it, and use it to quickly check if the actual epoch second has changed before allocating a new immutable Date/Time object, caching and reusing the previous instance if the second is identical.
 
+
+## 2024-05-30 - View Model Compose Modifiers Allocation Optimization
+**Learning:** In Jetpack Compose, explicitly instantiating common objects or states (like basic colors `val transparentColor = Color.Transparent`) repeatedly inside loops (like `for (day in DayOfWeek.entries)`) forces evaluation logic to happen on every iteration, leading to minor inefficiencies. However, incorrectly hoisting standard colors via `remember` blocks incurs a higher state-tracking penalty than standard variable instantiations.
+**Action:** Extract standard loop-invariant constants like state-dependent theme colors manually outside the loop block to evaluate conditionals once, without utilizing `remember` to prevent memory bloat on value classes.

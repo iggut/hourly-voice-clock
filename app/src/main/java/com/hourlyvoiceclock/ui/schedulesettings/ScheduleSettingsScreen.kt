@@ -467,6 +467,10 @@ fun ScheduleSettingsScreen(
                                 val errorBgColor = errorColor.copy(alpha = 0.2f)
 
                                 // ⚡ Bolt: Extract shared object instantiations and formatting out of loops
+                                val transparentColor = Color.Transparent
+                                val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
                                 val chipColors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = errorBgColor,
                                     selectedLabelColor = errorColor
@@ -507,10 +511,6 @@ fun ScheduleSettingsScreen(
                                         }
                                     }
                                 } else {
-                                    val transparentColor = Color.Transparent
-                                    val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-
                                     Row(
                                         modifier = layoutModifier,
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -953,7 +953,7 @@ private fun ClickableRow(
             )
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = stringResource(R.string.cd_navigate),
+                contentDescription = stringResource(R.string.a11y_arrow_right),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
