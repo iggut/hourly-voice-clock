@@ -81,3 +81,6 @@
 ## 2024-11-20 - Redundant screen reader announcements on Buttons
 **Learning:** Found `Icon`s inside `Button`s alongside descriptive `Text` labels (like the Play arrow inside the "Announce now" button). If these icons have their own `contentDescription`, screen readers will redundantly read both the icon and the text, causing a poor accessibility experience.
 **Action:** Always ensure that when a `Button` contains both an `Icon` and a `Text` element, the `contentDescription` on the `Icon` is explicitly set to `null` to avoid double-announcing the button's action.
+## 2026-08-20 - Add semantics to visual non-button icons
+**Learning:** Found instances of `Icons.AutoMirrored.Filled.KeyboardArrowRight` used visually at the end of list rows (to indicate navigation or an action) but set to `contentDescription = null` because they were not inside an `IconButton`. While they aren't standalone buttons, their presence conveys actionable meaning ("Navigate") that is lost to screen readers if the entire row doesn't have an encompassing description.
+**Action:** When using icons to indicate navigation inside non-button rows, explicitly provide a localized `contentDescription` (e.g., "Navigate") using the `Icon`'s `modifier = Modifier.semantics { ... }` (or `contentDescription` parameter) rather than leaving it `null`.

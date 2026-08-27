@@ -85,4 +85,5 @@
     <string name="collapsed">Collapsed</string>
     <string name="clear_text">Clear text</string>
     <string name="oem_specific_instructions">OEM Specific Instructions</string>
+    <string name="cd_navigate">Navigate</string>
 </resources>

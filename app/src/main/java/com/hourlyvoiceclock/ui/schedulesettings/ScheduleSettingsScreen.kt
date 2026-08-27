@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -878,9 +879,11 @@ fun ScheduleSettingsScreen(
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                            val cdNavigate = stringResource(R.string.cd_navigate)
                             Icon(
                                 imageVector = if (oemGuidesExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = null,
+                                modifier = Modifier.semantics { contentDescription = cdNavigate },
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -949,9 +952,11 @@ private fun ClickableRow(
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary
             )
+            val cdNavigate = stringResource(R.string.cd_navigate)
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
+                modifier = Modifier.semantics { contentDescription = cdNavigate },
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
