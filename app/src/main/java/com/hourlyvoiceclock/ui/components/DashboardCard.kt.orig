@@ -38,14 +38,13 @@ fun DashboardCard(
     subtitle: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    onClickLabel: String? = null
+    modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
     GlassCard(
         modifier = modifier.semantics(mergeDescendants = true) {
             role = Role.Button
-            onClick(label = onClickLabel ?: title, action = null)
+            onClick(label = title, action = null)
         },
         shape = GlassShapes.Dashboard,
         contentPadding = 16.dp,

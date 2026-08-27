@@ -213,7 +213,7 @@ fun ScheduleSettingsScreen(
                 } else {
                     BorderStroke(1.dp, glassBorderColor())
                 }
-                
+
                 val cardBg = if (needsExactPermission) {
                     MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
                 } else {
@@ -384,7 +384,6 @@ fun ScheduleSettingsScreen(
                             // Start time row
                             ClickableRow(
                                 label = stringResource(R.string.quiet_hours_start),
-                                onClickLabel = stringResource(R.string.cd_change_quiet_hours_start),
                                 value = formatTime(quietStart),
                                 onClick = {
                                     TimePickerDialog(
@@ -407,7 +406,6 @@ fun ScheduleSettingsScreen(
                             // End time row
                             ClickableRow(
                                 label = stringResource(R.string.quiet_hours_end),
-                                onClickLabel = stringResource(R.string.cd_change_quiet_hours_end),
                                 value = formatTime(quietEnd),
                                 onClick = {
                                     TimePickerDialog(
@@ -562,7 +560,6 @@ fun ScheduleSettingsScreen(
 
                                 ClickableRow(
                                     label = stringResource(R.string.quiet_days_alt_start),
-                                    onClickLabel = stringResource(R.string.cd_change_quiet_days_alt_start),
                                     value = formatTime(quietDaysQuietStart),
                                     onClick = {
                                         TimePickerDialog(
@@ -584,7 +581,6 @@ fun ScheduleSettingsScreen(
 
                                 ClickableRow(
                                     label = stringResource(R.string.quiet_days_alt_end),
-                                    onClickLabel = stringResource(R.string.cd_change_quiet_days_alt_end),
                                     value = formatTime(quietDaysQuietEnd),
                                     onClick = {
                                         TimePickerDialog(
@@ -750,7 +746,7 @@ fun ScheduleSettingsScreen(
                                                     Manifest.permission.POST_NOTIFICATIONS
                                                 )
                                             } ?: false
-                                            
+
                                             if (shouldShowRationale) {
                                                 showRationaleDialog = true
                                             } else {
@@ -932,7 +928,6 @@ fun ScheduleSettingsScreen(
 @Composable
 private fun ClickableRow(
     label: String,
-    onClickLabel: String,
     value: String,
     onClick: () -> Unit
 ) {
@@ -943,7 +938,7 @@ private fun ClickableRow(
             .semantics(mergeDescendants = true) {}
             .clickable(
                 role = Role.Button,
-                onClickLabel = onClickLabel
+                onClickLabel = label
             ) { onClick() }
             .padding(vertical = 12.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,

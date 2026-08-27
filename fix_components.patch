@@ -1,0 +1,59 @@
+--- app/src/main/java/com/hourlyvoiceclock/ui/schedulesettings/ScheduleSettingsScreen.kt
++++ app/src/main/java/com/hourlyvoiceclock/ui/schedulesettings/ScheduleSettingsScreen.kt
+@@ -382,7 +382,8 @@
+                             // Start time row
+                             ClickableRow(
+                                 label = stringResource(R.string.quiet_hours_start),
+-                                value = formatTime(quietStart),
++                                onClickLabel = stringResource(R.string.cd_change_quiet_hours_start),
++                                value = formatTime(quietStart),
+                                 onClick = {
+                                     TimePickerDialog(
+                                         context,
+@@ -404,7 +405,8 @@
+                             // End time row
+                             ClickableRow(
+                                 label = stringResource(R.string.quiet_hours_end),
+-                                value = formatTime(quietEnd),
++                                onClickLabel = stringResource(R.string.cd_change_quiet_hours_end),
++                                value = formatTime(quietEnd),
+                                 onClick = {
+                                     TimePickerDialog(
+                                         context,
+@@ -558,7 +560,8 @@
+
+                                 ClickableRow(
+                                     label = stringResource(R.string.quiet_days_alt_start),
+-                                    value = formatTime(quietDaysQuietStart),
++                                    onClickLabel = stringResource(R.string.cd_change_quiet_days_alt_start),
++                                    value = formatTime(quietDaysQuietStart),
+                                     onClick = {
+                                         TimePickerDialog(
+                                             context,
+@@ -579,7 +582,8 @@
+
+                                 ClickableRow(
+                                     label = stringResource(R.string.quiet_days_alt_end),
+-                                    value = formatTime(quietDaysQuietEnd),
++                                    onClickLabel = stringResource(R.string.cd_change_quiet_days_alt_end),
++                                    value = formatTime(quietDaysQuietEnd),
+                                     onClick = {
+                                         TimePickerDialog(
+                                             context,
+@@ -928,6 +932,7 @@
+ @Composable
+ private fun ClickableRow(
+     label: String,
++    onClickLabel: String,
+     value: String,
+     onClick: () -> Unit
+ ) {
+@@ -938,7 +943,7 @@
+             .semantics(mergeDescendants = true) {}
+             .clickable(
+                 role = Role.Button,
+-                onClickLabel = label
++                onClickLabel = onClickLabel
+             ) { onClick() }
+             .padding(vertical = 12.dp, horizontal = 4.dp),
+         horizontalArrangement = Arrangement.SpaceBetween,

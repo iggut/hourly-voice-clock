@@ -531,7 +531,6 @@ private fun UpdatesDialog(
 ) {
     val dialogContainer = dialogContainerColor()
     val dialogContent = dialogContentColor()
-    val cdToggleAutoUpdate = stringResource(R.string.cd_toggle_auto_update)
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = dialogContainer,

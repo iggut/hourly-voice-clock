@@ -100,5 +100,15 @@
     <string name="battery_optimization_oneplus">• OnePlus: Settings -&gt; Apps -&gt; App management -&gt; Hourly Voice Clock -&gt; Battery usage -&gt; Choose "Allow background activity".</string>
     <string name="battery_optimization_huawei">• Huawei: Settings -&gt; Apps -&gt; Apps -&gt; Hourly Voice Clock -&gt; Power usage details -&gt; Launch -&gt; Switch to "Manage manually" and enable "Run in background".</string>
     <string name="battery_optimization_vivo">• Vivo: Settings -&gt; Battery -&gt; High background power consumption -&gt; Enable "Hourly Voice Clock".</string>
-</resources>
+    <string name="cd_open_voice_settings">Open Voice settings</string>
+    <string name="cd_open_format_settings">Open Format settings</string>
+    <string name="cd_open_schedule_settings">Open Schedule settings</string>
+    <string name="cd_open_app_updates">Open App updates</string>
+    <string name="cd_toggle_hourly">Toggle hourly announcements</string>
+    <string name="cd_toggle_auto_update">Toggle auto update check</string>
+    <string name="cd_change_quiet_hours_start">Change quiet hours start</string>
+    <string name="cd_change_quiet_hours_end">Change quiet hours end</string>
+    <string name="cd_change_quiet_days_alt_start">Change quiet days alternate start</string>
+    <string name="cd_change_quiet_days_alt_end">Change quiet days alternate end</string>
+
 </resources>
