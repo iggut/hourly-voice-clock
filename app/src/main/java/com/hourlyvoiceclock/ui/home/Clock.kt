@@ -26,6 +26,8 @@ class Clock(
 
     fun secondsText(now: LocalDateTime): String = SECONDS_CACHE[now.second]
 
+    fun secondsText(second: Int): String = SECONDS_CACHE[second]
+
     fun timeState(now: LocalDateTime): TimeDisplayState {
         return TimeDisplayState(
             hoursMinutes = now.format(hoursMinutesFormatter),

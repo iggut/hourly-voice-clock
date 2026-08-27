@@ -99,13 +99,28 @@ class HomeViewModel(
 
     init {
         viewModelScope.launch {
+            var now = clock.now()
+            // ⚡ Bolt: Cache next minute boundary to avoid LocalDateTime allocation on every 1-second tick
+            val initialMillis = System.currentTimeMillis()
+            var nextMinuteBoundary = initialMillis + (60 - now.second) * 1000L - (initialMillis % 1000)
+            updateTime(now)
+            if (hourlyEnabled.value) {
+                updateNextAnnouncement(true, now)
+            }
             while (isActive) {
-                val now = clock.now()
-                updateTime(now)
-                if (hourlyEnabled.value) {
-                    updateNextAnnouncement(true, now)
-                }
                 delay(1000)
+                val currentMillis = System.currentTimeMillis()
+                if (currentMillis >= nextMinuteBoundary) {
+                    now = clock.now()
+                    nextMinuteBoundary = currentMillis + (60 - now.second) * 1000L - (currentMillis % 1000)
+                    updateTime(now)
+                    if (hourlyEnabled.value) {
+                        updateNextAnnouncement(true, now)
+                    }
+                } else {
+                    val second = ((currentMillis / 1000) % 60).toInt()
+                    _seconds.value = clock.secondsText(second)
+                }
             }
         }
         viewModelScope.launch {

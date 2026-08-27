@@ -61,3 +61,7 @@
 ## 2024-08-01 - Compose drawWithContent vs drawWithCache Optimization
 **Learning:** In Jetpack Compose, directly reading scroll states and performing object allocations (like instantiating `Brush.horizontalGradient` objects for edge fading) inside `Modifier.drawWithContent` causes those allocations to run on every single frame during scrolling, putting unnecessary pressure on the garbage collector.
 **Action:** Replace `Modifier.drawWithContent` with `Modifier.drawWithCache`. Pre-calculate layout-size-dependent drawing objects (like `Brush`) in the cache block, and only perform state reads (like `scrollState.canScrollForward`) and standard primitive drawing commands inside the returned `onDrawWithContent` lambda. This ensures objects are allocated only when layout bounds change, while still reacting accurately to state changes frame-by-frame.
+
+## 2024-11-20 - Prevent Date Allocation in 1-Second ViewModel Loop
+**Learning:** Checking whether the minute changed inside a 1-second view model update loop by instantiating `LocalDateTime.now()` multiple times per tick creates unnecessary Date objects and puts pressure on garbage collection.
+**Action:** Extract formatters and cache the `System.currentTimeMillis()` next-minute boundary instead. Only calculate a new `LocalDateTime.now()` when crossing the primitive time boundary to completely eliminate object allocations during the sub-minute ticks.

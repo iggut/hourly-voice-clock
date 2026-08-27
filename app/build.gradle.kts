@@ -186,6 +186,8 @@ dependencies {
     implementation("androidx.datastore:datastore-core:1.0.0")
 
     // Testing
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("org.robolectric:robolectric:4.11.1")
