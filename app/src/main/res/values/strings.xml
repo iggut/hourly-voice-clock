@@ -101,4 +101,3 @@
     <string name="battery_optimization_huawei">• Huawei: Settings -&gt; Apps -&gt; Apps -&gt; Hourly Voice Clock -&gt; Power usage details -&gt; Launch -&gt; Switch to "Manage manually" and enable "Run in background".</string>
     <string name="battery_optimization_vivo">• Vivo: Settings -&gt; Battery -&gt; High background power consumption -&gt; Enable "Hourly Voice Clock".</string>
 </resources>
-</resources>

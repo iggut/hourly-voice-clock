@@ -315,7 +315,7 @@ fun ChimeSoundSelector(
             )
             Icon(
                 imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
+                contentDescription = if (expanded) stringResource(R.string.expanded) else stringResource(R.string.collapsed),
                 modifier = Modifier.size(18.dp)
             )
         }
