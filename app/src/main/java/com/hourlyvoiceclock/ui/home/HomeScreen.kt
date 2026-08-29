@@ -370,9 +370,8 @@ fun HomeScreen(
                         }
                     }
                     settings.selectedVoicePresetId != null -> {
-                        val preset = SPECIAL_VOICE_PRESETS
-                            .plus(ESpeakNgVoiceVariants)
-                            .firstOrNull { it.id == settings.selectedVoicePresetId }
+                        val preset = SPECIAL_VOICE_PRESETS.firstOrNull { it.id == settings.selectedVoicePresetId }
+                            ?: ESpeakNgVoiceVariants.firstOrNull { it.id == settings.selectedVoicePresetId }
                         when {
                             preset != null -> stringResource(
                                 R.string.home_voice_subtitle_special,

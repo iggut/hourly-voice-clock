@@ -70,3 +70,7 @@
 **Learning:** In 1-second timer loops (e.g. updating the UI clock), allocating a new Date/Time object (like `LocalDateTime.now()`) on every tick causes unnecessary garbage collection pressure when the loop inevitably drifts and ticks multiple times in the same physical second.
 **Action:** Expose `System.currentTimeMillis()` from the `Clock` interface instead of bypassing it, and use it to quickly check if the actual epoch second has changed before allocating a new immutable Date/Time object, caching and reusing the previous instance if the second is identical.
 
+
+## 2024-08-28 - Compose List Allocation Optimization
+**Learning:** In Jetpack Compose, dynamically combining static lists using `.plus()` within a `@Composable` block creates a new collection instance on every single recomposition, putting unnecessary pressure on the garbage collector.
+**Action:** Replace collection combinations like `listA.plus(listB).firstOrNull { ... }` with sequential null-fallback lookups like `listA.firstOrNull { ... } ?: listB.firstOrNull { ... }` to avoid intermediate list allocations entirely.
