@@ -125,9 +125,12 @@ class SettingsMapper {
             }
         }
 
+        // ⚡ Bolt: Precomputed minute and hour strings to prevent allocations from padStart during mapping
+        private val PADDED_NUMBERS = Array(60) { it.toString().padStart(2, '0') }
+
         fun formatTime(time: LocalTime): String {
-            val h = time.hour.toString().padStart(2, '0')
-            val m = time.minute.toString().padStart(2, '0')
+            val h = PADDED_NUMBERS[time.hour]
+            val m = PADDED_NUMBERS[time.minute]
             return "$h:$m"
         }
 

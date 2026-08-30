@@ -48,14 +48,14 @@ object AnnouncementFormatter {
         return if (minute == 0 && !alwaysShowMinutes) {
             "$displayHour $amPm"
         } else {
-            "$displayHour:${minute.toString().padStart(2, '0')} $amPm"
+            "$displayHour:${PADDED_NUMBERS[minute]} $amPm"
         }
     }
 
     private fun format24Hour(dateTime: LocalDateTime, alwaysShowMinutes: Boolean): String {
         // ⚡ Bolt: Replace String.format with string template and padStart to prevent format parsing overhead
-        val hourStr = dateTime.hour.toString().padStart(2, '0')
-        val minuteStr = dateTime.minute.toString().padStart(2, '0')
+        val hourStr = PADDED_NUMBERS[dateTime.hour]
+        val minuteStr = PADDED_NUMBERS[dateTime.minute]
         return "$hourStr:$minuteStr"
     }
 
@@ -76,4 +76,7 @@ object AnnouncementFormatter {
     }
 
     private val DATE_FORMATTER = DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())
+
+    // ⚡ Bolt: Precomputed minute and hour strings to prevent allocations from padStart during high-frequency usage
+    private val PADDED_NUMBERS = Array(60) { it.toString().padStart(2, '0') }
 }
