@@ -211,12 +211,13 @@ private fun ErrorChip(message: String, onClear: () -> Unit) {
             modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(4.dp))
+        val dismissLabel = stringResource(R.string.dismiss)
         Text(
-            stringResource(R.string.dismiss),
+            dismissLabel,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onErrorContainer,
             modifier = Modifier
-                .clickable(onClick = onClear, role = Role.Button)
+                .clickable(onClick = onClear, role = Role.Button, onClickLabel = dismissLabel)
                 .padding(horizontal = 4.dp)
         )
     }
