@@ -92,3 +92,6 @@
 ## 2026-10-25 - Meaningful Screen Reader Semantics for Informational Icons
 **Learning:** Found informational icons acting as context (e.g., a "Clock" or "Warning" icon alongside settings text) which had `contentDescription = null`. This meant screen reader users were missing the semantic hints that sighted users were receiving about the type of content (like a warning).
 **Action:** Always ensure that informational icons, especially those conditionally displaying warning or status information, have explicit, localized `contentDescription` strings (e.g., `stringResource(R.string.a11y_warning)`) instead of `null`.
+## 2024-05-18 - LocalVoiceSettingsScreen a11y_error
+**Learning:** Adding a generic error string (`a11y_error`) in `strings.xml` helps to provide a `contentDescription` for `Icons.Default.ErrorOutline` when it conveys actual state (like "Error") rather than just decoration. Screen readers now properly announce it as "Error", enhancing the accessibility of error chips. Also, using `Modifier.semantics(mergeDescendants = true) {}` ensures screen reader users hear the context cohesively.
+**Action:** When adding icons that represent state or give context in chips/banners, provide a localized `contentDescription` rather than `null` and merge the semantics.

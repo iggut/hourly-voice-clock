@@ -105,4 +105,5 @@
     <string name="a11y_warning">Warning</string>
     <string name="a11y_clock">Clock</string>
     <string name="cd_navigate">Navigate forward</string>
+    <string name="a11y_error">Error</string>
 </resources>

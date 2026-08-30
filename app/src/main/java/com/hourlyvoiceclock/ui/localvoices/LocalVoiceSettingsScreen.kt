@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -194,12 +195,13 @@ private fun ErrorChip(message: String, onClear: () -> Unit) {
             .fillMaxWidth()
             .clip(GlassShapes.Chip)
             .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f))
+            .semantics(mergeDescendants = true) {}
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.Top
     ) {
         Icon(
             Icons.Default.ErrorOutline,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.a11y_error),
             tint = MaterialTheme.colorScheme.onErrorContainer,
             modifier = Modifier.size(18.dp)
         )
