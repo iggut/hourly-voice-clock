@@ -22,18 +22,20 @@ class AudioTrackPlayer : LocalTtsAudioPlayer {
     override suspend fun play(samples: FloatArray, sampleRate: Int, channel: AudioChannel) {
         val spec = AudioChannelMapping.specOf(channel)
 
+        // ⚡ Bolt: Use ENCODING_PCM_FLOAT to avoid manual float-to-short conversion overhead
         val audioFormat = AudioFormat.Builder()
             .setSampleRate(sampleRate)
-            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+            .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
             .build()
 
         val minBuffer = AudioTrack.getMinBufferSize(
             sampleRate,
             AudioFormat.CHANNEL_OUT_MONO,
-            AudioFormat.ENCODING_PCM_16BIT
+            AudioFormat.ENCODING_PCM_FLOAT
         )
-        val bufferSize = maxOf(minBuffer, samples.size * 2)
+        // ⚡ Bolt: Float is 4 bytes, so we need samples.size * 4 bytes for the buffer size
+        val bufferSize = maxOf(minBuffer, samples.size * 4)
 
         val track = AudioTrack.Builder()
             .setAudioAttributes(
@@ -47,14 +49,10 @@ class AudioTrackPlayer : LocalTtsAudioPlayer {
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
 
-        val pcmData = ShortArray(samples.size) { i ->
-            val clamped = samples[i].coerceIn(-1f, 1f)
-            (clamped * Short.MAX_VALUE).toInt().toShort()
-        }
-
         try {
             track.play()
-            track.write(pcmData, 0, pcmData.size)
+            // ⚡ Bolt: Directly pass FloatArray to AudioTrack.write() avoiding an intermediate ShortArray allocation and CPU-heavy loop
+            track.write(samples, 0, samples.size, AudioTrack.WRITE_BLOCKING)
             val playbackDurationMs = (samples.size.toLong() * 1000) / sampleRate
             delay(playbackDurationMs + 50)
         } finally {

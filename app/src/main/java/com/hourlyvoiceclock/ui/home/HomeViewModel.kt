@@ -114,7 +114,7 @@ class HomeViewModel(
                 if (hourlyEnabled.value) {
                     updateNextAnnouncement(true, cachedNow)
                 }
-                delay(1000)
+                delay(1000L - (clock.currentTimeMillis() % 1000L))
             }
         }
         viewModelScope.launch {
