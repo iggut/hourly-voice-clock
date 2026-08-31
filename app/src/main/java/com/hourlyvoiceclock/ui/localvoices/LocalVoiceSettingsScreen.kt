@@ -216,7 +216,11 @@ private fun ErrorChip(message: String, onClear: () -> Unit) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onErrorContainer,
             modifier = Modifier
-                .clickable(onClick = onClear, role = Role.Button)
+                .clickable(
+                    onClick = onClear,
+                    role = Role.Button,
+                    onClickLabel = stringResource(R.string.dismiss)
+                )
                 .padding(horizontal = 4.dp)
         )
     }

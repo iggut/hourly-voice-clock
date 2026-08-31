@@ -31,7 +31,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hourlyvoiceclock.ui.theme.GlassShapes
 import com.hourlyvoiceclock.ui.theme.GlassTypography
-import com.hourlyvoiceclock.R
 
 @Composable
 fun DashboardCard(
