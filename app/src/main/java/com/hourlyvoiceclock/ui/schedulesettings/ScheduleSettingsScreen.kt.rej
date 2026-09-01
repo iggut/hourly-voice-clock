@@ -1,0 +1,11 @@
+--- app/src/main/java/com/hourlyvoiceclock/ui/schedulesettings/ScheduleSettingsScreen.kt
++++ app/src/main/java/com/hourlyvoiceclock/ui/schedulesettings/ScheduleSettingsScreen.kt
+@@ -430,7 +430,7 @@
+                             modifier = Modifier
+                                 .fillMaxWidth()
+                                 .clip(GlassShapes.Chip)
+-                                .toggleable(value = allowManual, onValueChange = { viewModel.setAllowManualDuringQuiet(it) }, role = Role.Switch)
++                                .semantics(mergeDescendants = true) {}.toggleable(value = allowManual, onValueChange = { viewModel.setAllowManualDuringQuiet(it) }, role = Role.Switch)
+                                 .padding(vertical = 8.dp, horizontal = 4.dp),
+                             horizontalArrangement = Arrangement.SpaceBetween,
+                             verticalAlignment = Alignment.CenterVertically
