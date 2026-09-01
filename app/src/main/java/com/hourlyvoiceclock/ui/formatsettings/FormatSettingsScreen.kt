@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.os.Build
@@ -97,14 +98,14 @@ fun FormatSettingsScreen(
 
                 SectionHeader(title = stringResource(R.string.time_format), icon = Icons.Default.Timer)
                 GlassCard {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).selectable(selected = timeFormat == TimeFormat.HOUR_12, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }, role = Role.RadioButton)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).semantics(mergeDescendants = true) {}.selectable(selected = timeFormat == TimeFormat.HOUR_12, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }, role = Role.RadioButton)) {
                             RadioButton(
                                 selected = timeFormat == TimeFormat.HOUR_12,
                                 onClick = null
                             )
                             Text("12-hour (e.g. 3:00 PM)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).selectable(selected = timeFormat == TimeFormat.HOUR_24, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }, role = Role.RadioButton)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).semantics(mergeDescendants = true) {}.selectable(selected = timeFormat == TimeFormat.HOUR_24, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }, role = Role.RadioButton)) {
                             RadioButton(
                                 selected = timeFormat == TimeFormat.HOUR_24,
                                 onClick = null
@@ -117,7 +118,7 @@ fun FormatSettingsScreen(
                 GlassCard {
                         val optionShape = GlassShapes.Chip
                         PhraseStyle.entries.forEach { style ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).selectable(selected = phraseStyle == style, onClick = { viewModel.setPhraseStyle(style) }, role = Role.RadioButton)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).semantics(mergeDescendants = true) {}.selectable(selected = phraseStyle == style, onClick = { viewModel.setPhraseStyle(style) }, role = Role.RadioButton)) {
                                 RadioButton(
                                     selected = phraseStyle == style,
                                     onClick = null
@@ -190,7 +191,7 @@ fun FormatSettingsScreen(
                             )
                         }
                         Row(
-                            modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).toggleable(value = vibrateBefore, onValueChange = { viewModel.setVibrateBefore(it) }, role = Role.Switch),
+                            modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).semantics(mergeDescendants = true) {}.toggleable(value = vibrateBefore, onValueChange = { viewModel.setVibrateBefore(it) }, role = Role.Switch),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -201,7 +202,7 @@ fun FormatSettingsScreen(
                             )
                         }
                         Row(
-                            modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).toggleable(value = announceDate, onValueChange = { viewModel.setAnnounceDate(it) }, role = Role.Switch),
+                            modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).semantics(mergeDescendants = true) {}.toggleable(value = announceDate, onValueChange = { viewModel.setAnnounceDate(it) }, role = Role.Switch),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -224,7 +225,7 @@ fun FormatSettingsScreen(
                         Spacer(modifier = Modifier.height(10.dp))
                         val optionShape = GlassShapes.Chip
                         AudioChannel.entries.forEach { channel ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).selectable(selected = audioChannel == channel, onClick = { viewModel.setAudioChannel(channel) }, role = Role.RadioButton)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).semantics(mergeDescendants = true) {}.selectable(selected = audioChannel == channel, onClick = { viewModel.setAudioChannel(channel) }, role = Role.RadioButton)) {
                                 RadioButton(
                                     selected = audioChannel == channel,
                                     onClick = null
@@ -248,6 +249,7 @@ fun FormatSettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(GlassShapes.Chip)
+                            .semantics(mergeDescendants = true) {}
                             .toggleable(
                                 value = useDynamicColor,
                                 enabled = dynamicColorSupported,
