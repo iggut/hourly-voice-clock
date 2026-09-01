@@ -24,7 +24,9 @@ class Clock(
 
     fun now(): LocalDateTime = LocalDateTime.now(zoneId)
 
-    fun secondsText(now: LocalDateTime): String = SECONDS_CACHE[now.second]
+    fun currentTimeMillis(): Long = System.currentTimeMillis()
+
+    fun secondsText(second: Int): String = SECONDS_CACHE[second]
 
     fun timeState(now: LocalDateTime): TimeDisplayState {
         return TimeDisplayState(

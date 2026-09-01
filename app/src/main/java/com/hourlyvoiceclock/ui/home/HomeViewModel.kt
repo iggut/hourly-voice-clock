@@ -100,10 +100,17 @@ class HomeViewModel(
     init {
         viewModelScope.launch {
             while (isActive) {
-                val now = clock.now()
-                updateTime(now)
-                if (hourlyEnabled.value) {
-                    updateNextAnnouncement(true, now)
+                // ⚡ Bolt: Use milliseconds for high-frequency ticks to avoid 59 LocalDateTime object allocations per minute
+                val currentSecond = (clock.currentTimeMillis() / 1000) % 60
+                _seconds.value = clock.secondsText(currentSecond.toInt())
+
+                val currentMinuteHash = (clock.currentTimeMillis() / 60000)
+                if (cachedMinuteHash != currentMinuteHash) {
+                    val now = clock.now()
+                    updateTime(now)
+                    if (hourlyEnabled.value) {
+                        updateNextAnnouncement(true, now)
+                    }
                 }
                 delay(1000)
             }
@@ -140,12 +147,11 @@ class HomeViewModel(
     }
 
     private fun updateTime(now: LocalDateTime) {
-        _seconds.value = clock.secondsText(now)
-        val currentMinuteHash = getEpochDay(now) * 24 * 60 + now.hour * 60 + now.minute
+        val currentMinuteHash = (clock.currentTimeMillis() / 60000)
 
         if (cachedMinuteHash != currentMinuteHash) {
             cachedMinuteHash = currentMinuteHash
-    _nowMinute.value = now // ⚡ Bolt: Emit throttled time change
+            _nowMinute.value = now // ⚡ Bolt: Emit throttled time change
             _timeState.value = clock.timeState(now)
             _currentDate.value = clock.dateText(now)
         }
