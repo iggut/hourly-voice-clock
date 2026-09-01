@@ -74,3 +74,7 @@
 ## 2024-08-28 - Compose List Allocation Optimization
 **Learning:** In Jetpack Compose, dynamically combining static lists using `.plus()` within a `@Composable` block creates a new collection instance on every single recomposition, putting unnecessary pressure on the garbage collector.
 **Action:** Replace collection combinations like `listA.plus(listB).firstOrNull { ... }` with sequential null-fallback lookups like `listA.firstOrNull { ... } ?: listB.firstOrNull { ... }` to avoid intermediate list allocations entirely.
+
+## 2026-08-31 - Fast String Tokenization vs split(Regex)
+**Learning:** In Android, avoiding allocating intermediate lists of strings using `String.split(Regex)` on a relatively simple parsing task significantly reduces memory allocation overhead and Garbage Collector pressure during hot-paths like engine initializations. Using `String.contains()` on substring elements has false-positive flaws without exact delimiter matching, while standard index scanning tokenization is safe and substantially faster.
+**Action:** When extracting tokens from configuration strings separated by known character boundaries, manually traverse the string via index offsets instead of leveraging expensive compiled `Regex` rules and list collections.
