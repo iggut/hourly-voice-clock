@@ -231,6 +231,7 @@ fun ScheduleSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(GlassShapes.Chip)
+                                .semantics(mergeDescendants = true) {}
                                 .toggleable(
                                     value = exactAlarms,
                                     onValueChange = { enabled ->
@@ -337,6 +338,7 @@ fun ScheduleSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(GlassShapes.Chip)
+                                .semantics(mergeDescendants = true) {}
                                 .toggleable(value = quietEnabled, onValueChange = { viewModel.setQuietHoursEnabled(it) }, role = Role.Switch)
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -429,6 +431,7 @@ fun ScheduleSettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(GlassShapes.Chip)
+                                    .semantics(mergeDescendants = true) {}
                                     .toggleable(value = allowManual, onValueChange = { viewModel.setAllowManualDuringQuiet(it) }, role = Role.Switch)
                                     .padding(vertical = 8.dp, horizontal = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -661,6 +664,7 @@ fun ScheduleSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(GlassShapes.Chip)
+                                .semantics(mergeDescendants = true) {}
                                 .toggleable(
                                     value = notificationLogging,
                                     onValueChange = { checked ->
