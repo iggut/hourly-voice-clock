@@ -93,6 +93,8 @@ class HomeViewModel(
     private var cachedNextAnnouncementHash: Long? = null
 
     private var cachedMinuteHash: Long? = null
+    private var cachedHour = -1
+    private var cachedMinute = -1
     private var cachedYear = -1
     private var cachedDayOfYear = -1
     private var cachedEpochDay = 0L
@@ -150,11 +152,23 @@ class HomeViewModel(
 
     private fun updateTime(now: LocalDateTime) {
         _seconds.value = clock.secondsText(now)
-        val currentMinuteHash = getEpochDay(now) * 24 * 60 + now.hour * 60 + now.minute
+
+        // ⚡ Bolt: Fast path to skip full minute hash calculation if minute and hour haven't changed.
+        // In the normal tick loop, day changes are strictly bound to hour/minute rollovers,
+        // so checking hour and minute is sufficient to avoid calculating getEpochDay() on 99.9% of ticks,
+        // while remaining safe against hour-long leaps in time.
+        val currentMinuteHash = if (cachedMinuteHash != null &&
+            cachedHour == now.hour && cachedMinute == now.minute) {
+            cachedMinuteHash!!
+        } else {
+            cachedHour = now.hour
+            cachedMinute = now.minute
+            getEpochDay(now) * 24 * 60 + now.hour * 60 + now.minute
+        }
 
         if (cachedMinuteHash != currentMinuteHash) {
             cachedMinuteHash = currentMinuteHash
-    _nowMinute.value = now // ⚡ Bolt: Emit throttled time change
+            _nowMinute.value = now // ⚡ Bolt: Emit throttled time change
             _timeState.value = clock.timeState(now)
             _currentDate.value = clock.dateText(now)
         }
