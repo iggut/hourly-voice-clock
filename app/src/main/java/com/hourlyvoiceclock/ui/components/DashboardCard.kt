@@ -66,7 +66,7 @@ fun DashboardCard(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = stringResource(R.string.a11y_dashboard_icon),
+                    contentDescription = null,
                     tint = if (isDark) {
                         MaterialTheme.colorScheme.primary
                     } else {

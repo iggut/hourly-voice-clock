@@ -887,7 +887,7 @@ fun ScheduleSettingsScreen(
                             )
                             Icon(
                                 imageVector = if (oemGuidesExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = if (oemGuidesExpanded) stringResource(R.string.a11y_collapse) else stringResource(R.string.a11y_expand),
+                                contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
