@@ -111,12 +111,22 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
 
     override fun getEngines(): List<TtsEngineInfo> {
         val ttsInstance = tts ?: return emptyList()
-        val installed = ttsInstance.engines.map {
-            TtsEngineInfo(
-                packageName = it.name,
-                label = it.label,
-                isInstalled = true
+        val enginesList = ttsInstance.engines
+
+        // ⚡ Bolt: Single-pass initialization instead of chained .map { }.toMutableList()
+        // to prevent allocating intermediate lists and copies
+        val result = ArrayList<TtsEngineInfo>(enginesList.size + 2)
+        val existingPackageNames = HashSet<String>(enginesList.size + 2)
+
+        for (engine in enginesList) {
+            result.add(
+                TtsEngineInfo(
+                    packageName = engine.name,
+                    label = engine.label,
+                    isInstalled = true
+                )
             )
+            existingPackageNames.add(engine.name)
         }
 
         // Define standard popular engines to show even if not installed
@@ -125,8 +135,6 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             TtsEngineInfo("com.redzoc.ramees.tts.espeak", "eSpeak NG", false)
         )
 
-        val result = installed.toMutableList()
-        val existingPackageNames = installed.mapTo(HashSet()) { it.packageName }
         for (known in knownEngines) {
             if (existingPackageNames.add(known.packageName)) {
                 result.add(known)
