@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -189,10 +190,13 @@ fun LocalVoiceSettingsScreen(
 
 @Composable
 private fun ErrorChip(message: String, onClear: () -> Unit) {
+    val dismissLabel = stringResource(R.string.dismiss)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(GlassShapes.Chip)
+            .clickable(onClick = onClear, role = Role.Button, onClickLabel = dismissLabel)
+            .semantics(mergeDescendants = true) {}
             .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f))
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.Top
@@ -211,14 +215,11 @@ private fun ErrorChip(message: String, onClear: () -> Unit) {
             modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(4.dp))
-        val dismissLabel = stringResource(R.string.dismiss)
         Text(
             dismissLabel,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onErrorContainer,
-            modifier = Modifier
-                .clickable(onClick = onClear, role = Role.Button, onClickLabel = dismissLabel)
-                .padding(horizontal = 4.dp)
+            modifier = Modifier.padding(horizontal = 4.dp)
         )
     }
 }
