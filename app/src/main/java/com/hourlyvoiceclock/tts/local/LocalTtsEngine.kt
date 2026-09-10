@@ -117,19 +117,24 @@ class LocalTtsEngine(
     override fun isAvailable(): Boolean = isInitialized && synthesizer != null && currentModel != null
 
     override fun getVoices(): List<VoiceInfo> {
-        return downloader.getDownloadedModels().map { model ->
-            VoiceInfo(
-                name = model.id,
-                localeDisplayName = model.language,
-                localeTag = model.language,
-                quality = 4,
-                latency = 2,
-                requiresNetwork = false,
-                genderLabel = null,
-                description = model.id,
-                isSpecial = true
+        val models = downloader.getDownloadedModels()
+        val result = ArrayList<VoiceInfo>(models.size)
+        for (model in models) {
+            result.add(
+                VoiceInfo(
+                    name = model.id,
+                    localeDisplayName = model.language,
+                    localeTag = model.language,
+                    quality = 4,
+                    latency = 2,
+                    requiresNetwork = false,
+                    genderLabel = null,
+                    description = model.id,
+                    isSpecial = true
+                )
             )
         }
+        return result
     }
 
     override fun setVoice(voiceName: String, localeTag: String): Boolean {
@@ -264,13 +269,18 @@ class LocalTtsEngine(
     }
 
     override fun getEngines(): List<TtsEngineInfo> {
-        return downloader.getDownloadedModels().map { model ->
-            TtsEngineInfo(
-                packageName = model.id,
-                label = model.id,
-                isInstalled = true
+        val models = downloader.getDownloadedModels()
+        val result = ArrayList<TtsEngineInfo>(models.size)
+        for (model in models) {
+            result.add(
+                TtsEngineInfo(
+                    packageName = model.id,
+                    label = model.id,
+                    isInstalled = true
+                )
             )
         }
+        return result
     }
 
     override fun getCurrentEnginePackage(): String? = currentModel?.id
