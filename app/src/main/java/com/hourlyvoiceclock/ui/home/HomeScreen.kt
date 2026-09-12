@@ -233,7 +233,7 @@ fun HomeScreen(
                         if (canSpeakNow) {
                             Icon(
                                 imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = stringResource(R.string.announce_now),
+                                contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )
                         } else {
