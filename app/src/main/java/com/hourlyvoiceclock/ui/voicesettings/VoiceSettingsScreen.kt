@@ -263,7 +263,7 @@ fun VoiceSettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.Info, contentDescription = stringResource(R.string.a11y_info_icon), tint = MaterialTheme.colorScheme.onErrorContainer)
+                                Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
                                 Text(
                                     text = stringResource(R.string.single_voice_engine_detected),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -346,7 +346,7 @@ fun VoiceSettingsScreen(
                                 .height(48.dp),
                             shape = GlassShapes.Item
                         ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = stringResource(R.string.preview_voice), modifier = Modifier.size(18.dp))
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(stringResource(R.string.preview_voice), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                         }
