@@ -82,21 +82,27 @@ fun LocalVoiceSettingsScreen(
 
     val downloadedIds = remember(downloadedModels) { downloadedModels.map { it.id }.toSet() }
 
-    val categories = listOf(
-        VoiceCategory.STANDARD to R.string.category_standard,
-        VoiceCategory.CHARACTER to R.string.category_character,
-        VoiceCategory.NARRATOR to R.string.category_narrator,
-        VoiceCategory.ACCENT to R.string.category_accents
-    )
-
-    val visibleByCategory = categories.map { (category, labelRes) ->
-        val voices = VoiceModelRegistry.getVoicesByCategory(category)
-            .filter { model ->
-                listFilter == LocalVoiceListFilter.ALL || model.id in downloadedIds
-            }
-        Triple(category, labelRes, voices)
+    val categories = remember {
+        listOf(
+            VoiceCategory.STANDARD to R.string.category_standard,
+            VoiceCategory.CHARACTER to R.string.category_character,
+            VoiceCategory.NARRATOR to R.string.category_narrator,
+            VoiceCategory.ACCENT to R.string.category_accents
+        )
     }
-    val hasVisibleVoices = visibleByCategory.any { it.third.isNotEmpty() }
+
+    // ⚡ Bolt: Use remember to avoid recalculating visible categories and filtering lists on every recomposition.
+    val (visibleByCategory, hasVisibleVoices) = remember(listFilter, downloadedIds, categories) {
+        val visible = categories.map { (category, labelRes) ->
+            val voices = VoiceModelRegistry.getVoicesByCategory(category)
+                .filter { model ->
+                    listFilter == LocalVoiceListFilter.ALL || model.id in downloadedIds
+                }
+            Triple(category, labelRes, voices)
+        }
+        val hasVisible = visible.any { it.third.isNotEmpty() }
+        Pair(visible, hasVisible)
+    }
 
     GlassScreen(
         title = stringResource(R.string.local_voices_title),
