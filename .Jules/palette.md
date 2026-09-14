@@ -9,3 +9,7 @@
 ## 2023-11-20 - Redundant screen reader announcements in Buttons containing Icons (Part 2)
 **Learning:** Extending the previous learning, this redundancy applies broadly to any `Button` or interactive container that pairs an `Icon` with a descriptive `Text`. For instance, in `VoiceSettingsScreen` the "Preview Voice" button, and in `LocalVoiceSettingsScreen` the "Download" button, both paired icons with text that fully described the action. Similarly, the "Info" icon next to the "Single voice engine detected" text was redundant.
 **Action:** When auditing codebase for accessibility, search for `Icon` usage inside `Button`s or `Row`s and verify whether adjacent text makes the icon's `contentDescription` redundant. If so, set it to `null`.
+
+## 2023-11-20 - Missing accessibility semantics for `selectable` elements in `Row`s
+**Learning:** When using `Modifier.selectable(role = Role.RadioButton)` or `Modifier.toggleable` on a parent `Row` containing a `RadioButton` (or `Switch`) and text, if `.semantics(mergeDescendants = true) {}` is missing before the `.selectable` modifier, screen readers may not correctly group the text label and the selectable state into a single coherent element for the user.
+**Action:** Always verify that interactive `Row`s or `Card`s representing radio buttons or switches include `.semantics(mergeDescendants = true) {}` in their modifier chain before `.selectable` or `.toggleable` to ensure grouped announcements.
