@@ -89,12 +89,15 @@ fun LocalVoiceSettingsScreen(
         VoiceCategory.ACCENT to R.string.category_accents
     )
 
-    val visibleByCategory = categories.map { (category, labelRes) ->
-        val voices = VoiceModelRegistry.getVoicesByCategory(category)
-            .filter { model ->
-                listFilter == LocalVoiceListFilter.ALL || model.id in downloadedIds
-            }
-        Triple(category, labelRes, voices)
+    // ⚡ Bolt: Memoize the filtered voice list to prevent O(N) filtering and list allocations on every recomposition frame
+    val visibleByCategory = remember(listFilter, downloadedIds) {
+        categories.map { (category, labelRes) ->
+            val voices = VoiceModelRegistry.getVoicesByCategory(category)
+                .filter { model ->
+                    listFilter == LocalVoiceListFilter.ALL || model.id in downloadedIds
+                }
+            Triple(category, labelRes, voices)
+        }
     }
     val hasVisibleVoices = visibleByCategory.any { it.third.isNotEmpty() }
 
