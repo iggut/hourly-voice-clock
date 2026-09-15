@@ -188,6 +188,7 @@ fun VoiceSettingsScreen(
                             Card(
                                 modifier = Modifier
                                     .width(160.dp)
+                                    .semantics(mergeDescendants = true) {}
                                     .selectable(
                                         selected = isSelected,
                                         onClick = {
@@ -614,6 +615,7 @@ fun SpecialPresetItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(GlassShapes.Item)
+            .semantics(mergeDescendants = true) {}
             .selectable(selected = isSelected, onClick = onSelectPreset, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 10.dp),
@@ -706,6 +708,7 @@ fun VoiceItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(GlassShapes.Item)
+            .semantics(mergeDescendants = true) {}
             .selectable(selected = isSelected, onClick = { onSelectVoice(voice.name, voice.localeTag) }, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -797,6 +800,7 @@ fun LocalVoiceItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(GlassShapes.Item)
+            .semantics(mergeDescendants = true) {}
             .selectable(selected = isSelected, onClick = onSelect, role = Role.RadioButton)
             .background(backgroundColor)
             .padding(horizontal = 18.dp, vertical = 12.dp),
