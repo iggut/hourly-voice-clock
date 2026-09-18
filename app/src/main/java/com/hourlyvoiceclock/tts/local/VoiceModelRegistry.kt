@@ -705,11 +705,16 @@ object VoiceModelRegistry {
         ),
     )
 
+    // ⚡ Bolt: Cache voices by ID and Category using associateBy and groupBy to prevent
+    // O(N) array scanning and redundant list allocations on every registry query.
+    private val voicesById: Map<String, VoiceModel> = availableVoices.associateBy { it.id }
+    private val voicesByCategory: Map<VoiceCategory, List<VoiceModel>> = availableVoices.groupBy { it.category }
+
     fun getVoiceById(id: String): VoiceModel? =
-        availableVoices.find { it.id == id }
+        voicesById[id]
 
     fun getVoicesByCategory(category: VoiceCategory): List<VoiceModel> =
-        availableVoices.filter { it.category == category }
+        voicesByCategory[category] ?: emptyList()
 
     fun formatSize(context: Context, sizeBytes: Long): String {
         val kb = sizeBytes / 1024.0
