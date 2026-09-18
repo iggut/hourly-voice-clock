@@ -299,25 +299,28 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             .toList()
 
         val countryCounters = mutableMapOf<String, Int>()
-
-        return sorted.map { voice ->
+        val result = ArrayList<VoiceInfo>(sorted.size)
+        for (voice in sorted) {
             val isNetwork = voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS) ?: false
             val country = voice.locale.displayCountry.ifBlank { voice.locale.displayLanguage }
             val count = countryCounters.getOrDefault(country, 0) + 1
             countryCounters[country] = count
 
-            VoiceInfo(
-                name = voice.name,
-                localeDisplayName = country,
-                localeTag = voice.locale.toLanguageTag(),
-                quality = voice.quality,
-                latency = voice.latency,
-                requiresNetwork = isNetwork,
-                genderLabel = inferGender(voice.name),
-                description = "$country Voice $count",
-                isSpecial = false
+            result.add(
+                VoiceInfo(
+                    name = voice.name,
+                    localeDisplayName = country,
+                    localeTag = voice.locale.toLanguageTag(),
+                    quality = voice.quality,
+                    latency = voice.latency,
+                    requiresNetwork = isNetwork,
+                    genderLabel = inferGender(voice.name),
+                    description = "$country Voice $count",
+                    isSpecial = false
+                )
             )
         }
+        return result
     }
 
     private fun Locale.isSupportedAnnouncementLocale(): Boolean {
