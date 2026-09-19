@@ -13,3 +13,7 @@
 ## 2023-11-20 - Missing accessibility semantics for `selectable` elements in `Row`s
 **Learning:** When using `Modifier.selectable(role = Role.RadioButton)` or `Modifier.toggleable` on a parent `Row` containing a `RadioButton` (or `Switch`) and text, if `.semantics(mergeDescendants = true) {}` is missing before the `.selectable` modifier, screen readers may not correctly group the text label and the selectable state into a single coherent element for the user.
 **Action:** Always verify that interactive `Row`s or `Card`s representing radio buttons or switches include `.semantics(mergeDescendants = true) {}` in their modifier chain before `.selectable` or `.toggleable` to ensure grouped announcements.
+
+## 2023-11-21 - Lack of Role and full semantics for custom checkboxes
+**Learning:** When building custom multi-select UI elements (like a day-of-week picker using circles) using `Modifier.selectable`, relying purely on a short label (like "M" for Monday) without assigning an appropriate Role leads to poor screen reader accessibility. Users hear "M" instead of "Monday" and are not informed they are interacting with a checkbox.
+**Action:** Always use `.semantics(mergeDescendants = true) { contentDescription = fullContext }` to override narrow UI labels with descriptive text, and explicitly provide `role = Role.Checkbox` inside the `Modifier.selectable` to convey the component's interaction model to assistive technology.

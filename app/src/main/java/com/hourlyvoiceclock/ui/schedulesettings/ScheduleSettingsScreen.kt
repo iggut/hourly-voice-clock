@@ -17,6 +17,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -526,6 +527,7 @@ fun ScheduleSettingsScreen(
                                             val bgColor = if (isDisabled) errorBgColor else transparentColor
                                             val borderColor = if (isDisabled) errorColor else outlineColor
                                             val textColor = if (isDisabled) errorColor else onSurfaceColor
+                                            val fullDayName = fullDayNames[day] ?: narrowName
                                             Box(
                                                 modifier = baseBoxModifier
                                                     .clip(CircleShape)
@@ -535,7 +537,14 @@ fun ScheduleSettingsScreen(
                                                         color = borderColor,
                                                         shape = CircleShape
                                                     )
-                                                    .selectable(selected = !isDisabled, onClick = { viewModel.toggleQuietDay(day, !isDisabled) }),
+                                                    .semantics(mergeDescendants = true) {
+                                                        contentDescription = fullDayName
+                                                    }
+                                                    .selectable(
+                                                        selected = !isDisabled,
+                                                        onClick = { viewModel.toggleQuietDay(day, !isDisabled) },
+                                                        role = Role.Checkbox
+                                                    ),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
