@@ -319,6 +319,11 @@ val ESpeakNgVoiceVariants = listOf(
     )
 )
 
+// ⚡ Bolt: Cache special voice presets and variants by ID to prevent O(N) linear scans
+// and list allocations during frequent recompositions in HomeScreen's voice subtitle logic.
+val SPECIAL_VOICE_PRESETS_BY_ID = SPECIAL_VOICE_PRESETS.associateBy { it.id }
+val ESPEAK_NG_VOICE_VARIANTS_BY_ID = ESpeakNgVoiceVariants.associateBy { it.id }
+
 class VoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val deps = (application as DependenciesProvider).dependencies
