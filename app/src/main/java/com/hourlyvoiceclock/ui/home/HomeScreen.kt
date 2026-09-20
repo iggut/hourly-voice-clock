@@ -579,6 +579,7 @@ private fun UpdatesDialog(
                     }
                     is UpdateStatus.Checking -> {
                         Row(
+                            modifier = Modifier.semantics(mergeDescendants = true) {},
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -619,6 +620,7 @@ private fun UpdatesDialog(
                     is UpdateStatus.Downloading -> {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
+                                modifier = Modifier.semantics(mergeDescendants = true) {},
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -665,6 +667,7 @@ private fun UpdatesDialog(
                     is UpdateStatus.Installing -> {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
+                                modifier = Modifier.semantics(mergeDescendants = true) {},
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
