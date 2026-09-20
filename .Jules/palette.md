@@ -13,3 +13,7 @@
 ## 2023-11-20 - Missing accessibility semantics for `selectable` elements in `Row`s
 **Learning:** When using `Modifier.selectable(role = Role.RadioButton)` or `Modifier.toggleable` on a parent `Row` containing a `RadioButton` (or `Switch`) and text, if `.semantics(mergeDescendants = true) {}` is missing before the `.selectable` modifier, screen readers may not correctly group the text label and the selectable state into a single coherent element for the user.
 **Action:** Always verify that interactive `Row`s or `Card`s representing radio buttons or switches include `.semantics(mergeDescendants = true) {}` in their modifier chain before `.selectable` or `.toggleable` to ensure grouped announcements.
+
+## 2026-09-20 - Accessible Loading States in UpdatesDialog
+**Learning:** When displaying an unlabelled loading indicator (like `CircularProgressIndicator`) immediately adjacent to descriptive text (e.g., 'Downloading...'), screen readers might announce them separately or fail to provide context to the indicator.
+**Action:** Always apply `Modifier.semantics(mergeDescendants = true) {}` to their parent container (like `Row`). This ensures screen readers group the elements and announce them as a single cohesive status update, effectively labelling the indicator with the adjacent text.
