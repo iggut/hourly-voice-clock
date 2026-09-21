@@ -360,8 +360,8 @@ fun HomeScreen(
             ) {
                 val voiceSubtitle = when {
                     settings.selectedLocalModelId != null -> {
-                        val localModel = VoiceModelRegistry.availableVoices
-                            .firstOrNull { it.id == settings.selectedLocalModelId }
+                        // ⚡ Bolt: Use O(1) map lookup instead of O(N) array scanning during recomposition
+                        val localModel = VoiceModelRegistry.getVoiceById(settings.selectedLocalModelId!!)
                         if (localModel != null) {
                             stringResource(
                                 R.string.home_voice_subtitle_local,
