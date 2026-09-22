@@ -319,6 +319,9 @@ val ESpeakNgVoiceVariants = listOf(
     )
 )
 
+// ⚡ Bolt: Cache all presets by ID using associateBy to prevent O(N) array scanning during high-frequency recomposition lookups
+val ALL_PRESETS_BY_ID = (SPECIAL_VOICE_PRESETS + ESpeakNgVoiceVariants).associateBy { it.id }
+
 class VoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val deps = (application as DependenciesProvider).dependencies

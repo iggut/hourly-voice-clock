@@ -83,8 +83,7 @@ import com.hourlyvoiceclock.ui.theme.GlassTypography
 import com.hourlyvoiceclock.ui.theme.dialogContainerColor
 import com.hourlyvoiceclock.ui.theme.dialogContentColor
 import com.hourlyvoiceclock.ui.theme.glassBorderColor
-import com.hourlyvoiceclock.ui.voicesettings.ESpeakNgVoiceVariants
-import com.hourlyvoiceclock.ui.voicesettings.SPECIAL_VOICE_PRESETS
+import com.hourlyvoiceclock.ui.voicesettings.ALL_PRESETS_BY_ID
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -360,8 +359,8 @@ fun HomeScreen(
             ) {
                 val voiceSubtitle = when {
                     settings.selectedLocalModelId != null -> {
-                        val localModel = VoiceModelRegistry.availableVoices
-                            .firstOrNull { it.id == settings.selectedLocalModelId }
+                        // ⚡ Bolt: Fast lookup map from registry instead of O(N) array scanning
+                        val localModel = VoiceModelRegistry.getVoiceById(settings.selectedLocalModelId!!)
                         if (localModel != null) {
                             stringResource(
                                 R.string.home_voice_subtitle_local,
@@ -372,8 +371,8 @@ fun HomeScreen(
                         }
                     }
                     settings.selectedVoicePresetId != null -> {
-                        val preset = SPECIAL_VOICE_PRESETS.firstOrNull { it.id == settings.selectedVoicePresetId }
-                            ?: ESpeakNgVoiceVariants.firstOrNull { it.id == settings.selectedVoicePresetId }
+                        // ⚡ Bolt: Use precomputed fast lookup map instead of multiple O(N) list scans
+                        val preset = ALL_PRESETS_BY_ID[settings.selectedVoicePresetId]
                         when {
                             preset != null -> stringResource(
                                 R.string.home_voice_subtitle_special,
