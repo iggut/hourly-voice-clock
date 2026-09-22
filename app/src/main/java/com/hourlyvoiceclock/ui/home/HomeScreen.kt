@@ -83,8 +83,7 @@ import com.hourlyvoiceclock.ui.theme.GlassTypography
 import com.hourlyvoiceclock.ui.theme.dialogContainerColor
 import com.hourlyvoiceclock.ui.theme.dialogContentColor
 import com.hourlyvoiceclock.ui.theme.glassBorderColor
-import com.hourlyvoiceclock.ui.voicesettings.ESpeakNgVoiceVariants
-import com.hourlyvoiceclock.ui.voicesettings.SPECIAL_VOICE_PRESETS
+import com.hourlyvoiceclock.ui.voicesettings.ALL_SPECIAL_VOICE_PRESETS_BY_ID
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -372,8 +371,7 @@ fun HomeScreen(
                         }
                     }
                     settings.selectedVoicePresetId != null -> {
-                        val preset = SPECIAL_VOICE_PRESETS.firstOrNull { it.id == settings.selectedVoicePresetId }
-                            ?: ESpeakNgVoiceVariants.firstOrNull { it.id == settings.selectedVoicePresetId }
+                        val preset = ALL_SPECIAL_VOICE_PRESETS_BY_ID[settings.selectedVoicePresetId]
                         when {
                             preset != null -> stringResource(
                                 R.string.home_voice_subtitle_special,
