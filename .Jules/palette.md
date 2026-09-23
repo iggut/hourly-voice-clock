@@ -20,3 +20,7 @@
 ## 2023-11-20 - Unlabelled loading indicators next to text
 **Learning:** When displaying a visual loading indicator (like `CircularProgressIndicator`) right next to text describing the status (e.g. "Downloading...", "Checking for updates"), screen readers will read the text but may not associate the indicator with it, or might just announce a generic "progress bar" out of context. To create a cohesive announcement for assistive technologies, they should be grouped.
 **Action:** Apply `Modifier.semantics(mergeDescendants = true) {}` to the parent `Row` container that holds both the `CircularProgressIndicator` and the `Text`. This ensures the elements are grouped and announced together as a single status update.
+
+## 2023-11-20 - Redundant screen reader announcements in interactive rows
+**Learning:** Similar to icons inside buttons, when interactive `Row` elements (e.g., those using `Modifier.toggleable` or `Modifier.selectable`) have `.semantics(mergeDescendants = true)` applied to group the text label and state for screen readers, any structural or purely visual icons (like alarms or locks) adjacent to the text will cause redundant double-announcements if they also have a localized `contentDescription` set (e.g. `stringResource(R.string.a11y_clock)`).
+**Action:** Always set `contentDescription = null` for purely decorative or visual status icons that are housed within a merged interactive `Row` immediately adjacent to `Text` that conveys the same meaning.
