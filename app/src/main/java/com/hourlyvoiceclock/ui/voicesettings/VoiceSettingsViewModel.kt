@@ -319,6 +319,12 @@ val ESpeakNgVoiceVariants = listOf(
     )
 )
 
+// ⚡ Bolt: Cache special voices by ID to prevent O(N) array scanning and redundant allocations in Compose UI lookups.
+val ALL_SPECIAL_VOICE_PRESETS_BY_ID = buildList {
+    addAll(SPECIAL_VOICE_PRESETS)
+    addAll(ESpeakNgVoiceVariants)
+}.associateBy { it.id }
+
 class VoiceSettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val deps = (application as DependenciesProvider).dependencies
