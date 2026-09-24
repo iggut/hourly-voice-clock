@@ -262,7 +262,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = if (needsExactPermission) Icons.Default.Warning else Icons.Default.Alarm,
-                                        contentDescription = if (needsExactPermission) stringResource(R.string.a11y_warning) else stringResource(R.string.a11y_clock),
+                                        contentDescription = null,
                                         tint = if (needsExactPermission) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -355,7 +355,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.LockClock,
-                                        contentDescription = stringResource(R.string.a11y_clock),
+                                        contentDescription = null,
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -718,7 +718,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = if (showPermissionWarning) Icons.Default.Warning else Icons.Default.Notifications,
-                                        contentDescription = if (showPermissionWarning) stringResource(R.string.a11y_warning) else stringResource(R.string.notification_logging),
+                                        contentDescription = null,
                                         tint = if (showPermissionWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -819,7 +819,7 @@ fun ScheduleSettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.LockClock,
-                                        contentDescription = stringResource(R.string.a11y_clock),
+                                        contentDescription = null,
                                         tint = if (isOptimized) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                                     )
                                 }
