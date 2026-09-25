@@ -295,7 +295,8 @@ fun ChimeSoundSelector(
     onSoundSelected: (ChimeSound) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var expanded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    // ⚡ Bolt: Use rememberSaveable to prevent UI state loss on configuration changes.
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
 
     Box(modifier = modifier) {
         OutlinedButton(
