@@ -1,0 +1,4 @@
+💡 What: Updated the `ChimeSoundSelector` dropdown button in `FormatSettingsScreen` to use `stateDescription` instead of `contentDescription` on its inner `Icon`.
+🎯 Why: When the icon had `contentDescription`, screen readers announced the state redundantly or separated from the main button interaction. Applying `stateDescription` directly to the `OutlinedButton` groups the state ("Expanded" or "Collapsed") cohesively with the button reading for improved accessibility.
+📸 Before/After: Visuals are unchanged. The screen reader announcement goes from e.g., "Classic Chime, Expand, Button" to "Classic Chime, Button, Collapsed".
+♿ Accessibility: Fixes redundant screen reader announcements by explicitly setting `contentDescription = null` on the inner expand/collapse chevron and applying `Modifier.semantics { stateDescription = ... }` directly to the interactive parent container.
