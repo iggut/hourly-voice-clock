@@ -394,7 +394,7 @@ fun VoiceSettingsScreen(
                             ) {
                                 Icon(
                                     Icons.Filled.Star,
-                                    contentDescription = stringResource(R.string.a11y_info_icon),
+                                    contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -462,7 +462,7 @@ fun VoiceSettingsScreen(
                             ) {
                                 Icon(
                                     Icons.Filled.OfflineBolt,
-                                    contentDescription = stringResource(R.string.a11y_info_icon),
+                                    contentDescription = null,
                                     tint = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -546,7 +546,7 @@ fun VoiceSettingsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Info,
-                                contentDescription = stringResource(R.string.a11y_info_icon),
+                                contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -839,7 +839,7 @@ fun LocalVoiceItem(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Filled.OfflineBolt,
-                            contentDescription = stringResource(R.string.a11y_info_icon),
+                            contentDescription = null,
                             modifier = Modifier.size(12.dp),
                             tint = MaterialTheme.colorScheme.tertiary
                         )
