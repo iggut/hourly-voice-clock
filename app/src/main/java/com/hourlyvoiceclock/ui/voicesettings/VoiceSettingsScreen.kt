@@ -444,7 +444,14 @@ fun VoiceSettingsScreen(
                                 SpecialPresetItem(
                                     preset = preset,
                                     isSelected = selectedPresetId == preset.id && !localVoiceSelected,
-                                    matchedVoiceName = if (selectedPresetId == preset.id) selectedVoice else null,
+                                    matchedVoiceName = if (selectedPresetId == preset.id) {
+                                        friendlyMatchedVoiceLabel(
+                                            normalVoicesByLocale.values.flatten(),
+                                            selectedVoice
+                                        )
+                                    } else {
+                                        null
+                                    },
                                     onSelectPreset = { viewModel.selectVoicePreset(preset) },
                                     onPreviewPreset = { viewModel.selectAndPreviewPreset(preset) }
                                 )
@@ -907,4 +914,16 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
             )
         }
     }
+}
+
+/**
+ * Human label for the system voice a Special Voice preset resolved to.
+ * Engine ids such as "en-us-x-sfg-local" are not shown.
+ */
+internal fun friendlyMatchedVoiceLabel(voices: Iterable<VoiceInfo>, voiceName: String?): String? {
+    if (voiceName.isNullOrBlank()) return null
+    val voice = voices.firstOrNull { it.name == voiceName } ?: return null
+    val friendly = voice.description.ifBlank { voice.localeDisplayName }.trim()
+    if (friendly.isBlank() || friendly == voice.name) return null
+    return friendly
 }
