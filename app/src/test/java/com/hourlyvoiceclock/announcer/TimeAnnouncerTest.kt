@@ -266,7 +266,7 @@ private class FakeChimePlayer(context: android.content.Context) : ChimePlayer(co
     var played = false
     private var pendingComplete: (() -> Unit)? = null
 
-    override fun play(sound: ChimeSound, onComplete: () -> Unit) {
+    override fun play(sound: ChimeSound, channel: com.hourlyvoiceclock.data.AudioChannel, onComplete: () -> Unit) {
         played = true
         pendingComplete = onComplete
     }

@@ -79,7 +79,7 @@ class TimeAnnouncer(
         }
 
         if (settings.chimeSound != ChimeSound.NONE) {
-            chimePlayer.play(settings.chimeSound) {
+            chimePlayer.play(settings.chimeSound, settings.audioChannel) {
                 speakText(settings, dateTime, includeDate, usage, audioStream, onComplete)
             }
         } else {

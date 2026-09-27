@@ -5,7 +5,9 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.util.Log
 import com.hourlyvoiceclock.R
+import com.hourlyvoiceclock.data.AudioChannel
 import com.hourlyvoiceclock.data.ChimeSound
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Plays a short audio clip ("chime") before a spoken announcement.
@@ -26,6 +28,18 @@ open class ChimePlayer(private val context: Context) {
      * [ChimeSound.NONE] or the resource is missing. Never throws.
      */
     open fun play(sound: ChimeSound, onComplete: () -> Unit) {
+        play(sound, AudioChannel.NOTIFICATION, onComplete)
+    }
+
+    /**
+     * Play [sound] on the same output as the spoken announcement.
+     *
+     * Audio attributes have to be set while the player is still idle.
+     * [MediaPlayer.create] returns an already-prepared player, and setting
+     * attributes after that is ignored (MediaPlayer logs state 8) so the
+     * chime would ignore the user's audio channel.
+     */
+    open fun play(sound: ChimeSound, channel: AudioChannel, onComplete: () -> Unit) {
         val resourceId = resourceIdFor(sound)
         if (resourceId == 0) {
             if (sound != ChimeSound.NONE) {
@@ -35,27 +49,29 @@ open class ChimePlayer(private val context: Context) {
             return
         }
 
+        val mediaPlayer = MediaPlayer()
+        val finished = AtomicBoolean(false)
+        fun finish() {
+            if (!finished.compareAndSet(false, true)) return
+            runCatching { mediaPlayer.release() }
+            onComplete()
+        }
+
         try {
-            val mediaPlayer = MediaPlayer.create(context, resourceId)
-            if (mediaPlayer == null) {
-                Log.w(TAG, "MediaPlayer.create returned null for $sound")
-                onComplete()
-                return
+            mediaPlayer.setAudioAttributes(chimeAudioAttributes(channel))
+            context.resources.openRawResourceFd(resourceId).use { afd ->
+                mediaPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
             }
-            mediaPlayer.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            )
-            mediaPlayer.setOnCompletionListener { mp ->
-                mp.release()
-                onComplete()
+            mediaPlayer.setOnCompletionListener { finish() }
+            mediaPlayer.setOnErrorListener { _, _, _ ->
+                finish()
+                true
             }
+            mediaPlayer.prepare()
             mediaPlayer.start()
         } catch (e: Exception) {
             Log.e(TAG, "Error playing chime: $sound", e)
-            onComplete()
+            finish()
         }
     }
 
@@ -79,4 +95,13 @@ open class ChimePlayer(private val context: Context) {
     companion object {
         private const val TAG = "ChimePlayer"
     }
+}
+
+/** Sonification attributes routed through the announcement's audio channel. */
+internal fun chimeAudioAttributes(channel: AudioChannel): AudioAttributes {
+    val spec = AudioChannelMapping.specOf(channel)
+    return AudioAttributes.Builder()
+        .setUsage(spec.usage)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .build()
 }
