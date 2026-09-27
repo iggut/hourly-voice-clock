@@ -322,12 +322,13 @@ fun HomeScreen(
                         color = glassBorderColor()
                     )
                     Row(
+                        modifier = Modifier.semantics(mergeDescendants = true) {},
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Schedule,
-                            contentDescription = stringResource(R.string.a11y_clock),
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )

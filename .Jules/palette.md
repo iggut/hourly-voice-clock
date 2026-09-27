@@ -24,3 +24,11 @@
 ## 2023-11-20 - Redundant screen reader announcements in interactive rows
 **Learning:** Similar to icons inside buttons, when interactive `Row` elements (e.g., those using `Modifier.toggleable` or `Modifier.selectable`) have `.semantics(mergeDescendants = true)` applied to group the text label and state for screen readers, any structural or purely visual icons (like alarms or locks) adjacent to the text will cause redundant double-announcements if they also have a localized `contentDescription` set (e.g. `stringResource(R.string.a11y_clock)`).
 **Action:** Always set `contentDescription = null` for purely decorative or visual status icons that are housed within a merged interactive `Row` immediately adjacent to `Text` that conveys the same meaning.
+
+## 2023-11-20 - Missing accessibility semantics for informational status rows
+**Learning:** When building a static, informational `Row` containing an `Icon` and multiple `Text` elements (e.g., a battery optimization status indicator), omitting `Modifier.semantics(mergeDescendants = true) {}` causes screen readers to read the icon and each text segment individually. This breaks the cohesive context of the status block.
+**Action:** Always apply `Modifier.semantics(mergeDescendants = true) {}` to parent `Row` containers that group icons and text into a single logical status update, ensuring screen readers announce the entire block cohesively.
+
+## 2023-11-21 - Grouping informational text and icons for cohesive screen reader announcements
+**Learning:** When displaying an informational `Row` that contains both an `Icon` and a `Text` element describing a status or schedule (e.g., "Next announcement: 4:00 PM" with a clock icon), leaving them separate causes the screen reader to read the icon's description and the text sequentially, which can be disjointed and redundant.
+**Action:** Apply `Modifier.semantics(mergeDescendants = true) {}` to the parent `Row` container to group the elements into a single cohesive announcement, and set the `Icon`'s `contentDescription` to `null` to avoid redundant text.
