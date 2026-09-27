@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.os.Build
@@ -298,9 +299,14 @@ fun ChimeSoundSelector(
     var expanded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     Box(modifier = modifier) {
+        val expandText = stringResource(R.string.a11y_expand)
+        val collapseText = stringResource(R.string.a11y_collapse)
         OutlinedButton(
             onClick = { expanded = true },
-            shape = GlassShapes.Chip
+            shape = GlassShapes.Chip,
+            modifier = Modifier.semantics {
+                stateDescription = if (expanded) collapseText else expandText
+            }
         ) {
             Text(
                 text = when (selectedSound) {
@@ -317,7 +323,7 @@ fun ChimeSoundSelector(
             )
             Icon(
                 imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = if (expanded) stringResource(R.string.a11y_collapse) else stringResource(R.string.a11y_expand),
+                contentDescription = null,
                 modifier = Modifier.size(18.dp)
             )
         }
