@@ -102,4 +102,11 @@ class VoiceModelRegistryTest {
         assertEquals(VoiceSourceKind.OFFICIAL, kusal?.sourceKind)
         assertFalse(kusal!!.personalTestingOnly)
     }
+
+    @Test
+    fun `getVoicesByLanguage returns valid models`() {
+        val models = VoiceModelRegistry.getVoicesByLanguage("en-US")
+        assertTrue(models.isNotEmpty())
+        assertTrue(models.all { it.language == "en-US" })
+    }
 }

@@ -709,9 +709,14 @@ object VoiceModelRegistry {
     // O(N) array scanning and redundant list allocations on every registry query.
     private val voicesById: Map<String, VoiceModel> = availableVoices.associateBy { it.id }
     private val voicesByCategory: Map<VoiceCategory, List<VoiceModel>> = availableVoices.groupBy { it.category }
+    // ⚡ Bolt: Cache voices by language to prevent O(N) linear scans when switching locale
+    private val voicesByLanguage: Map<String, List<VoiceModel>> = availableVoices.groupBy { it.language }
 
     fun getVoiceById(id: String): VoiceModel? =
         voicesById[id]
+
+    fun getVoicesByLanguage(language: String): List<VoiceModel> =
+        voicesByLanguage[language] ?: emptyList()
 
     fun getVoicesByCategory(category: VoiceCategory): List<VoiceModel> =
         voicesByCategory[category] ?: emptyList()

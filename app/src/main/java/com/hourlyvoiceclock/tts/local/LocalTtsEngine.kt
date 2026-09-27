@@ -164,8 +164,9 @@ class LocalTtsEngine(
     }
 
     override fun setLanguage(localeTag: String): Boolean {
-        val models = downloader.getDownloadedModels()
-        val match = models.find { it.language == localeTag } ?: return false
+        // ⚡ Bolt: Use O(1) map lookup from VoiceModelRegistry instead of O(N) array scanning over downloaded models
+        val voicesForLanguage = VoiceModelRegistry.getVoicesByLanguage(localeTag)
+        val match = voicesForLanguage.find { downloader.isModelDownloaded(it) } ?: return false
         return setVoice(match.id, localeTag)
     }
 
