@@ -16,3 +16,7 @@
 ## 2024-10-25 - [Jetpack Compose List Lookup Optimization]
 **Learning:** Re-evaluating static or immutable lists using `.firstOrNull` (or similar array scanning methods) directly within Jetpack Compose recomposition paths (e.g., retrieving a model's display name or status based on an ID to compute a subtitle string) introduces unnecessary O(N) linear scans and garbage collection overhead that executes on every UI frame/state change.
 **Action:** When pulling data from static or infrequently changing registries based on an ID within Jetpack Compose, use precomputed O(1) Lookup Maps (`VoiceModelRegistry.getVoiceById`) instead of linearly searching the original list (`VoiceModelRegistry.availableVoices.firstOrNull { it.id == selectedId }`).
+
+## 2024-05-18 - [Optimize File I/O Scan in Voice Selection]
+**Learning:** Checking a large registry of items using an expensive file I/O condition (like checking if a voice model is downloaded) inside a global filter or find method can cause massive lag if evaluated before cheaper in-memory conditions.
+**Action:** When finding a matching item in a registry, always use short-circuit evaluation (`&&`) to evaluate cheap, in-memory checks first (e.g., `it.language == localeTag`) before delegating to expensive file I/O checks (`downloader.isModelDownloaded(it)`). This prevents unnecessary disk reads for non-matching items.
