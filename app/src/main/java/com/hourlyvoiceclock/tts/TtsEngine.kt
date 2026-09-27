@@ -208,11 +208,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             Log.e(TAG, "speak() called but TTS not initialized")
             return
         }
-        val params = Bundle().apply {
-            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
-            @Suppress("DEPRECATION")
-            putString(TextToSpeech.Engine.KEY_PARAM_STREAM, audioStreamFor(currentAudioChannel).toString())
-        }
+        val params = announcementSpeakParams(utteranceId, audioStreamFor(currentAudioChannel))
         val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             ttsInstance.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
         } else {
@@ -445,3 +441,14 @@ internal fun selectVoiceOrLocale(
     setLanguage(FALLBACK_LOCALE)
     return false
 }
+
+/**
+ * Bundle passed to [TextToSpeech.speak]. KEY_PARAM_STREAM must be an int.
+ * A string is ignored and TextToSpeech logs that the stream type is invalid.
+ */
+@Suppress("DEPRECATION")
+internal fun announcementSpeakParams(utteranceId: String, stream: Int): Bundle =
+    Bundle().apply {
+        putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+        putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream)
+    }
