@@ -122,7 +122,7 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
             result.add(
                 TtsEngineInfo(
                     packageName = engine.name,
-                    label = engine.label,
+                    label = preferredEngineLabel(engine.name, engine.label),
                     isInstalled = true
                 )
             )
@@ -130,10 +130,9 @@ class AndroidTtsEngine(context: Context) : TtsEngine {
         }
 
         // Define standard popular engines to show even if not installed
-        val knownEngines = listOf(
-            TtsEngineInfo("com.google.android.tts", "Speech Services by Google", false),
-            TtsEngineInfo("com.redzoc.ramees.tts.espeak", "eSpeak NG", false)
-        )
+        val knownEngines = KNOWN_TTS_ENGINE_LABELS.map { (packageName, label) ->
+            TtsEngineInfo(packageName, label, false)
+        }
 
         for (known in knownEngines) {
             if (existingPackageNames.add(known.packageName)) {
@@ -441,6 +440,19 @@ internal fun selectVoiceOrLocale(
     setLanguage(FALLBACK_LOCALE)
     return false
 }
+
+internal val KNOWN_TTS_ENGINE_LABELS = mapOf(
+    "com.google.android.tts" to "Speech Services by Google",
+    "com.redzoc.ramees.tts.espeak" to "eSpeak NG",
+)
+
+/**
+ * Prefer a short product name for engines we know. The platform label for
+ * Google TTS is "Speech Recognition and Synthesis from Google", which is
+ * clipped to "Speech Recognition" in the engine card.
+ */
+internal fun preferredEngineLabel(packageName: String, systemLabel: String): String =
+    KNOWN_TTS_ENGINE_LABELS[packageName] ?: systemLabel
 
 /**
  * Bundle passed to [TextToSpeech.speak]. KEY_PARAM_STREAM must be an int.
