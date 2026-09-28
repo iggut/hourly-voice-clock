@@ -38,10 +38,10 @@ interface LocalVoiceRepository {
 
     /**
      * Preview a downloaded model by initializing the local engine and speaking
-     * a short sample. Suspends until playback finishes (or fails).
+     * [phrase]. Suspends until playback finishes (or fails).
      * Errors are delivered to [onError] before the suspend returns.
      */
-    suspend fun preview(model: VoiceModel, onError: (String) -> Unit = {})
+    suspend fun preview(model: VoiceModel, phrase: String, onError: (String) -> Unit = {})
 
     fun stopPreview()
 }
@@ -85,7 +85,7 @@ class DefaultLocalVoiceRepository(context: Context) : LocalVoiceRepository {
         withContext(Dispatchers.IO) { downloader.deleteModel(model) }
     }
 
-    override suspend fun preview(model: VoiceModel, onError: (String) -> Unit) {
+    override suspend fun preview(model: VoiceModel, phrase: String, onError: (String) -> Unit) {
         if (queue.isActive(model.id)) {
             onError(appContext.getString(R.string.download_failed))
             return
@@ -98,7 +98,10 @@ class DefaultLocalVoiceRepository(context: Context) : LocalVoiceRepository {
                 return
             }
             suspendCancellableCoroutine { cont ->
-                engine.speakAsync("Hello from Hourly Voice Clock") { success ->
+                val spoken = phrase.ifBlank {
+                    appContext.getString(R.string.preview_sample_fallback)
+                }
+                engine.speakAsync(spoken) { success ->
                     if (!success) {
                         onError(appContext.getString(R.string.preview_failed_synthesize))
                     }

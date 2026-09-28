@@ -3,6 +3,8 @@ package com.hourlyvoiceclock.announcer
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.hourlyvoiceclock.R
 import com.hourlyvoiceclock.data.AudioChannel
@@ -21,6 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  *   references are kept).
  */
 open class ChimePlayer(private val context: Context) {
+
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
 
     /**
      * Play the given [sound]. [onComplete] is invoked on the main thread once
@@ -53,7 +57,22 @@ open class ChimePlayer(private val context: Context) {
         val finished = AtomicBoolean(false)
         fun finish() {
             if (!finished.compareAndSet(false, true)) return
-            runCatching { mediaPlayer.release() }
+            // Release on the next loop turn. Releasing inside the completion
+            // callback drops a native event and logcat reports
+            // "mediaplayer went away with unhandled events".
+            mediaPlayer.setOnCompletionListener(null)
+            mediaPlayer.setOnErrorListener(null)
+            mediaPlayer.setOnPreparedListener(null)
+            runCatching {
+                if (mediaPlayer.isPlaying) {
+                    mediaPlayer.stop()
+                }
+                mediaPlayer.reset()
+            }
+            val player = mediaPlayer
+            mainHandler.post {
+                runCatching { player.release() }
+            }
             onComplete()
         }
 

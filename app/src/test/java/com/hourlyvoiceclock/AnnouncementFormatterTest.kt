@@ -11,6 +11,16 @@ import java.time.LocalDateTime
 class AnnouncementFormatterTest {
 
     @Test
+    fun `preview phrase matches announce now without the date`() {
+        val dt = LocalDateTime.of(2024, 1, 15, 15, 45)
+        val settings = AppSettings(timeFormat = TimeFormat.HOUR_24, phraseStyle = PhraseStyle.SIMPLE)
+        assertEquals(
+            AnnouncementFormatter.format(dt, settings, false),
+            AnnouncementFormatter.previewPhrase(settings, dt)
+        )
+    }
+
+    @Test
     fun `simple 12 hour format`() {
         val dt = LocalDateTime.of(2024, 1, 15, 15, 0)
         val settings = AppSettings(timeFormat = TimeFormat.HOUR_12, phraseStyle = PhraseStyle.SIMPLE)

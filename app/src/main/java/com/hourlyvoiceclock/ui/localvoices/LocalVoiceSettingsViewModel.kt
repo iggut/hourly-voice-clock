@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.R
+import com.hourlyvoiceclock.announcer.AnnouncementFormatter
 import com.hourlyvoiceclock.data.SettingsRepository
 import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.tts.local.DownloadException
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -122,7 +124,8 @@ class LocalVoiceSettingsViewModel(
 
         viewModelScope.launch {
             _previewingModelId.value = model.id
-            repository.preview(model) { message ->
+            val phrase = AnnouncementFormatter.previewPhrase(settingsRepository.settings.first())
+            repository.preview(model, phrase) { message ->
                 _localErrors.value = _localErrors.value + (model.id to message)
             }
             if (_previewingModelId.value == model.id) {

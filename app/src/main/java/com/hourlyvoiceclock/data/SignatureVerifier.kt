@@ -1,7 +1,10 @@
 package com.hourlyvoiceclock.data
 
 import android.content.Context
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.Signature
+import android.os.Build
 import android.util.Log
 import java.security.MessageDigest
 
@@ -59,23 +62,12 @@ class AndroidSignatureVerifier(context: Context) : SignatureVerifier {
 
     private fun getInstalledAppSignatureFingerprint(): String? {
         return try {
-            val packageName = appContext.packageName
-            val packageInfo = appContext.packageManager.getPackageInfo(
-                packageName,
-                PackageManager.GET_SIGNATURES
-            )
-
-            val signatures = packageInfo.signatures
-            if (signatures.isNullOrEmpty()) {
+            val flags = signingFlags()
+            val packageInfo = appContext.packageManager.getPackageInfo(appContext.packageName, flags)
+            fingerprintOf(packageInfo) ?: run {
                 Log.e(TAG, "No signatures found for installed app")
-                return null
+                null
             }
-
-            val signature = signatures[0]
-            val cert = signature.toByteArray()
-            val md = MessageDigest.getInstance("SHA-256")
-            val publicKeyHash = md.digest(cert)
-            bytesToHex(publicKeyHash)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get installed app signature", e)
             null
@@ -84,45 +76,49 @@ class AndroidSignatureVerifier(context: Context) : SignatureVerifier {
 
     private fun getApkSignatureFingerprint(apkPath: String): String? {
         return try {
-            val packageInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                appContext.packageManager.getPackageArchiveInfo(
-                    apkPath,
-                    PackageManager.GET_SIGNING_CERTIFICATES
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                appContext.packageManager.getPackageArchiveInfo(
-                    apkPath,
-                    PackageManager.GET_SIGNATURES
-                )
-            }
-
+            val packageInfo = appContext.packageManager.getPackageArchiveInfo(apkPath, signingFlags())
             if (packageInfo == null) {
                 Log.e(TAG, "Could not parse APK: $apkPath")
                 return null
             }
-
-            val signatures = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                packageInfo.signingInfo?.apkContentsSigners
-            } else {
-                @Suppress("DEPRECATION")
-                packageInfo.signatures
-            }
-
-            if (signatures.isNullOrEmpty()) {
+            fingerprintOf(packageInfo) ?: run {
                 Log.e(TAG, "No signatures found in APK")
-                return null
+                null
             }
-
-            val signature = signatures[0]
-            val cert = signature.toByteArray()
-            val md = MessageDigest.getInstance("SHA-256")
-            val publicKeyHash = md.digest(cert)
-            bytesToHex(publicKeyHash)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get APK signature", e)
             null
         }
+    }
+
+    /**
+     * Installed app and downloaded APK must be hashed the same way.
+     * Mixing [PackageManager.GET_SIGNATURES] with signing-info certificates
+     * can reject a valid same-key update on API 28+.
+     */
+    private fun signingFlags(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            PackageManager.GET_SIGNING_CERTIFICATES
+        } else {
+            @Suppress("DEPRECATION")
+            PackageManager.GET_SIGNATURES
+        }
+    }
+
+    private fun fingerprintOf(packageInfo: PackageInfo): String? {
+        val signature = signingCertificates(packageInfo).firstOrNull() ?: return null
+        val digest = MessageDigest.getInstance("SHA-256").digest(signature.toByteArray())
+        return bytesToHex(digest)
+    }
+
+    private fun signingCertificates(packageInfo: PackageInfo): List<Signature> {
+        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.signingInfo?.apkContentsSigners
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.signatures
+        }
+        return signatures?.toList().orEmpty()
     }
 
     private fun bytesToHex(bytes: ByteArray): String {

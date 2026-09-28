@@ -44,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
@@ -258,11 +259,15 @@ private fun VoiceModelCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         displayName,
+                        modifier = Modifier.weight(1f, fill = false),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -276,7 +281,9 @@ private fun VoiceModelCard(
                 Text(
                     stringResource(model.descriptionRes),
                     style = GlassTypography.cardSubtitle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -297,11 +304,10 @@ private fun VoiceModelCard(
                     IconButton(onClick = onPreview) {
                         Icon(
                             if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
-                            contentDescription = if (isPreviewing) {
-                                stringResource(R.string.stop)
-                            } else {
-                                stringResource(R.string.preview)
-                            },
+                            contentDescription = stringResource(
+                                if (isPreviewing) R.string.stop_named else R.string.preview_named,
+                                displayName
+                            ),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }

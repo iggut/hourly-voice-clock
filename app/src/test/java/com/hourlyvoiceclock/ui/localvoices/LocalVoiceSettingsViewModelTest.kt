@@ -133,7 +133,7 @@ class LocalVoiceSettingsViewModelTest {
             _downloaded.value = _downloaded.value.filterNot { it.id == model.id }
         }
 
-        override suspend fun preview(model: VoiceModel, onError: (String) -> Unit) = Unit
+        override suspend fun preview(model: VoiceModel, phrase: String, onError: (String) -> Unit) = Unit
 
         override fun stopPreview() = Unit
     }

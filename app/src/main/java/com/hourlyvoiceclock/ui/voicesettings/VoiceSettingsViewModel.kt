@@ -4,10 +4,13 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hourlyvoiceclock.R
+import com.hourlyvoiceclock.announcer.AnnouncementFormatter
 import com.hourlyvoiceclock.di.DependenciesProvider
 import com.hourlyvoiceclock.tts.TtsEngineInfo
 import com.hourlyvoiceclock.tts.VoiceInfo
 import com.hourlyvoiceclock.tts.local.VoiceModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +19,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.yield
+import kotlin.coroutines.resume
 
 enum class VoiceListFilter {
     ALL,
@@ -29,6 +35,14 @@ enum class SpecialVoiceTag {
     CHARACTER,
     ACCENT,
     ESPEAK
+}
+
+/** Which voice-settings control is currently speaking a preview. */
+sealed interface VoicePreviewTarget {
+    data object Selection : VoicePreviewTarget
+    data class Preset(val id: String) : VoicePreviewTarget
+    data class SystemVoice(val name: String) : VoicePreviewTarget
+    data class LocalModel(val id: String) : VoicePreviewTarget
 }
 
 /** Filters Special / eSpeak presets for the unified voice list (no carousel). */
@@ -347,6 +361,11 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     private val _userMessage = MutableStateFlow<String?>(null)
     val userMessage: StateFlow<String?> = _userMessage.asStateFlow()
 
+    private val _previewingTarget = MutableStateFlow<VoicePreviewTarget?>(null)
+    val previewingTarget: StateFlow<VoicePreviewTarget?> = _previewingTarget.asStateFlow()
+    private var previewJob: Job? = null
+    private var previewToken = 0
+
     val selectedPresetId: StateFlow<String?> = deps.settingsRepository.settings
         .map { it.selectedVoicePresetId }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -477,8 +496,9 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
      * next to each downloaded model.
      */
     fun previewLocalModel(model: VoiceModel, onError: (String) -> Unit = {}) {
-        viewModelScope.launch {
-            deps.localVoiceRepository.preview(model) { message ->
+        launchPreview(VoicePreviewTarget.LocalModel(model.id)) {
+            val phrase = currentPreviewPhrase()
+            deps.localVoiceRepository.preview(model, phrase) { message ->
                 onError(message)
                 _userMessage.value = message
             }
@@ -609,46 +629,98 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun previewVoice() {
-        viewModelScope.launch {
+        launchPreview(VoicePreviewTarget.Selection) {
+            val phrase = currentPreviewPhrase()
             val localId = deps.settingsRepository.settings.first().selectedLocalModelId
             if (!localId.isNullOrBlank()) {
                 val model = downloadedLocalModels.value.firstOrNull { it.id == localId }
                     ?: com.hourlyvoiceclock.tts.local.VoiceModelRegistry.getVoiceById(localId)
                 if (model != null) {
-                    deps.localVoiceRepository.preview(model) { message ->
+                    deps.localVoiceRepository.preview(model, phrase) { message ->
                         _userMessage.value = message
                     }
-                    return@launch
+                    return@launchPreview
                 }
                 _userMessage.value = getApplication<Application>().getString(R.string.selected_local_voice_missing)
-                return@launch
+                return@launchPreview
             }
-
-            runCatching {
-                if (!deps.ttsEngine.isAvailable()) {
-                    deps.ttsEngine.initialize(_selectedEnginePackage.value)
-                }
-                deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
-            }.onFailure {
-                _userMessage.value = getApplication<Application>().getString(R.string.preview_failed_tts)
-            }
+            speakSystemPreview(phrase, previewToken)
         }
     }
 
     fun selectAndPreviewVoice(voiceName: String, localeTag: String) {
-        viewModelScope.launch {
-            runCatching {
-                writer.setVoice(voiceName, localeTag)
-                deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
-            }
+        launchPreview(VoicePreviewTarget.SystemVoice(voiceName)) {
+            writer.setVoice(voiceName, localeTag)
+            speakSystemPreview(currentPreviewPhrase(), previewToken)
         }
     }
 
     fun selectAndPreviewPreset(preset: SpecialVoicePreset) {
-        viewModelScope.launch {
-            runCatching {
-                if (applyPreset(preset)) {
-                    deps.ttsEngine.speakAsync("The time is 3:45 PM.") { }
+        launchPreview(VoicePreviewTarget.Preset(preset.id)) {
+            if (applyPreset(preset)) {
+                speakSystemPreview(currentPreviewPhrase(), previewToken)
+            }
+        }
+    }
+
+    private suspend fun currentPreviewPhrase(): String {
+        val settings = deps.settingsRepository.settings.first()
+        return AnnouncementFormatter.previewPhrase(settings)
+    }
+
+    private suspend fun speakSystemPreview(phrase: String, token: Int) {
+        if (!deps.ttsEngine.isAvailable()) {
+            val ready = deps.ttsEngine.initialize(_selectedEnginePackage.value)
+            if (!ready && !deps.ttsEngine.isAvailable()) {
+                _userMessage.value = getApplication<Application>().getString(R.string.preview_failed_tts)
+                return
+            }
+        }
+        suspendCancellableCoroutine { cont ->
+            deps.ttsEngine.speakAsync(phrase) { success ->
+                if (previewToken == token && !success) {
+                    _userMessage.value = getApplication<Application>().getString(R.string.preview_failed_tts)
+                }
+                if (cont.isActive) cont.resume(Unit)
+            }
+            cont.invokeOnCancellation {
+                if (previewToken == token) {
+                    runCatching { deps.ttsEngine.stop() }
+                }
+            }
+        }
+    }
+
+    private fun cancelPreview() {
+        previewToken += 1
+        previewJob?.cancel()
+        previewJob = null
+        _previewingTarget.value = null
+        runCatching { deps.ttsEngine.stop() }
+        runCatching { deps.localVoiceRepository.stopPreview() }
+    }
+
+    private fun launchPreview(target: VoicePreviewTarget, block: suspend () -> Unit) {
+        if (_previewingTarget.value == target) {
+            cancelPreview()
+            return
+        }
+        cancelPreview()
+        val token = previewToken
+        _previewingTarget.value = target
+        previewJob = viewModelScope.launch {
+            yield()
+            if (previewToken != token) return@launch
+            try {
+                block()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                _userMessage.value = getApplication<Application>().getString(R.string.preview_failed_tts)
+            } finally {
+                if (previewToken == token) {
+                    _previewingTarget.value = null
+                    previewJob = null
                 }
             }
         }

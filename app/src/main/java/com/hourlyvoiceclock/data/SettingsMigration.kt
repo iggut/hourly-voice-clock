@@ -12,7 +12,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
  */
 object SettingsMigration {
 
-    const val CURRENT_SCHEMA_VERSION = 2
+    const val CURRENT_SCHEMA_VERSION = 3
 
     private val KEY_SCHEMA_VERSION = intPreferencesKey("settings_schema_version")
 
@@ -26,6 +26,10 @@ object SettingsMigration {
         if (version < 2) {
             migrateToV2(prefs)
             version = 2
+        }
+        if (version < 3) {
+            migrateToV3(prefs)
+            version = 3
         }
 
         prefs[KEY_SCHEMA_VERSION] = version
@@ -46,6 +50,13 @@ object SettingsMigration {
     private fun migrateToV2(prefs: MutablePreferences) {
         with(SettingsMapper) {
             sanitizeOptionalString(prefs, KEY_SELECTED_LOCAL_MODEL_ID)
+        }
+    }
+
+    private fun migrateToV3(prefs: MutablePreferences) {
+        with(SettingsMapper) {
+            // Exact alarms are required. Older installs could store false.
+            prefs[KEY_EXACT_ALARMS] = true
         }
     }
 

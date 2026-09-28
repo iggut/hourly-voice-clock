@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.FlowRow
@@ -122,10 +121,8 @@ fun ScheduleSettingsScreen(
     val quietDaysQuietEnd by viewModel.quietDaysQuietEnd.collectAsState()
     val allowManual by viewModel.allowManualDuringQuiet.collectAsState()
     val quietDaysDisabled by viewModel.quietDaysDisabled.collectAsState()
-    val exactAlarms by viewModel.exactAlarmsEnabled.collectAsState()
     val exactAlarmState by viewModel.exactAlarmState.collectAsState()
-    val canScheduleExact = exactAlarmState is ExactAlarmState.Granted
-    val needsExactPermission = exactAlarms && exactAlarmState is ExactAlarmState.Denied
+    val needsExactPermission = exactAlarmState is ExactAlarmState.Denied
     val notificationLogging by viewModel.notificationLogging.collectAsState()
     val hasNotificationPermission by viewModel.hasNotificationPermission.collectAsState()
     val context = LocalContext.current
@@ -148,43 +145,7 @@ fun ScheduleSettingsScreen(
         }
     }
 
-    // Permission explanation dialog with device-specific guidance
-    // ⚡ Bolt: Use rememberSaveable to prevent UI state loss on configuration changes.
-    var showExactAlarmDialog by rememberSaveable { mutableStateOf(false) }
     val deviceGuidance = viewModel.deviceGuidance()
-
-    if (showExactAlarmDialog) {
-        OpaqueAlertDialog(
-            onDismissRequest = { showExactAlarmDialog = false },
-            title = stringResource(R.string.exact_alarm_permission_title),
-            text = {
-                Column {
-                    Text(stringResource(R.string.exact_alarm_permission_explanation))
-                    Spacer(modifier = Modifier.height(12.dp))
-                    if (deviceGuidance != null) {
-                        Text(
-                            buildString {
-                                appendLine("${deviceGuidance.manufacturerLabel} device:")
-                                appendLine(deviceGuidance.permissionPath)
-                                deviceGuidance.extraNote?.let {
-                                    appendLine()
-                                    append(it)
-                                }
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            },
-            confirmLabel = stringResource(R.string.grant_permission),
-            onConfirm = {
-                showExactAlarmDialog = false
-                viewModel.openExactAlarmSettings()
-            },
-            dismissLabel = stringResource(R.string.cancel)
-        )
-    }
 
     // Notification permission launcher for Android 13+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -231,18 +192,6 @@ fun ScheduleSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(GlassShapes.Chip)
-                                .semantics(mergeDescendants = true) {}
-                                .toggleable(
-                                    value = exactAlarms,
-                                    onValueChange = { enabled ->
-                                        viewModel.setExactAlarmsEnabled(enabled)
-                                        if (enabled && !canScheduleExact) {
-                                            showExactAlarmDialog = true
-                                        }
-                                    },
-                                    role = Role.Switch
-                                )
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -275,23 +224,16 @@ fun ScheduleSettingsScreen(
                                     Text(
                                         when {
                                             needsExactPermission -> stringResource(R.string.permission_denied)
-                                            exactAlarms && canScheduleExact -> stringResource(R.string.active)
-                                            exactAlarms -> stringResource(R.string.pending_permission)
-                                            else -> stringResource(R.string.inactive)
+                                            else -> stringResource(R.string.exact_alarms_always_on)
                                         },
                                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                         color = when {
                                             needsExactPermission -> MaterialTheme.colorScheme.error
-                                            exactAlarms && canScheduleExact -> MaterialTheme.colorScheme.primary
-                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            else -> MaterialTheme.colorScheme.primary
                                         }
                                     )
                                 }
                             }
-                            Switch(
-                                checked = exactAlarms,
-                                onCheckedChange = null
-                            )
                         }
 
                         if (needsExactPermission) {
@@ -703,7 +645,11 @@ fun ScheduleSettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
@@ -722,7 +668,7 @@ fun ScheduleSettingsScreen(
                                         tint = if (showPermissionWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                     )
                                 }
-                                Column(modifier = Modifier.widthIn(max = 200.dp)) {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         stringResource(R.string.notification_logging),
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -806,7 +752,11 @@ fun ScheduleSettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
@@ -825,7 +775,7 @@ fun ScheduleSettingsScreen(
                                         tint = if (isOptimized) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                                     )
                                 }
-                                Column(modifier = Modifier.widthIn(max = 240.dp)) {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         stringResource(R.string.battery_optimization),
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -850,7 +800,7 @@ fun ScheduleSettingsScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            "Android aggressive battery savers suspend background processes. To ensure voice announcements fire exactly at the top of the hour, please set the app's battery usage settings to Unrestricted.",
+                            stringResource(R.string.battery_optimization_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -863,7 +813,10 @@ fun ScheduleSettingsScreen(
                                 },
                                 shape = GlassShapes.Chip
                             ) {
-                                Text("Disable Optimization", color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(
+                                    stringResource(R.string.battery_optimization_disable),
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
 

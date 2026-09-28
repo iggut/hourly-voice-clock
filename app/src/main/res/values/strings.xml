@@ -38,7 +38,8 @@
     <string name="quiet_hours_end">End time</string>
     <string name="allow_manual_during_quiet">Allow manual announcements during quiet time</string>
     <string name="exact_alarms">Exact top-of-hour alarms</string>
-    <string name="exact_alarms_desc">Requires Alarms \&amp; reminders permission. Falls back to inexact alarms if unavailable.</string>
+    <string name="exact_alarms_desc">Required so announcements fire at the top of the hour.</string>
+    <string name="exact_alarms_always_on">Always on</string>
     <string name="notification_logging">Notification logging</string>
     <string name="back">Back</string>
     <string name="settings">Settings</string>
@@ -60,7 +61,7 @@
     <string name="active">Active</string>
     <string name="inactive">Inactive</string>
     <string name="cancel">Cancel</string>
-    <string name="notification_logging_desc">Log each hourly announcement as a notification</string>
+    <string name="notification_logging_desc">Log each hour as a notification</string>
     <string name="chime_none">None</string>
     <string name="chime_classic_chime">Classic Chime</string>
     <string name="chime_bell">Bell</string>
@@ -81,20 +82,20 @@
     <string name="day_sat">Sat</string>
     <string name="day_sun">Sun</string>
     <string name="expanded">Expanded</string>
-    <string name="toggle_oem_instructions">Toggle OEM instructions</string>
+    <string name="toggle_oem_instructions">Toggle phone maker instructions</string>
     <string name="collapsed">Collapsed</string>
     <string name="clear_text">Clear text</string>
-    <string name="oem_specific_instructions">OEM Specific Instructions</string>
+    <string name="oem_specific_instructions">Phone maker instructions</string>
     <!-- Accessibility -->
     <string name="a11y_info_icon">Information</string>
     <string name="a11y_dashboard_icon">Dashboard card icon</string>
     <string name="a11y_arrow_right">Navigate forward</string>
     <string name="battery_optimization">Battery Optimization</string>
-    <string name="battery_optimization_unrestricted">Unrestricted - High Reliability</string>
-    <string name="battery_optimization_optimized">Optimized - Delayed Announcements Possible</string>
+    <string name="battery_optimization_unrestricted">Unrestricted · high reliability</string>
+    <string name="battery_optimization_optimized">Optimized · may delay announcements</string>
     <string name="battery_optimization_unknown">Checking status...</string>
-    <string name="battery_optimization_desc">Android aggressive battery savers suspend background processes. To ensure voice announcements fire exactly at the top of the hour, please set the app\'s battery usage settings to Unrestricted.</string>
-    <string name="battery_optimization_disable">Disable Optimization</string>
+    <string name="battery_optimization_desc">Battery saver can pause this app. Set battery use to Unrestricted so announcements fire at the top of the hour.</string>
+    <string name="battery_optimization_disable">Set to unrestricted</string>
     <string name="battery_optimization_samsung">• Samsung: Settings -&gt; Apps -&gt; Hourly Voice Clock -&gt; Battery -&gt; Choose "Unrestricted".</string>
     <string name="battery_optimization_xiaomi">• Xiaomi / MIUI: Settings -&gt; Apps -&gt; Manage Apps -&gt; Hourly Voice Clock -&gt; Battery saver -&gt; Choose "No restrictions".</string>
     <string name="battery_optimization_oneplus">• OnePlus: Settings -&gt; Apps -&gt; App management -&gt; Hourly Voice Clock -&gt; Battery usage -&gt; Choose "Allow background activity".</string>

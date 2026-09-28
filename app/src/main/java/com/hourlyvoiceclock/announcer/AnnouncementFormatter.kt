@@ -8,6 +8,15 @@ import java.util.Locale
 
 object AnnouncementFormatter {
 
+    /**
+     * Phrase a voice preview should speak. Same wording as announce-now,
+     * without the optional date line.
+     */
+    fun previewPhrase(
+        settings: com.hourlyvoiceclock.data.AppSettings,
+        at: LocalDateTime = LocalDateTime.now()
+    ): String = format(at, settings, includeDate = false)
+
     fun format(
         dateTime: LocalDateTime,
         settings: com.hourlyvoiceclock.data.AppSettings,

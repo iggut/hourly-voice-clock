@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.36-alpha] - 2026-09-27
+
+### Changed
+- **Exact top-of-hour alarms are always on.** Hourly announcements schedule an exact alarm whenever Android allows it. The schedule screen no longer has a switch to turn that off. Existing installs are migrated to exact alarms. If Alarms & reminders permission is missing, the screen asks for it.
+- **Voice and layout polish.** Speech engines are full-width rows, pitch and rate show the real preset values, voice preview speaks the configured announcement and can be stopped, and audio-channel and battery copy wrap cleanly.
+
+### Fixed
+- **In-app updates compare every previously shipped version.** `0.4.4-alpha` through `0.4.35-alpha`, with or without a leading `v`, are older than this release. A release build is also newer than the alpha of the same numbers. Signature checks read the installed app and the downloaded APK with the same certificate API so a same-key update is not rejected.
+- Release builds no longer fall back to the debug keystore. They must be signed with the persistent release certificate.
+
 ## [0.4.34-alpha] - 2026-06-17
 
 ### Added

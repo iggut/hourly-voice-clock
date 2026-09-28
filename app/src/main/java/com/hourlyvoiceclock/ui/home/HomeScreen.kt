@@ -417,9 +417,6 @@ fun HomeScreen(
                             context.getString(R.string.quiet_hours_disabled)
                         }
                     )
-                    if (settings.exactAlarmsEnabled) {
-                        append(context.getString(R.string.exact_alarms_suffix))
-                    }
                 }
                 DashboardCard(
                     title = stringResource(R.string.schedule_settings),

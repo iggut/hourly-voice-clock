@@ -38,4 +38,20 @@
     <string name="material_you_colors">Material You colors</string>
     <string name="material_you_colors_desc">Use wallpaper colors from your system theme (Android 12+). Brand glass stays the default when off.</string>
     <string name="material_you_unavailable">Requires Android 12 or newer</string>
+    <string name="time_format_12">12-hour (e.g. 3:00 PM)</string>
+    <string name="time_format_24">24-hour (e.g. 15:00)</string>
+    <string name="phrase_style_simple_example">Simple: \"It is 3 PM.\"</string>
+    <string name="phrase_style_detailed_example">Detailed: \"The time is 3:00 PM.\"</string>
+    <string name="phrase_style_friendly_example">Friendly: \"Good afternoon. It is 3 PM.\"</string>
+    <string name="phrase_style_custom_example">Custom phrase format</string>
+    <string name="custom_prefix">Prefix</string>
+    <string name="custom_suffix">Suffix</string>
+    <string name="custom_prefix_hint">e.g. It is now</string>
+    <string name="custom_suffix_hint">e.g. exactly</string>
+    <string name="audio_channel_media">Media</string>
+    <string name="audio_channel_media_detail">Uses the media volume</string>
+    <string name="audio_channel_notification">Notifications</string>
+    <string name="audio_channel_notification_detail">Follows Do Not Disturb</string>
+    <string name="audio_channel_ringer">Ringer</string>
+    <string name="audio_channel_ringer_detail">Uses the ringtone volume</string>
 </resources>

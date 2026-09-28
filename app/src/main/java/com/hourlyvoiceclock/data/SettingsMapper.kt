@@ -42,7 +42,7 @@ class SettingsMapper {
             quietDaysQuietEnd = parseTime(prefs[KEY_QUIET_DAYS_END], "18:00"),
             allowManualDuringQuiet = prefs[KEY_ALLOW_MANUAL_QUIET] ?: true,
             quietDaysDisabled = parseDayOfWeekSet(prefs[KEY_QUIET_DAYS_DISABLED]),
-            exactAlarmsEnabled = prefs[KEY_EXACT_ALARMS] ?: false,
+            exactAlarmsEnabled = prefs[KEY_EXACT_ALARMS] ?: true,
             notificationLogging = prefs[KEY_NOTIFICATION_LOGGING] ?: false,
             audioChannel = safeEnumValueOf(prefs[KEY_AUDIO_CHANNEL], AudioChannel.MEDIA),
             selectedTtsEnginePackage = prefs[KEY_SELECTED_TTS_ENGINE_PACKAGE]?.takeIf { it.isNotBlank() },

@@ -99,50 +99,39 @@ fun FormatSettingsScreen(
 
                 SectionHeader(title = stringResource(R.string.time_format), icon = Icons.Default.Timer)
                 GlassCard {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).semantics(mergeDescendants = true) {}.selectable(selected = timeFormat == TimeFormat.HOUR_12, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }, role = Role.RadioButton)) {
-                            RadioButton(
-                                selected = timeFormat == TimeFormat.HOUR_12,
-                                onClick = null
-                            )
-                            Text("12-hour (e.g. 3:00 PM)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(GlassShapes.Chip).semantics(mergeDescendants = true) {}.selectable(selected = timeFormat == TimeFormat.HOUR_24, onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }, role = Role.RadioButton)) {
-                            RadioButton(
-                                selected = timeFormat == TimeFormat.HOUR_24,
-                                onClick = null
-                            )
-                            Text("24-hour (e.g. 15:00)", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
-                        }
+                    OptionLine(
+                        selected = timeFormat == TimeFormat.HOUR_12,
+                        title = stringResource(R.string.time_format_12),
+                        onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_12) }
+                    )
+                    OptionLine(
+                        selected = timeFormat == TimeFormat.HOUR_24,
+                        title = stringResource(R.string.time_format_24),
+                        onClick = { viewModel.setTimeFormat(TimeFormat.HOUR_24) }
+                    )
                 }
 
                 SectionHeader(title = stringResource(R.string.phrase_style), icon = Icons.Default.Style)
                 GlassCard {
-                        val optionShape = GlassShapes.Chip
                         PhraseStyle.entries.forEach { style ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).semantics(mergeDescendants = true) {}.selectable(selected = phraseStyle == style, onClick = { viewModel.setPhraseStyle(style) }, role = Role.RadioButton)) {
-                                RadioButton(
-                                    selected = phraseStyle == style,
-                                    onClick = null
-                                )
-                                Text(
-                                    text = when (style) {
-                                        PhraseStyle.SIMPLE -> "Simple: \"It is 3 PM.\""
-                                        PhraseStyle.DETAILED -> "Detailed: \"The time is 3:00 PM.\""
-                                        PhraseStyle.FRIENDLY -> "Friendly: \"Good afternoon. It is 3 PM.\""
-                                        PhraseStyle.CUSTOM -> "Custom phrase format"
-                                    },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
-                            }
+                            OptionLine(
+                                selected = phraseStyle == style,
+                                title = when (style) {
+                                    PhraseStyle.SIMPLE -> stringResource(R.string.phrase_style_simple_example)
+                                    PhraseStyle.DETAILED -> stringResource(R.string.phrase_style_detailed_example)
+                                    PhraseStyle.FRIENDLY -> stringResource(R.string.phrase_style_friendly_example)
+                                    PhraseStyle.CUSTOM -> stringResource(R.string.phrase_style_custom_example)
+                                },
+                                onClick = { viewModel.setPhraseStyle(style) }
+                            )
                         }
                         if (phraseStyle == PhraseStyle.CUSTOM) {
                             Spacer(modifier = Modifier.height(12.dp))
                             OutlinedTextField(
                                 value = customPrefix,
                                 onValueChange = { viewModel.setCustomPrefix(it) },
-                                label = { Text("Prefix") },
-                                placeholder = { Text("e.g., 'Hello, it is now '") },
+                                label = { Text(stringResource(R.string.custom_prefix)) },
+                                placeholder = { Text(stringResource(R.string.custom_prefix_hint)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = GlassShapes.Item,
                                 trailingIcon = {
@@ -160,8 +149,8 @@ fun FormatSettingsScreen(
                             OutlinedTextField(
                                 value = customSuffix,
                                 onValueChange = { viewModel.setCustomSuffix(it) },
-                                label = { Text("Suffix") },
-                                placeholder = { Text("e.g., ' master.'") },
+                                label = { Text(stringResource(R.string.custom_suffix)) },
+                                placeholder = { Text(stringResource(R.string.custom_suffix_hint)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = GlassShapes.Item,
                                 trailingIcon = {
@@ -185,7 +174,11 @@ fun FormatSettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(stringResource(R.string.chime_before), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
+                            Text(
+                                stringResource(R.string.chime_before),
+                                modifier = Modifier.weight(1f).padding(end = 12.dp),
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+                            )
                             ChimeSoundSelector(
                                 selectedSound = chimeSound,
                                 onSoundSelected = { viewModel.setChimeSound(it) }
@@ -224,23 +217,18 @@ fun FormatSettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(10.dp))
-                        val optionShape = GlassShapes.Chip
                         AudioChannel.entries.forEach { channel ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(optionShape).semantics(mergeDescendants = true) {}.selectable(selected = audioChannel == channel, onClick = { viewModel.setAudioChannel(channel) }, role = Role.RadioButton)) {
-                                RadioButton(
-                                    selected = audioChannel == channel,
-                                    onClick = null
-                                )
-                                Text(
-                                    text = when (channel) {
-                                        AudioChannel.MEDIA -> "Media output (uses media volume)"
-                                        AudioChannel.NOTIFICATION -> "Notification output (respects do-not-disturb)"
-                                        AudioChannel.CALL -> "Ringer output (uses ringtone volume)"
-                                    },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
+                            val (titleRes, detailRes) = when (channel) {
+                                AudioChannel.MEDIA -> R.string.audio_channel_media to R.string.audio_channel_media_detail
+                                AudioChannel.NOTIFICATION -> R.string.audio_channel_notification to R.string.audio_channel_notification_detail
+                                AudioChannel.CALL -> R.string.audio_channel_ringer to R.string.audio_channel_ringer_detail
                             }
+                            OptionLine(
+                                selected = audioChannel == channel,
+                                title = stringResource(titleRes),
+                                detail = stringResource(detailRes),
+                                onClick = { viewModel.setAudioChannel(channel) }
+                            )
                         }
                 }
 
@@ -288,6 +276,40 @@ fun FormatSettingsScreen(
             }
     }
 
+}
+
+@Composable
+private fun OptionLine(
+    selected: Boolean,
+    title: String,
+    detail: String? = null,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GlassShapes.Chip)
+            .semantics(mergeDescendants = true) {}
+            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+            .padding(vertical = 4.dp)
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 8.dp, end = 4.dp)
+        ) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            if (detail != null) {
+                Text(
+                    text = detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
 }
 
 @Composable

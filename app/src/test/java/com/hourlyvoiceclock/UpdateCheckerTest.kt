@@ -48,8 +48,30 @@ class UpdateCheckerTest {
 
     @Test
     fun `isNewerVersion handles non-numeric parts gracefully`() {
-        // Falling back to 0 for invalid sections
-        assertFalse(GitHubUpdateChecker.isNewerVersion("0.1.0-alpha", "0.1.0"))
+        assertTrue(GitHubUpdateChecker.isNewerVersion("0.1.0-alpha", "0.1.0"))
         assertTrue(GitHubUpdateChecker.isNewerVersion("0.1.0", "0.2.0-beta"))
+        assertFalse(GitHubUpdateChecker.isNewerVersion("0.1.0", "0.1.0-alpha"))
+        assertFalse(GitHubUpdateChecker.isNewerVersion("0.4.36-alpha", "0.4.36-alpha"))
+    }
+
+    @Test
+    fun `isNewerVersion treats every previously shipped tag as older than 0_4_36-alpha`() {
+        val latest = "v0.4.36-alpha"
+        listOf(
+            "0.4.4-alpha",
+            "0.4.9-alpha",
+            "0.4.10-alpha",
+            "v0.4.10-alpha",
+            "0.4.12-alpha",
+            "v0.4.25-alpha",
+            "0.4.29-alpha",
+            "v0.4.35-alpha",
+            "0.4.35-alpha"
+        ).forEach { older ->
+            assertTrue(
+                "$older should update to $latest",
+                GitHubUpdateChecker.isNewerVersion(GitHubUpdateChecker.cleanVersion(older), GitHubUpdateChecker.cleanVersion(latest))
+            )
+        }
     }
 }

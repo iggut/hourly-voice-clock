@@ -24,9 +24,9 @@ class HourlySchedulePolicyTest {
         }
 
     @Test
-    fun `enable hourly announcements schedules using the current exact setting`() = runBlocking {
+    fun `enable hourly announcements schedules an exact alarm`() = runBlocking {
         val store = FakeHourlyScheduleSettingsStore(
-            AppSettings(hourlyAnnouncementsEnabled = false, exactAlarmsEnabled = true)
+            AppSettings(hourlyAnnouncementsEnabled = false, exactAlarmsEnabled = false)
         )
         val scheduler = FakeHourlyAlarmScheduler()
         val policy = HourlySchedulePolicy(store, scheduler, fakeCapability(granted = true))
@@ -39,19 +39,18 @@ class HourlySchedulePolicyTest {
     }
 
     @Test
-    fun `enable exact alarms without permission keeps the current alarm and flags permission`() = runBlocking {
+    fun `missing exact permission is reported and the alarm stays inexact`() = runBlocking {
         val store = FakeHourlyScheduleSettingsStore(
-            AppSettings(hourlyAnnouncementsEnabled = true, exactAlarmsEnabled = false)
+            AppSettings(hourlyAnnouncementsEnabled = true, exactAlarmsEnabled = true)
         )
         val scheduler = FakeHourlyAlarmScheduler()
         val policy = HourlySchedulePolicy(store, scheduler, fakeCapability(granted = false))
 
-        val result = policy.setExactRequested(true)
+        val result = policy.applyCurrentPolicy(ScheduleReason.HOURLY_TOGGLED)
 
         assertTrue(result.needsExactPermission)
         assertFalse(result.scheduledExact)
-        assertTrue(scheduler.calls.isEmpty())
-        assertTrue(store.settings.first().exactAlarmsEnabled)
+        assertEquals(listOf("schedule:inexact"), scheduler.calls)
     }
 
     @Test
@@ -69,7 +68,7 @@ class HourlySchedulePolicyTest {
     }
 
     @Test
-    fun `time change reconciliation cancels first and then reschedules`() = runBlocking {
+    fun `time change reconciliation cancels first and then reschedules an exact alarm`() = runBlocking {
         val store = FakeHourlyScheduleSettingsStore(
             AppSettings(hourlyAnnouncementsEnabled = true, exactAlarmsEnabled = false)
         )
@@ -78,8 +77,8 @@ class HourlySchedulePolicyTest {
 
         val result = policy.applyCurrentPolicy(ScheduleReason.TIME_CHANGED)
 
-        assertFalse(result.scheduledExact)
-        assertEquals(listOf("cancel", "schedule:inexact"), scheduler.calls)
+        assertTrue(result.scheduledExact)
+        assertEquals(listOf("cancel", "schedule:exact"), scheduler.calls)
     }
 
     @Test
@@ -92,7 +91,7 @@ class HourlySchedulePolicyTest {
         val result = policy.onAlarmTriggered()
 
         assertEquals(settings, result?.settings)
-        assertEquals(listOf("schedule:inexact"), scheduler.calls)
+        assertEquals(listOf("schedule:exact"), scheduler.calls)
     }
 
     @Test

@@ -54,10 +54,6 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         .map { it.quietDaysDisabled }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
-    val exactAlarmsEnabled: StateFlow<Boolean> = deps.settingsRepository.settings
-        .map { it.exactAlarmsEnabled }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
     val notificationLogging: StateFlow<Boolean> = deps.settingsRepository.settings
         .map { it.notificationLogging }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
@@ -69,7 +65,7 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         get() = _exactAlarmState.value is ExactAlarmState.Granted
 
     val needsExactPermission: Boolean
-        get() = exactAlarmsEnabled.value && _exactAlarmState.value is ExactAlarmState.Denied
+        get() = _exactAlarmState.value is ExactAlarmState.Denied
 
     private val _hasNotificationPermission = MutableStateFlow(true)
     val hasNotificationPermission: StateFlow<Boolean> = _hasNotificationPermission.asStateFlow()
@@ -102,7 +98,7 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
         val isGranted = currentState is ExactAlarmState.Granted
 
         // If permission was previously denied and is now granted, reschedule
-        if (wasDenied && isGranted && exactAlarmsEnabled.value) {
+        if (wasDenied && isGranted) {
             viewModelScope.launch {
                 val settings = deps.settingsRepository.settings.first()
                 if (settings.hourlyAnnouncementsEnabled) {
@@ -194,13 +190,6 @@ class ScheduleSettingsViewModel(application: Application) : AndroidViewModel(app
             val current = quietDaysDisabled.value.toMutableSet()
             if (disabled) current.add(day) else current.remove(day)
             deps.settingsRepository.update { it.copy(quietDaysDisabled = current) }
-        }
-    }
-
-    fun setExactAlarmsEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            deps.hourlySchedulePolicy.setExactRequested(enabled)
-            _exactAlarmState.value = deps.exactAlarmCapability.current()
         }
     }
 

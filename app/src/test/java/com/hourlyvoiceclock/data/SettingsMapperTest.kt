@@ -77,5 +77,6 @@ class SettingsMapperTest {
         assertEquals(LocalTime.of(7, 0), settings.quietHoursEnd)
         assertEquals(true, settings.allowManualDuringQuiet)
         assertEquals(true, settings.autoUpdateEnabled)
+        assertEquals(true, settings.exactAlarmsEnabled)
     }
 }

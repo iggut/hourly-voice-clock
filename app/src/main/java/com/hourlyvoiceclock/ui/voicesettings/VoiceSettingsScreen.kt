@@ -11,8 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,6 +33,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OfflineBolt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Card
@@ -75,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hourlyvoiceclock.R
+import com.hourlyvoiceclock.tts.TtsEngineInfo
 import com.hourlyvoiceclock.tts.VoiceInfo
 import com.hourlyvoiceclock.tts.local.VoiceModel
 import com.hourlyvoiceclock.ui.components.DashboardCard
@@ -91,10 +91,6 @@ import com.hourlyvoiceclock.ui.theme.AccentCloud
 import com.hourlyvoiceclock.ui.theme.AccentFemale
 import com.hourlyvoiceclock.ui.theme.AccentMale
 import com.hourlyvoiceclock.ui.theme.AccentOffline
-import com.hourlyvoiceclock.ui.theme.GlassBgDark
-import com.hourlyvoiceclock.ui.theme.GlassBgLight
-import com.hourlyvoiceclock.ui.theme.GlassBorderDark
-import com.hourlyvoiceclock.ui.theme.GlassBorderLight
 import com.hourlyvoiceclock.ui.theme.GlassShapes
 import com.hourlyvoiceclock.ui.theme.GlassSpacing
 import com.hourlyvoiceclock.ui.theme.GlassTypography
@@ -128,11 +124,10 @@ fun VoiceSettingsScreen(
     val selectedLocalModelId by viewModel.selectedLocalModelId.collectAsState()
     val specialTagFilter by viewModel.specialTagFilter.collectAsState()
     val userMessage by viewModel.userMessage.collectAsState()
+    val previewingTarget by viewModel.previewingTarget.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val localVoiceSelected = selectedLocalModelId != null
-
-    val isDark = isSystemInDarkTheme()
 
     // Refresh the list of on-device voices whenever the screen
     // becomes active. The user can navigate to the Local Voices
@@ -165,33 +160,14 @@ fun VoiceSettingsScreen(
                 // Speech Engines Section
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     SectionHeader(title = stringResource(R.string.preferred_speech_engine))
-                    
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // ⚡ Bolt: Hoist shared styles outside the high-frequency iteration loop to prevent redundant object allocations
-                        val selectedEngineBg = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
-                        val unselectedEngineBg = if (isDark) GlassBgDark else GlassBgLight
-                        val selectedBorderTint = MaterialTheme.colorScheme.primary
-                        val unselectedBorderTint = if (isDark) GlassBorderDark else GlassBorderLight
-                        val selectedTextTint = MaterialTheme.colorScheme.onPrimaryContainer
-                        val unselectedTextTint = MaterialTheme.colorScheme.onBackground
-
-                        engines.forEach { engine ->
-                            val isSelected = selectedEnginePackage == engine.packageName
-                            val engineBg = if (isSelected) selectedEngineBg else unselectedEngineBg
-                            val borderTint = if (isSelected) selectedBorderTint else unselectedBorderTint
-                            val textTint = if (isSelected) selectedTextTint else unselectedTextTint
-
-                            Card(
-                                modifier = Modifier
-                                    .width(160.dp)
-                                    .semantics(mergeDescendants = true) {}
-                                    .selectable(
-                                        selected = isSelected,
+                    if (engines.isNotEmpty()) {
+                        GlassCard(contentPadding = 0.dp) {
+                            Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                                engines.forEach { engine ->
+                                    val isSelected = selectedEnginePackage == engine.packageName
+                                    EngineOptionRow(
+                                        engine = engine,
+                                        isSelected = isSelected,
                                         onClick = {
                                             when {
                                                 engine.isInstalled && isSelected -> {
@@ -200,54 +176,10 @@ fun VoiceSettingsScreen(
                                                 engine.isInstalled -> {
                                                     viewModel.switchTtsEngine(engine.packageName)
                                                 }
-                                                else -> {
-                                                    val playStoreUri = Uri.parse("market://details?id=${engine.packageName}")
-                                                    val playStoreIntent = Intent(Intent.ACTION_VIEW, playStoreUri).apply {
-                                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                    }
-                                                    try {
-                                                        context.startActivity(playStoreIntent)
-                                                    } catch (e: Exception) {
-                                                        val webUri = Uri.parse("https://play.google.com/store/apps/details?id=${engine.packageName}")
-                                                        context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
-                                                    }
-                                                }
+                                                else -> openEngineInstallPage(context, engine.packageName)
                                             }
-                                        },
-                                        role = Role.RadioButton
-                                    ),
-                                shape = RoundedCornerShape(16.dp),
-                                border = BorderStroke(1.dp, borderTint),
-                                colors = CardDefaults.cardColors(containerColor = engineBg)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(14.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = engine.label,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = textTint,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
+                                        }
                                     )
-                                    
-                                    if (engine.isInstalled) {
-                                        Text(
-                                            text = when {
-                                                isSelected -> stringResource(R.string.engine_active_tap_settings)
-                                                else -> stringResource(R.string.engine_tap_to_switch)
-                                            },
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = textTint.copy(alpha = 0.7f)
-                                        )
-                                    } else {
-                                        Text(
-                                            text = stringResource(R.string.engine_tap_to_install),
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -314,14 +246,14 @@ fun VoiceSettingsScreen(
                         Column(modifier = Modifier.alpha(if (localVoiceSelected) 0.45f else 1f)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(stringResource(R.string.pitch), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                                Text("%.1f".format(pitch), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                                Text(formatVoiceControl(pitch), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                             }
                             val pitchA11y = stringResource(R.string.voice_pitch_a11y)
                             Slider(
-                                value = pitch,
+                                value = pitch.coerceIn(0.3f, 2.0f),
                                 onValueChange = { viewModel.setPitch(it) },
                                 enabled = !localVoiceSelected,
-                                valueRange = 0.5f..2.0f,
+                                valueRange = 0.3f..2.0f,
                                 modifier = Modifier.semantics { contentDescription = pitchA11y }
                             )
                         }
@@ -330,11 +262,11 @@ fun VoiceSettingsScreen(
                         Column(modifier = Modifier.alpha(if (localVoiceSelected) 0.45f else 1f)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(stringResource(R.string.speech_rate), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                                Text("%.1f".format(speechRate), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                                Text(formatVoiceControl(speechRate), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                             }
                             val rateA11y = stringResource(R.string.speech_rate_a11y)
                             Slider(
-                                value = speechRate,
+                                value = speechRate.coerceIn(0.5f, 2.0f),
                                 onValueChange = { viewModel.setSpeechRate(it) },
                                 enabled = !localVoiceSelected,
                                 valueRange = 0.5f..2.0f,
@@ -342,6 +274,7 @@ fun VoiceSettingsScreen(
                             )
                         }
 
+                        val previewingSelection = previewingTarget == VoicePreviewTarget.Selection
                         Button(
                             onClick = { viewModel.previewVoice() },
                             modifier = Modifier
@@ -349,9 +282,18 @@ fun VoiceSettingsScreen(
                                 .height(48.dp),
                             shape = GlassShapes.Item
                         ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(
+                                if (previewingSelection) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.preview_voice), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                stringResource(
+                                    if (previewingSelection) R.string.stop_preview else R.string.preview_voice
+                                ),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                            )
                         }
                     }
                 }
@@ -444,6 +386,7 @@ fun VoiceSettingsScreen(
                                 SpecialPresetItem(
                                     preset = preset,
                                     isSelected = selectedPresetId == preset.id && !localVoiceSelected,
+                                    isPreviewing = previewingTarget == VoicePreviewTarget.Preset(preset.id),
                                     matchedVoiceName = if (selectedPresetId == preset.id) {
                                         friendlyMatchedVoiceLabel(
                                             normalVoicesByLocale.values.flatten(),
@@ -495,6 +438,7 @@ fun VoiceSettingsScreen(
                                     LocalVoiceItem(
                                         model = model,
                                         isSelected = selectedLocalModelId == model.id,
+                                        isPreviewing = previewingTarget == VoicePreviewTarget.LocalModel(model.id),
                                         onSelect = { viewModel.selectLocalModel(model) },
                                         onPreview = { viewModel.previewLocalModel(model) }
                                     )
@@ -535,6 +479,7 @@ fun VoiceSettingsScreen(
                                 VoiceItem(
                                     voice = voice,
                                     selectedVoice = selectedVoice,
+                                    isPreviewing = previewingTarget == VoicePreviewTarget.SystemVoice(voice.name),
                                     onSelectVoice = viewModel::selectVoice,
                                     onPreviewVoice = viewModel::selectAndPreviewVoice
                                 )
@@ -599,10 +544,81 @@ fun VoiceSettingsScreen(
     }
 }
 
+private fun openEngineInstallPage(context: android.content.Context, packageName: String) {
+    val playStoreUri = Uri.parse("market://details?id=$packageName")
+    val playStoreIntent = Intent(Intent.ACTION_VIEW, playStoreUri).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    try {
+        context.startActivity(playStoreIntent)
+    } catch (_: Exception) {
+        val webUri = Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+        context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+    }
+}
+
+@Composable
+private fun EngineOptionRow(
+    engine: TtsEngineInfo,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val targetBg = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+    } else {
+        Color.Transparent
+    }
+    val backgroundColor by animateColorAsState(targetBg, tween(180), label = "engineSel")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GlassShapes.Item)
+            .semantics(mergeDescendants = true) {}
+            .selectable(selected = isSelected, onClick = onClick, role = Role.RadioButton)
+            .background(backgroundColor)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = isSelected, onClick = null)
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = engine.label,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                ),
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = when {
+                    !engine.isInstalled -> stringResource(R.string.engine_tap_to_install)
+                    isSelected -> stringResource(R.string.engine_active_tap_settings)
+                    else -> stringResource(R.string.engine_tap_to_switch)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (engine.isInstalled) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
 @Composable
 fun SpecialPresetItem(
     preset: SpecialVoicePreset,
     isSelected: Boolean,
+    isPreviewing: Boolean = false,
     matchedVoiceName: String? = null,
     onSelectPreset: () -> Unit,
     onPreviewPreset: () -> Unit
@@ -668,34 +684,38 @@ fun SpecialPresetItem(
                 text = description,
                 style = GlassTypography.cardSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
-            val meta = if (isSelected && !matchedVoiceName.isNullOrBlank()) {
-                stringResource(
-                    R.string.special_voice_meta_matched,
-                    preset.pitch,
-                    preset.speechRate,
-                    genderLabel,
-                    matchedVoiceName
-                )
-            } else {
-                stringResource(
+            Text(
+                text = stringResource(
                     R.string.special_voice_meta,
-                    preset.pitch,
-                    preset.speechRate,
+                    formatVoiceControl(preset.pitch),
+                    formatVoiceControl(preset.speechRate),
                     genderLabel
+                ),
+                style = GlassTypography.badgeLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (isSelected && !matchedVoiceName.isNullOrBlank()) {
+                Text(
+                    text = stringResource(R.string.special_voice_matched, matchedVoiceName),
+                    style = GlassTypography.badgeLabel,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            Text(
-                text = meta,
-                style = GlassTypography.badgeLabel,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
-            )
         }
         IconButton(onClick = onPreviewPreset) {
             Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = stringResource(R.string.preview_named, displayName),
+                imageVector = if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
+                contentDescription = stringResource(
+                    if (isPreviewing) R.string.stop_named else R.string.preview_named,
+                    displayName
+                ),
                 tint = MaterialTheme.colorScheme.primary
             )
         }
@@ -706,6 +726,7 @@ fun SpecialPresetItem(
 fun VoiceItem(
     voice: VoiceInfo,
     selectedVoice: String?,
+    isPreviewing: Boolean = false,
     onSelectVoice: (String, String) -> Unit,
     onPreviewVoice: (String, String) -> Unit
 ) {
@@ -733,7 +754,9 @@ fun VoiceItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal),
-                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
             
             Spacer(modifier = Modifier.height(4.dp))
@@ -768,22 +791,15 @@ fun VoiceItem(
             onClick = { onPreviewVoice(voice.name, voice.localeTag) }
         ) {
             Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = stringResource(R.string.preview_voice_named, title),
+                imageVector = if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
+                contentDescription = stringResource(
+                    if (isPreviewing) R.string.stop_named else R.string.preview_voice_named,
+                    title
+                ),
                 tint = MaterialTheme.colorScheme.primary
             )
         }
     }
-}
-
-@Composable
-private fun Icon(imageVector: androidx.compose.ui.graphics.vector.ImageVector, contentDescription: String?, size: androidx.compose.ui.unit.Dp, tint: Color) {
-    Icon(
-        imageVector = imageVector,
-        contentDescription = contentDescription,
-        tint = tint,
-        modifier = Modifier.size(size)
-    )
 }
 
 /**
@@ -795,6 +811,7 @@ private fun Icon(imageVector: androidx.compose.ui.graphics.vector.ImageVector, c
 fun LocalVoiceItem(
     model: VoiceModel,
     isSelected: Boolean,
+    isPreviewing: Boolean = false,
     onSelect: () -> Unit,
     onPreview: () -> Unit
 ) {
@@ -823,6 +840,8 @@ fun LocalVoiceItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = displayName,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
                 ),
@@ -834,6 +853,7 @@ fun LocalVoiceItem(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -862,6 +882,9 @@ fun LocalVoiceItem(
                 }
                 Text(
                     text = stringResource(model.descriptionRes),
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -869,8 +892,11 @@ fun LocalVoiceItem(
         }
         IconButton(onClick = onPreview) {
             Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = stringResource(R.string.preview_named, displayName),
+                imageVector = if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
+                contentDescription = stringResource(
+                    if (isPreviewing) R.string.stop_named else R.string.preview_named,
+                    displayName
+                ),
                 tint = MaterialTheme.colorScheme.primary
             )
         }

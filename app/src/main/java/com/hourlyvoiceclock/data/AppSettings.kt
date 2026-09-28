@@ -64,7 +64,7 @@ data class AppSettings(
     val quietDaysQuietEnd: LocalTime = LocalTime.of(18, 0),
     val allowManualDuringQuiet: Boolean = true,
     val quietDaysDisabled: Set<DayOfWeek> = emptySet(),
-    val exactAlarmsEnabled: Boolean = false,
+    val exactAlarmsEnabled: Boolean = true,
     val notificationLogging: Boolean = false,
     val audioChannel: AudioChannel = AudioChannel.MEDIA,
     val selectedTtsEnginePackage: String? = null,

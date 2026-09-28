@@ -2,9 +2,9 @@
 <resources>
     <!-- Voice Settings / Local Voices UI -->
     <string name="preferred_speech_engine">Preferred Speech Engine</string>
-    <string name="engine_active_tap_settings">Active — Tap for Settings</string>
-    <string name="engine_tap_to_switch">Tap to Switch</string>
-    <string name="engine_tap_to_install">Tap to Install</string>
+    <string name="engine_active_tap_settings">Active · tap for settings</string>
+    <string name="engine_tap_to_switch">Tap to switch</string>
+    <string name="engine_tap_to_install">Tap to install</string>
     <string name="single_voice_engine_detected">Single Voice Engine Detected</string>
     <string name="pitch_rate_system_tts_only">Pitch and speech rate apply to system TTS only. A Local AI voice is currently selected for announcements.</string>
     <string name="voices_section_title">Voices</string>
@@ -26,8 +26,8 @@
     <string name="get_more_accents_voices">Get More Accents &amp; Voices</string>
     <string name="get_more_accents_body">"To download additional high-quality voices with accents (e.g. UK, Australia, India, Ireland, Canada), open your Android Text-to-Speech settings and select \'Install voice data\' under your preferred speech engine."</string>
     <string name="open_tts_settings_short">Open TTS Settings</string>
-    <string name="special_voice_meta">Pitch %1$.1f · Rate %2$.1f · %3$s</string>
-    <string name="special_voice_meta_matched">Pitch %1$.1f · Rate %2$.1f · %3$s · %4$s</string>
+    <string name="special_voice_meta">Pitch %1$s · Rate %2$s · %3$s</string>
+    <string name="special_voice_matched">Uses %1$s</string>
     <string name="preview_named">Preview %1$s</string>
     <string name="preview_voice_named">Preview voice %1$s</string>
     <string name="voice_pitch_a11y">Voice Pitch</string>
@@ -47,6 +47,8 @@
     <string name="category_accents">Accents</string>
     <string name="dismiss">Dismiss</string>
     <string name="stop">Stop</string>
+    <string name="stop_preview">Stop preview</string>
+    <string name="stop_named">Stop %1$s</string>
     <string name="preview">Preview</string>
     <string name="delete">Delete</string>
     <string name="delete_voice_model_title">Delete Voice Model</string>
@@ -61,7 +63,8 @@
     <string name="home_voice_subtitle_local">Local: %1$s</string>
     <string name="home_voice_subtitle_special">Special: %1$s</string>
     <string name="home_voice_subtitle_missing_local">Local voice missing — pick another in Voice Settings</string>
-    <string name="home_voice_subtitle_system_default">System Default voice</string>
+    <string name="home_voice_subtitle_system_default">System default voice</string>
+    <string name="preview_sample_fallback">The time is 3:45 PM.</string>
     <string name="preset_no_matching_voice">No matching system voice for %1$s. Install more TTS voices or try another engine.</string>
     <string name="selected_local_voice_missing">Selected local voice is missing. Pick another voice or re-download it.</string>
     <string name="preview_failed_tts">Preview failed. Check your TTS engine.</string>

@@ -133,57 +133,38 @@ class GitHubUpdateChecker : UpdateChecker {
 
         fun isNewerVersion(current: String, latest: String): Boolean {
             if (current.isBlank() || latest.isBlank()) return false
-            if (current == latest) return false
+            val currentParts = parseVersion(current)
+            val latestParts = parseVersion(latest)
+            if (currentParts.numbers.isEmpty() || latestParts.numbers.isEmpty()) return false
 
-            var currIdx = 0
-            var lateIdx = 0
-            val currLen = current.length
-            val lateLen = latest.length
+            val count = maxOf(currentParts.numbers.size, latestParts.numbers.size)
+            for (index in 0 until count) {
+                val currentNumber = currentParts.numbers.getOrElse(index) { 0 }
+                val latestNumber = latestParts.numbers.getOrElse(index) { 0 }
+                if (latestNumber > currentNumber) return true
+                if (currentNumber > latestNumber) return false
+            }
+            // Same numbers: 0.4.36 is newer than 0.4.36-alpha.
+            return currentParts.preRelease != null && latestParts.preRelease == null
+        }
 
-            while (currIdx < currLen && lateIdx < lateLen) {
-                var currNum = 0
-                var lateNum = 0
+        private data class ParsedVersion(val numbers: List<Int>, val preRelease: String?)
 
-                var currParsingDigits = true
-                while (currIdx < currLen) {
-                    val c = current[currIdx++]
-                    if (c == '.') break
-                    if (currParsingDigits) {
-                        if (c.isDigit()) {
-                            currNum = currNum * 10 + (c - '0')
-                        } else {
-                            currParsingDigits = false
-                        }
-                    }
+        private fun parseVersion(raw: String): ParsedVersion {
+            val cleaned = cleanVersion(raw)
+            val numbers = mutableListOf<Int>()
+            var preRelease: String? = null
+            for (piece in cleaned.split('.')) {
+                val digits = piece.takeWhile { it.isDigit() }
+                if (digits.isNotEmpty()) {
+                    numbers += digits.toInt()
                 }
-
-                var lateParsingDigits = true
-                while (lateIdx < lateLen) {
-                    val c = latest[lateIdx++]
-                    if (c == '.') break
-                    if (lateParsingDigits) {
-                        if (c.isDigit()) {
-                            lateNum = lateNum * 10 + (c - '0')
-                        } else {
-                            lateParsingDigits = false
-                        }
-                    }
+                val rest = piece.drop(digits.length).trimStart('-', '+')
+                if (rest.isNotEmpty() && preRelease == null) {
+                    preRelease = rest
                 }
-
-                if (lateNum > currNum) return true
-                if (currNum > lateNum) return false
             }
-
-            var currentPartsCount = 1
-            for (i in 0 until currLen) {
-                if (current[i] == '.') currentPartsCount++
-            }
-            var latestPartsCount = 1
-            for (i in 0 until lateLen) {
-                if (latest[i] == '.') latestPartsCount++
-            }
-
-            return latestPartsCount > currentPartsCount
+            return ParsedVersion(numbers, preRelease)
         }
     }
 }

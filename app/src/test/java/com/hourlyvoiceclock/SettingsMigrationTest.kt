@@ -1,5 +1,6 @@
 package com.hourlyvoiceclock
 
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
@@ -7,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.hourlyvoiceclock.data.SettingsMigration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SettingsMigrationTest {
@@ -54,6 +56,23 @@ class SettingsMigrationTest {
         SettingsMigration.migrateInPlace(prefs)
 
         assertNull(prefs[localKey])
-        assertEquals(2, prefs[intPreferencesKey("settings_schema_version")])
+        assertEquals(
+            SettingsMigration.CURRENT_SCHEMA_VERSION,
+            prefs[intPreferencesKey("settings_schema_version")]
+        )
+    }
+
+    @Test
+    fun `migrateToV3 turns exact alarms on`() {
+        val exactKey = booleanPreferencesKey("exact_alarms")
+        val prefs = mutablePreferencesOf(
+            intPreferencesKey("settings_schema_version") to 2,
+            exactKey to false
+        )
+
+        SettingsMigration.migrateInPlace(prefs)
+
+        assertTrue(prefs[exactKey] == true)
+        assertEquals(3, prefs[intPreferencesKey("settings_schema_version")])
     }
 }

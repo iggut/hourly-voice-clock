@@ -9,7 +9,7 @@ plugins {
 // the default values drifting from the source of truth in this file.
 val versionMajor: Int = (project.findProperty("version.major") as String?)?.toIntOrNull() ?: 0
 val versionMinor: Int = (project.findProperty("version.minor") as String?)?.toIntOrNull() ?: 4
-val versionPatch: Int = (project.findProperty("version.patch") as String?)?.toIntOrNull() ?: 35
+val versionPatch: Int = (project.findProperty("version.patch") as String?)?.toIntOrNull() ?: 36
 val versionPre: String = (project.findProperty("version.pre") as String?) ?: "alpha"
 // versionCode is a monotonically increasing integer; compute it from
 // the components above so we never forget to bump it.
@@ -39,27 +39,17 @@ android {
         resourceConfigurations += listOf("en", "fr")
     }
 
+    val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
+    val hasReleaseKeystore = releaseKeystorePath != null &&
+        file(releaseKeystorePath).let { it.exists() && it.length() > 0 }
+
     signingConfigs {
         create("release") {
-            val envKeystorePath = System.getenv("KEYSTORE_PATH")
-            val envKeystorePassword = System.getenv("KEYSTORE_PASSWORD")
-            val envKeyAlias = System.getenv("KEY_ALIAS")
-            val envKeyPassword = System.getenv("KEY_PASSWORD")
-
-            if (envKeystorePath != null && file(envKeystorePath).exists() && file(envKeystorePath).length() > 0) {
-                storeFile = file(envKeystorePath)
-                storePassword = envKeystorePassword ?: ""
-                keyAlias = envKeyAlias ?: ""
-                keyPassword = envKeyPassword ?: ""
-            } else {
-                // Fallback to the debug keystore so local builds work
-                // without release credentials. The CI workflow sets
-                // KEYSTORE_PATH etc. from secrets; local dev without
-                // a real key still gets a signed (debug-key) APK.
-                storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
+            if (hasReleaseKeystore) {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("KEY_ALIAS") ?: ""
+                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
             }
         }
     }
@@ -75,7 +65,9 @@ android {
             // constructor signatures.
             isMinifyEnabled = false
             isShrinkResources = false
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

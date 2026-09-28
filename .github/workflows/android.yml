@@ -105,7 +105,12 @@ jobs:
           fi
 
       - name: Build release APK
-        run: ./gradlew assembleRelease
+        run: |
+          if [ -z "${KEYSTORE_PATH:-}" ] || [ ! -s "$KEYSTORE_PATH" ]; then
+            echo "Release keystore is required. Refusing to build an unsigned release."
+            exit 1
+          fi
+          ./gradlew assembleRelease
 
       - name: Rename release APK and compute checksum
         id: rename
