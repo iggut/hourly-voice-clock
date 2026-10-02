@@ -23,3 +23,7 @@
 ## 2024-12-10 - [Use rememberSaveable for transient UI state]
 **Learning:** In Jetpack Compose, using `remember { mutableStateOf(...) }` for simple transient UI state like dialog visibility or dropdown expansion loses its state across configuration changes (e.g., screen rotations). This can cause an annoying user experience when a dialog suddenly disappears.
 **Action:** When declaring simple boolean UI states for conditional visibility (e.g., `showDeleteDialog`, `expanded`) in Jetpack Compose, use `rememberSaveable { mutableStateOf(...) }` instead of `remember { mutableStateOf(...) }` to correctly preserve state during configuration changes. Ensure `androidx.compose.runtime.saveable.rememberSaveable` is correctly imported.
+
+## 2024-12-15 - [Optimize File I/O for Downloaded Models Query]
+**Learning:** Checking which items in a large static registry are currently downloaded by iterating over the entire in-memory list and performing O(N) file system checks (e.g., `isModelDownloaded` calling `File.exists()`) is extremely slow and scales linearly with the size of the *available* registry, rather than what is actually downloaded.
+**Action:** When determining which models or items are currently downloaded, do not iterate over the entire in-memory registry. Instead, read the actual directories present on disk (`modelsDir.listFiles()`) and use an O(1) registry map (e.g., `VoiceModelRegistry.getVoiceById(it)`) to resolve the directory names back to models. This reduces expensive I/O operations to only evaluate what exists on disk.

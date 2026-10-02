@@ -368,7 +368,17 @@ open class OnnxModelDownloader(private val context: Context) {
     }
 
     open fun getDownloadedModels(): List<VoiceModel> {
-        return VoiceModelRegistry.availableVoices.filter { isModelDownloaded(it) }
+        // ⚡ Bolt: Instead of iterating over the entire in-memory registry and checking File.exists()
+        // for every possible voice, we read the directories that actually exist on disk and map
+        // them back to the registry via O(1) lookup. This reduces disk I/O significantly.
+        val downloadedIds = modelsDir.listFiles { file -> file.isDirectory }
+            ?.map { it.name }
+            ?.toSet()
+            ?: emptySet()
+
+        return downloadedIds
+            .mapNotNull { VoiceModelRegistry.getVoiceById(it) }
+            .filter { isModelDownloaded(it) }
     }
 
     fun getTotalDownloadedSize(): Long {
