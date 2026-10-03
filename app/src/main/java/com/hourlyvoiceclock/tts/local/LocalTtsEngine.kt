@@ -164,10 +164,10 @@ class LocalTtsEngine(
     }
 
     override fun setLanguage(localeTag: String): Boolean {
-        // ⚡ Bolt: Use short-circuit evaluation to find the first downloaded matching language model,
-        // preventing unnecessary O(N) file system I/O scans across the entire registry.
-        val match = VoiceModelRegistry.availableVoices.find {
-            it.language == localeTag && downloader.isModelDownloaded(it)
+        // ⚡ Bolt: Use pre-computed O(1) map for language lookups instead of scanning the full registry array
+        // (VoiceModelRegistry.availableVoices) to find a matching language, and short-circuit the I/O check.
+        val match = VoiceModelRegistry.getVoicesByLanguage(localeTag).find {
+            downloader.isModelDownloaded(it)
         } ?: return false
         return setVoice(match.id, localeTag)
     }
