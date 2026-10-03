@@ -45,6 +45,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LockClock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Warning
@@ -850,7 +851,7 @@ fun ScheduleSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Icon(
-                                imageVector = if (oemGuidesExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                imageVector = if (oemGuidesExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )

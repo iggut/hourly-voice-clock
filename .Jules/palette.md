@@ -32,3 +32,6 @@
 ## 2023-11-21 - Grouping informational text and icons for cohesive screen reader announcements
 **Learning:** When displaying an informational `Row` that contains both an `Icon` and a `Text` element describing a status or schedule (e.g., "Next announcement: 4:00 PM" with a clock icon), leaving them separate causes the screen reader to read the icon's description and the text sequentially, which can be disjointed and redundant.
 **Action:** Apply `Modifier.semantics(mergeDescendants = true) {}` to the parent `Row` container to group the elements into a single cohesive announcement, and set the `Icon`'s `contentDescription` to `null` to avoid redundant text.
+## 2023-10-28 - Inconsistent Icon states for Expandable Sections
+**Learning:** Expandable sections should consistently use `KeyboardArrowUp` for the expanded state to indicate 'click to collapse upwards' and `KeyboardArrowDown` for the collapsed state to indicate 'click to expand downwards'. Using `KeyboardArrowRight` or reversing the directions breaks Material Design expectations and user intuition.
+**Action:** Always verify that toggling `oemGuidesExpanded` or similar boolean flags uses `if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown`.
