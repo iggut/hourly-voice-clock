@@ -352,6 +352,10 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
     private val _normalVoicesByLocale = MutableStateFlow<Map<String, List<VoiceInfo>>>(emptyMap())
     val normalVoicesByLocale: StateFlow<Map<String, List<VoiceInfo>>> = _normalVoicesByLocale.asStateFlow()
 
+    // ⚡ Bolt: Cache voices by name using associateBy to prevent O(N) array scanning and list allocations during recomposition lookups
+    private val _normalVoicesByName = MutableStateFlow<Map<String, VoiceInfo>>(emptyMap())
+    val normalVoicesByName: StateFlow<Map<String, VoiceInfo>> = _normalVoicesByName.asStateFlow()
+
     private val _selectedFilter = MutableStateFlow(VoiceListFilter.ALL)
     val selectedFilter: StateFlow<VoiceListFilter> = _selectedFilter.asStateFlow()
 
@@ -561,6 +565,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             allNormalVoices.filter { it.genderLabel == genderFilter }
         }
         _normalVoicesByLocale.value = filtered.groupBy { it.localeDisplayName }
+        _normalVoicesByName.value = allNormalVoices.associateBy { it.name }
     }
 
     fun selectVoice(voiceName: String, localeTag: String) {
