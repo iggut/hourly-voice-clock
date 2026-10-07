@@ -129,7 +129,7 @@ fun LocalVoiceSettingsScreen(
                 GlassInfoBanner(
                     text = stringResource(R.string.local_voices_preview_banner),
                     icon = Icons.Default.Info,
-                    iconContentDescription = stringResource(R.string.a11y_info_icon)
+                    iconContentDescription = null
                 )
             }
 
@@ -211,7 +211,7 @@ private fun ErrorChip(message: String, onClear: () -> Unit) {
     ) {
         Icon(
             Icons.Default.ErrorOutline,
-            contentDescription = stringResource(R.string.a11y_warning),
+            contentDescription = null,
             tint = MaterialTheme.colorScheme.onErrorContainer,
             modifier = Modifier.size(18.dp)
         )
