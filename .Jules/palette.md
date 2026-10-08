@@ -35,3 +35,7 @@
 ## 2023-10-28 - Inconsistent Icon states for Expandable Sections
 **Learning:** Expandable sections should consistently use `KeyboardArrowUp` for the expanded state to indicate 'click to collapse upwards' and `KeyboardArrowDown` for the collapsed state to indicate 'click to expand downwards'. Using `KeyboardArrowRight` or reversing the directions breaks Material Design expectations and user intuition.
 **Action:** Always verify that toggling `oemGuidesExpanded` or similar boolean flags uses `if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown`.
+
+## 2024-05-19 - Removed redundant contentDescription for Icons inside merged semantic nodes
+**Learning:** Setting `contentDescription = null` for an `Icon` inside a `Row` container that has `Modifier.semantics(mergeDescendants = true)` correctly prevents redundant double-announcements when the `Icon` sits next to a `Text` node containing the same description string.
+**Action:** When implementing icons inside merged elements, verify if adjacent `Text` provides the same context, and explicitly set `contentDescription = null` to optimize the screen reader experience.
