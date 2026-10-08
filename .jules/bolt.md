@@ -29,3 +29,6 @@
 ## 2024-05-19 - [Registry List Lookups using groupBy]
 **Learning:** In `LocalTtsEngine.setLanguage`, the engine previously scanned the full `VoiceModelRegistry.availableVoices` array linearly to find a matching language, and then performed I/O checks on each until one matched. This was slow.
 **Action:** Always pre-compute grouped lookups in static registries (e.g., `availableVoices.groupBy { it.language }`) to avoid scanning the whole list during runtime requests.
+## 2024-10-08 - [Avoid Map.values.flatten() in Compose Recomposition]
+**Learning:** In `VoiceSettingsScreen`, computing the label for a voice preset called `normalVoicesByLocale.values.flatten()` inside a `forEach` loop within the composable layout. `.flatten()` allocates a new list every single time it evaluates. During Jetpack Compose recomposition, repeatedly allocating large arrays in hot rendering paths introduces significant garbage collection churn and frame drops.
+**Action:** When a combined or flattened list is needed for UI evaluation, expose a pre-computed flat list (e.g., `_allNormalVoices` as a `StateFlow`) directly from the ViewModel instead of dynamically flattening grouped UI states inside the `@Composable` tree.

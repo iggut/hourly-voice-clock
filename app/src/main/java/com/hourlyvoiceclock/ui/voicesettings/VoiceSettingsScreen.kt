@@ -125,6 +125,7 @@ fun VoiceSettingsScreen(
     val specialTagFilter by viewModel.specialTagFilter.collectAsState()
     val userMessage by viewModel.userMessage.collectAsState()
     val previewingTarget by viewModel.previewingTarget.collectAsState()
+    val allNormalVoices by viewModel.allNormalVoices.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val localVoiceSelected = selectedLocalModelId != null
@@ -389,7 +390,7 @@ fun VoiceSettingsScreen(
                                     isPreviewing = previewingTarget == VoicePreviewTarget.Preset(preset.id),
                                     matchedVoiceName = if (selectedPresetId == preset.id) {
                                         friendlyMatchedVoiceLabel(
-                                            normalVoicesByLocale.values.flatten(),
+                                            allNormalVoices,
                                             selectedVoice
                                         )
                                     } else {
