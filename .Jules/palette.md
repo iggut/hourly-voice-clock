@@ -35,3 +35,6 @@
 ## 2023-10-28 - Inconsistent Icon states for Expandable Sections
 **Learning:** Expandable sections should consistently use `KeyboardArrowUp` for the expanded state to indicate 'click to collapse upwards' and `KeyboardArrowDown` for the collapsed state to indicate 'click to expand downwards'. Using `KeyboardArrowRight` or reversing the directions breaks Material Design expectations and user intuition.
 **Action:** Always verify that toggling `oemGuidesExpanded` or similar boolean flags uses `if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown`.
+## 2023-11-22 - Redundant screen reader announcements in custom components
+**Learning:** When removing a redundant `contentDescription` from an `Icon` inside a custom, reusable Jetpack Compose component (like `GlassInfoBanner` or `SectionHeader`), do not modify the internal implementation to hardcode `contentDescription = null` if the component accepts a parameter for it. Hardcoding it overrides other valid call sites and introduces an accessibility regression for non-redundant usages.
+**Action:** Always modify the specific call site causing the redundancy (e.g. `iconContentDescription = null` when using the component) rather than modifying the internal implementation of the reusable component itself.
