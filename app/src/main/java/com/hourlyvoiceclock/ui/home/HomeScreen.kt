@@ -289,7 +289,7 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.NotificationsActive,
-                                contentDescription = stringResource(R.string.hourly_announcements),
+                                contentDescription = null, // decorative
                                 tint = if (hourlyEnabled) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
