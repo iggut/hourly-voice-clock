@@ -29,3 +29,6 @@
 ## 2024-05-19 - [Registry List Lookups using groupBy]
 **Learning:** In `LocalTtsEngine.setLanguage`, the engine previously scanned the full `VoiceModelRegistry.availableVoices` array linearly to find a matching language, and then performed I/O checks on each until one matched. This was slow.
 **Action:** Always pre-compute grouped lookups in static registries (e.g., `availableVoices.groupBy { it.language }`) to avoid scanning the whole list during runtime requests.
+## 2024-10-25 - [Jetpack Compose List Allocation]
+**Learning:** Re-evaluating lists using `.flatten()` or other collection transformations that allocate new lists inside Jetpack Compose recomposition blocks forces new memory allocation on every UI frame, causing severe garbage collection pressure and stuttering.
+**Action:** When list transformations are needed inside Jetpack Compose, avoid calling them directly inside recomposition blocks. Expose pre-computed, flattened, or O(1) lookup structures directly from the ViewModel instead, or wrap the transformation in a `remember` block if appropriate.
