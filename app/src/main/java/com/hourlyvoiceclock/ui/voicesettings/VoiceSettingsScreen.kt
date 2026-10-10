@@ -125,6 +125,7 @@ fun VoiceSettingsScreen(
     val specialTagFilter by viewModel.specialTagFilter.collectAsState()
     val userMessage by viewModel.userMessage.collectAsState()
     val previewingTarget by viewModel.previewingTarget.collectAsState()
+    val allNormalVoices by viewModel.allNormalVoices.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val localVoiceSelected = selectedLocalModelId != null
@@ -388,8 +389,13 @@ fun VoiceSettingsScreen(
                                     isSelected = selectedPresetId == preset.id && !localVoiceSelected,
                                     isPreviewing = previewingTarget == VoicePreviewTarget.Preset(preset.id),
                                     matchedVoiceName = if (selectedPresetId == preset.id) {
+                                        // ⚡ Bolt: Avoid calling normalVoicesByLocale.values.flatten() here.
+                                        // Flattening inside a Compose recomposition block causes severe garbage collection
+                                        // pressure and UI stutters since a new ArrayList is allocated on every frame.
+                                        // Furthermore, using allNormalVoices prevents bugs where the matched label
+                                        // disappeared when gender filters were active.
                                         friendlyMatchedVoiceLabel(
-                                            normalVoicesByLocale.values.flatten(),
+                                            allNormalVoices,
                                             selectedVoice
                                         )
                                     } else {

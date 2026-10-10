@@ -347,7 +347,8 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         repo = deps.settingsRepository
     )
 
-    private var allNormalVoices = emptyList<VoiceInfo>()
+    private val _allNormalVoices = MutableStateFlow<List<VoiceInfo>>(emptyList())
+    val allNormalVoices: StateFlow<List<VoiceInfo>> = _allNormalVoices.asStateFlow()
 
     private val _normalVoicesByLocale = MutableStateFlow<Map<String, List<VoiceInfo>>>(emptyMap())
     val normalVoicesByLocale: StateFlow<Map<String, List<VoiceInfo>>> = _normalVoicesByLocale.asStateFlow()
@@ -439,8 +440,8 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             _speechRate.value = settings.speechRate
 
             _engines.value = deps.ttsEngine.getEngines()
-            allNormalVoices = deps.ttsEngine.getVoices()
-            _hasMultipleVoices.value = allNormalVoices.size > 1
+            _allNormalVoices.value = deps.ttsEngine.getVoices()
+            _hasMultipleVoices.value = _allNormalVoices.value.size > 1
 
             updateFilteredVoices()
 
@@ -535,8 +536,8 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
                 _isEspeakNgSelected.value = packageName.contains("espeak", ignoreCase = true)
 
                 _engines.value = deps.ttsEngine.getEngines()
-                allNormalVoices = deps.ttsEngine.getVoices()
-                _hasMultipleVoices.value = allNormalVoices.size > 1
+                _allNormalVoices.value = deps.ttsEngine.getVoices()
+                _hasMultipleVoices.value = _allNormalVoices.value.size > 1
 
                 updateFilteredVoices()
             }
@@ -556,9 +557,9 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
         }
 
         val filtered = if (genderFilter == null) {
-            allNormalVoices
+            _allNormalVoices.value
         } else {
-            allNormalVoices.filter { it.genderLabel == genderFilter }
+            _allNormalVoices.value.filter { it.genderLabel == genderFilter }
         }
         _normalVoicesByLocale.value = filtered.groupBy { it.localeDisplayName }
     }
@@ -598,11 +599,11 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
             .firstOrNull()
             ?: bestPresetVoice(preset, "en")
             ?: bestPresetVoice(preset, "fr")
-            ?: allNormalVoices.firstOrNull()
+            ?: _allNormalVoices.value.firstOrNull()
     }
 
     private fun bestPresetVoice(preset: SpecialVoicePreset, localePrefix: String): VoiceInfo? {
-        val candidates = allNormalVoices.filter { it.localeTag.startsWith(localePrefix, ignoreCase = true) }
+        val candidates = _allNormalVoices.value.filter { it.localeTag.startsWith(localePrefix, ignoreCase = true) }
         if (candidates.isEmpty()) return null
 
         return candidates.maxWithOrNull(
