@@ -29,3 +29,6 @@
 ## 2024-05-19 - [Registry List Lookups using groupBy]
 **Learning:** In `LocalTtsEngine.setLanguage`, the engine previously scanned the full `VoiceModelRegistry.availableVoices` array linearly to find a matching language, and then performed I/O checks on each until one matched. This was slow.
 **Action:** Always pre-compute grouped lookups in static registries (e.g., `availableVoices.groupBy { it.language }`) to avoid scanning the whole list during runtime requests.
+## 2024-12-15 - [Jetpack Compose List Lookup Optimization in UI Loops]
+**Learning:** Re-evaluating lists using `.flatten()` and `.firstOrNull` (or similar array scanning methods) inside Jetpack Compose recomposition blocks (e.g., retrieving a model's display name or status based on an ID within a `forEach` loop) introduces unnecessary O(N) linear scans and garbage collection overhead that executes on every UI frame/state change.
+**Action:** When pulling data from static or infrequently changing registries based on an ID within Jetpack Compose (such as in a `forEach` loop), expose pre-computed O(1) Lookup Maps (`associateBy`) directly from the ViewModel instead of linearly searching the original list inside Compose.

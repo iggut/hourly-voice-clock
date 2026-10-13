@@ -120,6 +120,7 @@ fun VoiceSettingsScreen(
     val engines by viewModel.engines.collectAsState()
     val selectedEnginePackage by viewModel.selectedEnginePackage.collectAsState()
     val isEspeakNgSelected by viewModel.isEspeakNgSelected.collectAsState()
+    val normalVoiceByName by viewModel.normalVoiceByName.collectAsState()
     val downloadedLocalModels by viewModel.downloadedLocalModels.collectAsState()
     val selectedLocalModelId by viewModel.selectedLocalModelId.collectAsState()
     val specialTagFilter by viewModel.specialTagFilter.collectAsState()
@@ -389,7 +390,7 @@ fun VoiceSettingsScreen(
                                     isPreviewing = previewingTarget == VoicePreviewTarget.Preset(preset.id),
                                     matchedVoiceName = if (selectedPresetId == preset.id) {
                                         friendlyMatchedVoiceLabel(
-                                            normalVoicesByLocale.values.flatten(),
+                                            normalVoiceByName,
                                             selectedVoice
                                         )
                                     } else {
@@ -946,9 +947,9 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
  * Human label for the system voice a Special Voice preset resolved to.
  * Engine ids such as "en-us-x-sfg-local" are not shown.
  */
-internal fun friendlyMatchedVoiceLabel(voices: Iterable<VoiceInfo>, voiceName: String?): String? {
+internal fun friendlyMatchedVoiceLabel(voicesByName: Map<String, VoiceInfo>, voiceName: String?): String? {
     if (voiceName.isNullOrBlank()) return null
-    val voice = voices.firstOrNull { it.name == voiceName } ?: return null
+    val voice = voicesByName[voiceName] ?: return null
     val friendly = voice.description.ifBlank { voice.localeDisplayName }.trim()
     if (friendly.isBlank() || friendly == voice.name) return null
     return friendly
