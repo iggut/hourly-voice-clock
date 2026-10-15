@@ -349,6 +349,9 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     private var allNormalVoices = emptyList<VoiceInfo>()
 
+    private val _allNormalVoicesState = MutableStateFlow<List<VoiceInfo>>(emptyList())
+    val allNormalVoicesState: StateFlow<List<VoiceInfo>> = _allNormalVoicesState.asStateFlow()
+
     private val _normalVoicesByLocale = MutableStateFlow<Map<String, List<VoiceInfo>>>(emptyMap())
     val normalVoicesByLocale: StateFlow<Map<String, List<VoiceInfo>>> = _normalVoicesByLocale.asStateFlow()
 
@@ -440,6 +443,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
             _engines.value = deps.ttsEngine.getEngines()
             allNormalVoices = deps.ttsEngine.getVoices()
+            _allNormalVoicesState.value = allNormalVoices
             _hasMultipleVoices.value = allNormalVoices.size > 1
 
             updateFilteredVoices()
@@ -536,6 +540,7 @@ class VoiceSettingsViewModel(application: Application) : AndroidViewModel(applic
 
                 _engines.value = deps.ttsEngine.getEngines()
                 allNormalVoices = deps.ttsEngine.getVoices()
+                _allNormalVoicesState.value = allNormalVoices
                 _hasMultipleVoices.value = allNormalVoices.size > 1
 
                 updateFilteredVoices()

@@ -111,6 +111,7 @@ fun VoiceSettingsScreen(
     )
 ) {
     val normalVoicesByLocale by viewModel.normalVoicesByLocale.collectAsState()
+    val allNormalVoices by viewModel.allNormalVoicesState.collectAsState()
     val selectedVoice by viewModel.selectedVoiceName.collectAsState()
     val pitch by viewModel.pitch.collectAsState()
     val speechRate by viewModel.speechRate.collectAsState()
@@ -389,7 +390,7 @@ fun VoiceSettingsScreen(
                                     isPreviewing = previewingTarget == VoicePreviewTarget.Preset(preset.id),
                                     matchedVoiceName = if (selectedPresetId == preset.id) {
                                         friendlyMatchedVoiceLabel(
-                                            normalVoicesByLocale.values.flatten(),
+                                                allNormalVoices,
                                             selectedVoice
                                         )
                                     } else {
