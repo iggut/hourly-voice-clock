@@ -348,7 +348,7 @@ fun HomeScreen(
                     contentColor = MaterialTheme.colorScheme.onErrorContainer,
                     accentColor = MaterialTheme.colorScheme.error,
                     icon = Icons.Default.Info,
-                    iconContentDescription = stringResource(R.string.a11y_info_icon)
+                    iconContentDescription = null
                 )
             }
 
