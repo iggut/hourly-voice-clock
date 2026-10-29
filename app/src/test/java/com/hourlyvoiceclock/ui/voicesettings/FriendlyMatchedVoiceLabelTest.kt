@@ -14,7 +14,7 @@ class FriendlyMatchedVoiceLabelTest {
         // Report: .gstack/qa-reports/qa-report-hourly-voice-clock-2026-09-27.md
         val voices = listOf(
             voice(name = "en-us-x-sfg-local", description = "United States Voice 2")
-        )
+        ).associateBy { it.name }
 
         assertEquals(
             "United States Voice 2",
@@ -24,8 +24,8 @@ class FriendlyMatchedVoiceLabelTest {
 
     @Test
     fun `missing voice does not fall back to the raw engine id`() {
-        assertNull(friendlyMatchedVoiceLabel(emptyList(), "en-us-x-sfg-local"))
-        assertNull(friendlyMatchedVoiceLabel(emptyList(), null))
+        assertNull(friendlyMatchedVoiceLabel(emptyMap(), "en-us-x-sfg-local"))
+        assertNull(friendlyMatchedVoiceLabel(emptyMap(), null))
     }
 
     private fun voice(name: String, description: String) = VoiceInfo(
