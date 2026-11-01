@@ -111,6 +111,7 @@ fun VoiceSettingsScreen(
     )
 ) {
     val normalVoicesByLocale by viewModel.normalVoicesByLocale.collectAsState()
+    val normalVoicesByName by viewModel.normalVoicesByName.collectAsState()
     val allNormalVoices by viewModel.allNormalVoicesState.collectAsState()
     val selectedVoice by viewModel.selectedVoiceName.collectAsState()
     val pitch by viewModel.pitch.collectAsState()
@@ -390,7 +391,7 @@ fun VoiceSettingsScreen(
                                     isPreviewing = previewingTarget == VoicePreviewTarget.Preset(preset.id),
                                     matchedVoiceName = if (selectedPresetId == preset.id) {
                                         friendlyMatchedVoiceLabel(
-                                                allNormalVoices,
+                                            normalVoicesByName,
                                             selectedVoice
                                         )
                                     } else {
@@ -947,9 +948,10 @@ private fun LocalVoiceClearRow(onClear: () -> Unit) {
  * Human label for the system voice a Special Voice preset resolved to.
  * Engine ids such as "en-us-x-sfg-local" are not shown.
  */
-internal fun friendlyMatchedVoiceLabel(voices: Iterable<VoiceInfo>, voiceName: String?): String? {
+internal fun friendlyMatchedVoiceLabel(voicesByName: Map<String, VoiceInfo>, voiceName: String?): String? {
     if (voiceName.isNullOrBlank()) return null
-    val voice = voices.firstOrNull { it.name == voiceName } ?: return null
+    // ⚡ Bolt: Using O(1) map lookup instead of linearly scanning with firstOrNull {} during recomposition
+    val voice = voicesByName[voiceName] ?: return null
     val friendly = voice.description.ifBlank { voice.localeDisplayName }.trim()
     if (friendly.isBlank() || friendly == voice.name) return null
     return friendly
